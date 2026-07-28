@@ -17,8 +17,8 @@ def create_app() -> FastAPI:
     app.include_router(auth_router, prefix="/api/v1/auth", tags=["auth"])
     
     # Add middleware
-    for middleware in get_middleware():
-        app.add_middleware(middleware.cls, **middleware.options)
+    for middleware_cls, middleware_options in get_middleware():
+        app.add_middleware(middleware_cls, **middleware_options)
     
     return app
 

@@ -3,9 +3,8 @@
 import logging
 from typing import Callable
 from fastapi import Request, Response
-from fastapi.middleware import Middleware
-from fastapi.middleware.base import BaseHTTPMiddleware
-from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.cors import CORSMiddleware
 
 logger = logging.getLogger(__name__)
 
@@ -30,10 +29,10 @@ class SanitizationMiddleware(BaseHTTPMiddleware):
         return response
 
 
-def get_middleware() -> list[Middleware]:
+def get_middleware() -> list[tuple[type, dict]]:
     """Get list of middleware for the application."""
     return [
-        Middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]),
-        Middleware(SanitizationMiddleware),
+        (CORSMiddleware, {"allow_origins": ["*"], "allow_methods": ["*"], "allow_headers": ["*"]}),
+        (SanitizationMiddleware, {}),
     ]
 

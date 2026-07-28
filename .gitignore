@@ -17,7 +17,7 @@ venv/
 env/
 ENV/
 
-# Poetry / packaging
+# Packaging
 dist/
 build/
 *.egg-info/
