@@ -1,7 +1,8 @@
 ﻿"""Middleware for request/response logging with sensitive data sanitization."""
 
 import logging
-from typing import Callable
+from collections.abc import Callable
+
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.cors import CORSMiddleware
@@ -17,22 +18,24 @@ class SanitizationMiddleware(BaseHTTPMiddleware):
         # Log request without sensitive data
         path = request.url.path
         method = request.method
-        
+
         # Don't log auth endpoints with sensitive data
-        if path in ['/api/v1/auth/login', '/api/v1/auth/register']:
+        if path in ["/api/v1/auth/login", "/api/v1/auth/register"]:
             logger.info(f"{method} {path} - [REDACTED]")
         else:
             logger.info(f"{method} {path}")
-        
+
         response = await call_next(request)
-        
+
         return response
 
 
 def get_middleware() -> list[tuple[type, dict]]:
     """Get list of middleware for the application."""
     return [
-        (CORSMiddleware, {"allow_origins": ["*"], "allow_methods": ["*"], "allow_headers": ["*"]}),
+        (
+            CORSMiddleware,
+            {"allow_origins": ["*"], "allow_methods": ["*"], "allow_headers": ["*"]},
+        ),
         (SanitizationMiddleware, {}),
     ]
-

@@ -1,7 +1,6 @@
 ﻿"""Base entity class for domain entities."""
 
 from uuid import UUID
-from typing import Any
 
 
 class Entity:
@@ -11,7 +10,7 @@ class Entity:
         """Initialize entity with unique identifier."""
         self.id = id
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         """Check equality based on entity id."""
         if not isinstance(other, Entity):
             return False

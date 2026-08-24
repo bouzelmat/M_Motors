@@ -1,6 +1,6 @@
-﻿"""Exceptions spécifiques au contexte Véhicules."""
+"""Exceptions spécifiques au contexte Véhicules."""
 
-from shared.domain.exceptions import DomainError, NotFoundError
+from src.shared.domain.exceptions import DomainError, NotFoundError
 
 
 class VehicleNotFoundError(NotFoundError):
@@ -15,5 +15,7 @@ class VehicleNotAvailableError(DomainError):
     """Levée lorsqu'on tente de louer/acheter un véhicule indisponible."""
 
     def __init__(self, vehicle_id: str) -> None:
-        super().__init__(f"Le véhicule {vehicle_id} n'est pas disponible pour la location.")
+        super().__init__(
+            f"Le véhicule {vehicle_id} n'est pas disponible pour la location."
+        )
         self.vehicle_id = vehicle_id

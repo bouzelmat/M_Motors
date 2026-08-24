@@ -1,7 +1,6 @@
 ﻿"""In-memory event bus for domain events."""
 
 from collections.abc import Callable
-from typing import Any
 
 from src.shared.domain.domain_event import DomainEvent
 
@@ -37,4 +36,3 @@ def get_event_bus() -> EventBus:
     if _event_bus is None:
         _event_bus = EventBus()
     return _event_bus
-

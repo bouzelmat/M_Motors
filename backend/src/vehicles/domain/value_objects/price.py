@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from shared.domain.exceptions import DomainError
+from src.shared.domain.exceptions import DomainError
 
 
 @dataclass(frozen=True)

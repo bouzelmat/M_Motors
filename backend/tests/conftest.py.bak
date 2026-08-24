@@ -1,0 +1,90 @@
+"""Fixtures partagées pour les tests d'intégration."""
+
+from collections.abc import AsyncIterator
+
+import pytest_asyncio
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import (
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
+from src.api.main import app
+
+from src.shared.infrastructure.database import Base, get_session
+
+TEST_DATABASE_URL = (
+    "postgresql+asyncpg://postgres:postgres@localhost:5432/m_motors_test"
+)
+
+engine = create_async_engine(
+    TEST_DATABASE_URL,
+    echo=False,
+)
+
+TestingSessionLocal = async_sessionmaker(
+    bind=engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+)
+
+
+@pytest_asyncio.fixture(scope="session", autouse=True)
+async def create_database() -> AsyncIterator[None]:
+    """Crée le schéma de test avant la session puis le supprime à la fin."""
+
+    async with engine.begin() as connection:
+        await connection.run_sync(Base.metadata.create_all)
+
+    yield
+
+    async with engine.begin() as connection:
+        await connection.run_sync(Base.metadata.drop_all)
+
+    await engine.dispose()
+
+
+@pytest_asyncio.fixture
+async def db_session() -> AsyncIterator[AsyncSession]:
+    """Fournit une session de base de données isolée pour chaque test."""
+
+    async with engine.connect() as connection:
+        transaction = await connection.begin()
+
+        session = TestingSessionLocal(bind=connection)
+
+        try:
+            yield session
+        finally:
+            await session.close()
+            await transaction.rollback()
+
+
+@pytest_asyncio.fixture(autouse=True)
+async def configure_test_session(
+    db_session: AsyncSession,
+) -> None:
+    """Configure la session de test."""
+
+    await db_session.execute(text("SET TIME ZONE 'UTC'"))
+
+
+@pytest_asyncio.fixture
+async def async_client(
+    db_session: AsyncSession,
+) -> AsyncIterator[AsyncClient]:
+    """Fournit un client HTTP utilisant la même session de base de données."""
+
+    async def override_get_session() -> AsyncIterator[AsyncSession]:
+        yield db_session
+
+    app.dependency_overrides[get_session] = override_get_session
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        yield client
+
+    app.dependency_overrides.clear()

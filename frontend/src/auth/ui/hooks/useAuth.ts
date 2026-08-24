@@ -1,9 +1,9 @@
-﻿// Auth store using Zustand
+// Auth store using Zustand
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { authService } from '../application/AuthService';
-import { UserResponse } from '../application/dtos';
+import { authService } from '../../application/AuthService';
+import { UserResponse } from '../../application/dtos';
 
 interface AuthState {
   token: string | null;

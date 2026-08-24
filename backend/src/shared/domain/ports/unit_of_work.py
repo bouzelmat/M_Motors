@@ -14,6 +14,7 @@ Usage in a use-case::
 from __future__ import annotations
 
 import abc
+from typing import Self
 
 
 class AbstractUnitOfWork(abc.ABC):
@@ -45,7 +46,7 @@ class AbstractUnitOfWork(abc.ABC):
     # Async context manager protocol
     # ------------------------------------------------------------------
 
-    async def __aenter__(self) -> "AbstractUnitOfWork":
+    async def __aenter__(self) -> Self:
         """Begin a new transactional unit and return this UoW instance."""
         return self
 

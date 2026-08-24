@@ -1,0 +1,2 @@
+class ServiceMapper:
+    pass

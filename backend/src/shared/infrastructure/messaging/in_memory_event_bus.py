@@ -26,10 +26,8 @@ Typical setup at application startup
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from collections import defaultdict
-from collections.abc import Awaitable, Callable
 
 from src.shared.domain.domain_event import DomainEvent
 from src.shared.domain.ports.event_bus import AbstractEventBus, EventHandler
@@ -120,7 +118,7 @@ class InMemoryEventBus(AbstractEventBus):
         for handler in handlers:
             try:
                 await handler(event)
-            except Exception:  # noqa: BLE001
+            except Exception:
                 logger.exception(
                     "EventBus: handler '%s' raised an exception while "
                     "processing '%s' (id=%s). Continuing with next handler.",
@@ -172,7 +170,7 @@ def get_event_bus() -> InMemoryEventBus:
     InMemoryEventBus
         The shared bus instance.
     """
-    global _event_bus  # noqa: PLW0603
+    global _event_bus
     if _event_bus is None:
         _event_bus = InMemoryEventBus()
         logger.info("EventBus: InMemoryEventBus singleton created.")

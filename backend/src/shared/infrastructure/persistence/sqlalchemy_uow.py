@@ -17,6 +17,8 @@ automatically, preventing partial writes from reaching PostgreSQL.
 
 from __future__ import annotations
 
+from typing import Self
+
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from src.shared.domain.ports.unit_of_work import AbstractUnitOfWork
@@ -59,7 +61,7 @@ class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
     # Async context manager — lifecycle
     # ------------------------------------------------------------------
 
-    async def __aenter__(self) -> "SqlAlchemyUnitOfWork":
+    async def __aenter__(self) -> Self:
         """Open a new ``AsyncSession`` and begin an implicit transaction."""
         self.session = self._session_factory()
         return await super().__aenter__()

@@ -3,8 +3,6 @@
 from datetime import datetime, timezone
 from uuid import uuid4
 
-import pytest
-
 from src.auth.domain.entities import User
 from src.auth.domain.value_objects import Email, Role
 

@@ -1,4 +1,4 @@
-﻿"""Database engine helpers for shared infrastructure concerns."""
+"""Database engine helpers for shared infrastructure concerns."""
 
 from collections.abc import AsyncIterator
 from functools import lru_cache
@@ -10,8 +10,13 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
+from sqlalchemy.orm import DeclarativeBase
 
 from src.config import get_settings
+
+
+class Base(DeclarativeBase):
+    """Base class for all ORM models."""
 
 
 @lru_cache(maxsize=1)
@@ -19,7 +24,11 @@ def get_engine() -> AsyncEngine:
     """Create the SQLAlchemy async engine used by shared infrastructure."""
 
     settings = get_settings()
-    return create_async_engine(settings.database_url, pool_pre_ping=True)
+
+    return create_async_engine(
+        settings.database_url,
+        pool_pre_ping=True,
+    )
 
 
 @lru_cache(maxsize=1)
@@ -37,6 +46,7 @@ async def get_session() -> AsyncIterator[AsyncSession]:
     """Yield an async database session for request-scoped work."""
 
     session_factory = get_session_factory()
+
     async with session_factory() as session:
         yield session
 
