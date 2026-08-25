@@ -13,11 +13,11 @@ from src.vehicles.domain.value_objects.vehicle_search_criteria import (
     VehicleSearchCriteria,
 )
 from src.vehicles.domain.value_objects.vehicle_status import VehicleStatus
-from src.vehicles.infrastructure.mappers.ServiceMapper import ServiceMapper
-from src.vehicles.infrastructure.mappers.VehicleMapper import VehicleMapper
+from src.vehicles.infrastructure.mappers.service_mapper import ServiceMapper
+from src.vehicles.infrastructure.mappers.vehicle_mapper import VehicleMapper
 
 # from src.vehicles.infrastructure.orm.ServiceModel import ServiceModel
-from src.vehicles.infrastructure.orm.VehicleModel import VehicleModel
+from src.vehicles.infrastructure.orm.vehicle_model import VehicleModel
 
 logger = logging.getLogger(__name__)
 

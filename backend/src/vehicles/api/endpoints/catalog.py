@@ -10,11 +10,11 @@ from src.vehicles.api.schemas.vehicle_schemas import (
     VehicleDetailDTO,
     VehicleListItemDTO,
 )
-from src.vehicles.application.queries.GetRentalCatalogQuery import (
+from src.vehicles.application.queries.get_rental_catalog_query import (
     GetRentalCatalogQuery,
     GetRentalCatalogQueryHandler,
 )
-from src.vehicles.application.queries.GetVehicleDetailQuery import (
+from src.vehicles.application.queries.get_vehicle_detail_query import (
     GetVehicleDetailQuery,
     GetVehicleDetailQueryHandler,
 )

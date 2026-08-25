@@ -12,7 +12,7 @@ from src.vehicles.domain.value_objects.vehicle_search_criteria import (
     VehicleSearchCriteria,
 )
 from src.vehicles.domain.value_objects.vehicle_status import VehicleStatus
-from src.vehicles.infrastructure.repositories.SQLAlchemyVehicleRepository import (
+from src.vehicles.infrastructure.repositories.sqlalchemy_vehicle_repository import (
     SQLAlchemyVehicleRepository,
 )
 

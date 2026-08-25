@@ -6,7 +6,7 @@ from src.vehicles.domain.value_objects.energy_type import EnergyType
 from src.vehicles.domain.value_objects.mileage import Mileage
 from src.vehicles.domain.value_objects.price import Price
 from src.vehicles.domain.value_objects.vehicle_status import VehicleStatus
-from src.vehicles.infrastructure.orm.VehicleModel import VehicleModel
+from src.vehicles.infrastructure.orm.vehicle_model import VehicleModel
 
 
 class VehicleMapper:

@@ -14,7 +14,7 @@ from src.shared.infrastructure.database import Base
 from src.vehicles.domain.value_objects.service_category import ServiceCategory
 
 if TYPE_CHECKING:
-    from src.vehicles.infrastructure.orm.VehicleModel import VehicleModel
+    from src.vehicles.infrastructure.orm.vehicle_model import VehicleModel
 
 
 class ServiceModel(Base):

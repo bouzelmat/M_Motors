@@ -3,13 +3,13 @@
 from fastapi import Depends
 
 from src.shared.infrastructure.dependencies import SessionDep
-from src.vehicles.application.queries.GetRentalCatalogQuery import (
+from src.vehicles.application.queries.get_rental_catalog_query import (
     GetRentalCatalogQueryHandler,
 )
-from src.vehicles.application.queries.GetVehicleDetailQuery import (
+from src.vehicles.application.queries.get_vehicle_detail_query import (
     GetVehicleDetailQueryHandler,
 )
-from src.vehicles.infrastructure.repositories.SQLAlchemyVehicleRepository import (
+from src.vehicles.infrastructure.repositories.sqlalchemy_vehicle_repository import (
     SQLAlchemyVehicleRepository,
 )
 

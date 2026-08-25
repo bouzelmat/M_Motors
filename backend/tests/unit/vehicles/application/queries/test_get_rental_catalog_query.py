@@ -4,7 +4,7 @@ from uuid import uuid4
 
 import pytest
 
-from src.vehicles.application.queries.GetRentalCatalogQuery import (
+from src.vehicles.application.queries.get_rental_catalog_query import (
     GetRentalCatalogQuery,
     GetRentalCatalogQueryHandler,
 )

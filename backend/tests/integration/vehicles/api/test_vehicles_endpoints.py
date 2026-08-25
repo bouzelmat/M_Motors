@@ -10,7 +10,7 @@ from src.vehicles.domain.value_objects.energy_type import EnergyType
 from src.vehicles.domain.value_objects.mileage import Mileage
 from src.vehicles.domain.value_objects.price import Price
 from src.vehicles.domain.value_objects.vehicle_status import VehicleStatus
-from src.vehicles.infrastructure.repositories.SQLAlchemyVehicleRepository import (
+from src.vehicles.infrastructure.repositories.sqlalchemy_vehicle_repository import (
     SQLAlchemyVehicleRepository,
 )
 
