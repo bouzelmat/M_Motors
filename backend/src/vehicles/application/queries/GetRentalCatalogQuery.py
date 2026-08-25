@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from decimal import Decimal
 
-from src.vehicles.domain.entities.Vehicle import Vehicle
-from src.vehicles.domain.ports.VehicleRepository import VehicleRepository
+from src.vehicles.domain.entities.vehicle import Vehicle
+from src.vehicles.domain.ports.vehicle_repository import VehicleRepository
 from src.vehicles.domain.value_objects.VehicleSearchCriteria import (
     VehicleSearchCriteria,
 )

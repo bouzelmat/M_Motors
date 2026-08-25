@@ -5,9 +5,9 @@ from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from src.vehicles.domain.entities.Service import Service
-from src.vehicles.domain.entities.Vehicle import Vehicle
-from src.vehicles.domain.ports.VehicleRepository import VehicleRepository
+from src.vehicles.domain.entities.service import Service
+from src.vehicles.domain.entities.vehicle import Vehicle
+from src.vehicles.domain.ports.vehicle_repository import VehicleRepository
 from src.vehicles.domain.value_objects.CatalogType import CatalogType
 from src.vehicles.domain.value_objects.VehicleSearchCriteria import (
     VehicleSearchCriteria,

@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 from uuid import UUID
 
-from src.vehicles.domain.entities.Service import Service
-from src.vehicles.domain.entities.Vehicle import Vehicle
-from src.vehicles.domain.ports.VehicleRepository import VehicleRepository
+from src.vehicles.domain.entities.service import Service
+from src.vehicles.domain.entities.vehicle import Vehicle
+from src.vehicles.domain.ports.vehicle_repository import VehicleRepository
 
 
 @dataclass(frozen=True, slots=True)

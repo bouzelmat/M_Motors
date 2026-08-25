@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from src.vehicles.domain.entities.Vehicle import Vehicle
+from src.vehicles.domain.entities.vehicle import Vehicle
 from src.vehicles.domain.value_objects.CatalogType import CatalogType
 from src.vehicles.domain.value_objects.EnergyType import EnergyType
 from src.vehicles.domain.value_objects.Mileage import Mileage

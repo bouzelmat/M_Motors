@@ -10,7 +10,7 @@ BACKEND_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BACKEND_ROOT))
 
 from src.shared.infrastructure.database import get_session_factory
-from src.vehicles.domain.entities.Vehicle import Vehicle
+from src.vehicles.domain.entities.vehicle import Vehicle
 from src.vehicles.domain.value_objects.CatalogType import CatalogType
 from src.vehicles.domain.value_objects.EnergyType import EnergyType
 from src.vehicles.domain.value_objects.Mileage import Mileage
