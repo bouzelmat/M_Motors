@@ -36,7 +36,7 @@ class SQLAlchemyVehicleRepository(VehicleRepository):
         existing = await self._session.get(VehicleModel, vehicle.id)
         if existing:
             # Mise à jour des attributs
-            updated_orm = self._mapper.to_orm(vehicle, existing_orm=existing)
+            self._mapper.to_orm(vehicle, existing_orm=existing)
         else:
             self._session.add(orm)
         await self._session.flush()

@@ -1,7 +1,8 @@
 """Fixtures partagées pour les tests d'intégration."""
 
 from collections.abc import AsyncIterator
-import pytest
+from importlib import import_module
+
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
@@ -12,10 +13,9 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.pool import NullPool
 
-from src.shared.infrastructure.database import Base, get_session
-from src.api.dependencies import get_db_session
 import src.shared.infrastructure.event_bus as event_bus_module
-from importlib import import_module
+from src.api.dependencies import get_db_session
+from src.shared.infrastructure.database import Base, get_session
 from src.shared.infrastructure.messaging.in_memory_event_bus import get_event_bus
 
 # Import ORM models early so they register with Base.metadata before the

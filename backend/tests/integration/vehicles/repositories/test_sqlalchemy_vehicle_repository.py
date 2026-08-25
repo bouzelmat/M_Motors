@@ -8,7 +8,9 @@ from src.vehicles.domain.value_objects.CatalogType import CatalogType
 from src.vehicles.domain.value_objects.EnergyType import EnergyType
 from src.vehicles.domain.value_objects.Mileage import Mileage
 from src.vehicles.domain.value_objects.Price import Price
-from src.vehicles.domain.value_objects.VehicleSearchCriteria import VehicleSearchCriteria
+from src.vehicles.domain.value_objects.VehicleSearchCriteria import (
+    VehicleSearchCriteria,
+)
 from src.vehicles.domain.value_objects.VehicleStatus import VehicleStatus
 from src.vehicles.infrastructure.repositories.SQLAlchemyVehicleRepository import (
     SQLAlchemyVehicleRepository,

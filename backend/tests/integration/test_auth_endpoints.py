@@ -1,9 +1,10 @@
 """Integration tests for auth endpoints."""
 
+from unittest.mock import AsyncMock
+
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
-from unittest.mock import AsyncMock
 
 
 @pytest.fixture(autouse=True)
@@ -17,7 +18,7 @@ def mock_notification_or_email_service(monkeypatch):
     # OPTION A : Si l'objet à l'origine du .send est importé dans un module d'infrastructure
     # Adaptez le chemin selon la structure exacte de votre projet (ex: src.shared... ou src.api...)
     try:
-        from src.shared.infrastructure.email import EmailService # Exemple de chemin
+        from src.shared.infrastructure.email import EmailService  # Exemple de chemin
         monkeypatch.setattr(EmailService, "send", mock_send)
     except ImportError:
         pass
