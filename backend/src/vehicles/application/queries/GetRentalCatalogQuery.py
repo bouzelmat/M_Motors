@@ -3,7 +3,7 @@ from decimal import Decimal
 
 from src.vehicles.domain.entities.vehicle import Vehicle
 from src.vehicles.domain.ports.vehicle_repository import VehicleRepository
-from src.vehicles.domain.value_objects.VehicleSearchCriteria import (
+from src.vehicles.domain.value_objects.vehicle_search_criteria import (
     VehicleSearchCriteria,
 )
 

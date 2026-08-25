@@ -4,14 +4,14 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.vehicles.domain.entities.vehicle import Vehicle
-from src.vehicles.domain.value_objects.CatalogType import CatalogType
-from src.vehicles.domain.value_objects.EnergyType import EnergyType
-from src.vehicles.domain.value_objects.Mileage import Mileage
-from src.vehicles.domain.value_objects.Price import Price
-from src.vehicles.domain.value_objects.VehicleSearchCriteria import (
+from src.vehicles.domain.value_objects.catalog_type import CatalogType
+from src.vehicles.domain.value_objects.energy_type import EnergyType
+from src.vehicles.domain.value_objects.mileage import Mileage
+from src.vehicles.domain.value_objects.price import Price
+from src.vehicles.domain.value_objects.vehicle_search_criteria import (
     VehicleSearchCriteria,
 )
-from src.vehicles.domain.value_objects.VehicleStatus import VehicleStatus
+from src.vehicles.domain.value_objects.vehicle_status import VehicleStatus
 from src.vehicles.infrastructure.repositories.SQLAlchemyVehicleRepository import (
     SQLAlchemyVehicleRepository,
 )

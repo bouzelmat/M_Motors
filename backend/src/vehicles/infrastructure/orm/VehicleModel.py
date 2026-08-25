@@ -9,9 +9,9 @@ from sqlalchemy import DateTime, Enum, Index, Integer, Numeric, String, Text, fu
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.shared.infrastructure.database import Base
-from src.vehicles.domain.value_objects.CatalogType import CatalogType
-from src.vehicles.domain.value_objects.EnergyType import EnergyType
-from src.vehicles.domain.value_objects.VehicleStatus import VehicleStatus
+from src.vehicles.domain.value_objects.catalog_type import CatalogType
+from src.vehicles.domain.value_objects.energy_type import EnergyType
+from src.vehicles.domain.value_objects.vehicle_status import VehicleStatus
 from src.vehicles.infrastructure.orm.ServiceModel import vehicle_services
 
 if TYPE_CHECKING:

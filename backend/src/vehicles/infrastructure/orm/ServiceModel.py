@@ -11,7 +11,7 @@ from sqlalchemy import Column, DateTime, Enum, ForeignKey, Numeric, String, Tabl
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.shared.infrastructure.database import Base
-from src.vehicles.domain.value_objects.ServiceCategory import ServiceCategory
+from src.vehicles.domain.value_objects.service_category import ServiceCategory
 
 if TYPE_CHECKING:
     from src.vehicles.infrastructure.orm.VehicleModel import VehicleModel

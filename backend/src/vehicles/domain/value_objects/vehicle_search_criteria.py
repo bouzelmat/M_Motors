@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Literal
 
-from src.vehicles.domain.value_objects.CatalogType import CatalogType
+from src.vehicles.domain.value_objects.catalog_type import CatalogType
 
 
 @dataclass(frozen=True)

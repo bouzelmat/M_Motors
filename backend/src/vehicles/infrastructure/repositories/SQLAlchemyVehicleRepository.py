@@ -8,11 +8,11 @@ from sqlalchemy.orm import selectinload
 from src.vehicles.domain.entities.service import Service
 from src.vehicles.domain.entities.vehicle import Vehicle
 from src.vehicles.domain.ports.vehicle_repository import VehicleRepository
-from src.vehicles.domain.value_objects.CatalogType import CatalogType
-from src.vehicles.domain.value_objects.VehicleSearchCriteria import (
+from src.vehicles.domain.value_objects.catalog_type import CatalogType
+from src.vehicles.domain.value_objects.vehicle_search_criteria import (
     VehicleSearchCriteria,
 )
-from src.vehicles.domain.value_objects.VehicleStatus import VehicleStatus
+from src.vehicles.domain.value_objects.vehicle_status import VehicleStatus
 from src.vehicles.infrastructure.mappers.ServiceMapper import ServiceMapper
 from src.vehicles.infrastructure.mappers.VehicleMapper import VehicleMapper
 
