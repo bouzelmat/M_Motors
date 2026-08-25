@@ -1,4 +1,4 @@
-﻿"""HTTP dependency providers."""
+"""HTTP dependency providers."""
 
 from collections.abc import AsyncIterator
 from typing import Annotated

@@ -1,4 +1,4 @@
-﻿"""Base entity class for domain entities."""
+"""Base entity class for domain entities."""
 
 from uuid import UUID
 

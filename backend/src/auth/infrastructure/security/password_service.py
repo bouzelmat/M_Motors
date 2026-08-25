@@ -1,4 +1,4 @@
-﻿"""Password hashing service.
+"""Password hashing service.
 
 Uses PBKDF2-SHA256 via passlib to avoid runtime dependency on the native
 `bcrypt` package (which in some environments triggers import/version issues

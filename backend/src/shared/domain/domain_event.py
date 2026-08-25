@@ -1,4 +1,4 @@
-﻿"""Base class for domain events."""
+"""Base class for domain events."""
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone

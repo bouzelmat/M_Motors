@@ -1,4 +1,4 @@
-﻿"""In-memory event bus for domain events."""
+"""In-memory event bus for domain events."""
 
 from collections.abc import Callable
 

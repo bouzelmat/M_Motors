@@ -1,4 +1,4 @@
-﻿"""Middleware for request/response logging with sensitive data sanitization."""
+"""Middleware for request/response logging with sensitive data sanitization."""
 
 import logging
 from collections.abc import Callable
