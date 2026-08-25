@@ -22,9 +22,9 @@ class VehicleMapper:
             year=orm.year,
             price=Price(float(orm.price)),
             mileage=Mileage(orm.mileage),
-            energy_type=EnergyType(orm.energy_type),       # plus de .value
-            status=VehicleStatus(orm.status),               # plus de .value
-            catalog_type=CatalogType(orm.catalog_type),     # plus de .value
+            energy_type=EnergyType(orm.energy_type),  # plus de .value
+            status=VehicleStatus(orm.status),  # plus de .value
+            catalog_type=CatalogType(orm.catalog_type),  # plus de .value
             monthly_rent=(
                 Price(float(orm.monthly_rent)) if orm.monthly_rent is not None else None
             ),

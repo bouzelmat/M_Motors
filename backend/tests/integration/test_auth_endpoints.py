@@ -9,16 +9,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 @pytest.fixture(autouse=True)
 def mock_notification_or_email_service(monkeypatch):
-    """Intercepte et simule automatiquement n'importe quel appel à .send() 
+    """Intercepte et simule automatiquement n'importe quel appel à .send()
 
     dans les routes d'authentification.
     """
     mock_send = AsyncMock(return_value=True)
-    
+
     # OPTION A : Si l'objet à l'origine du .send est importé dans un module d'infrastructure
     # Adaptez le chemin selon la structure exacte de votre projet (ex: src.shared... ou src.api...)
     try:
         from src.shared.infrastructure.email import EmailService  # Exemple de chemin
+
         monkeypatch.setattr(EmailService, "send", mock_send)
     except ImportError:
         pass
@@ -27,9 +28,8 @@ def mock_notification_or_email_service(monkeypatch):
     # from src.api.dependencies import get_email_service
     # from src.api.main import app
     # app.dependency_overrides[get_email_service] = lambda: AsyncMock(send=mock_send)
-    
-    return mock_send
 
+    return mock_send
 
 
 @pytest.mark.asyncio

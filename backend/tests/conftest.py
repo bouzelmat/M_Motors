@@ -30,6 +30,7 @@ for _mod in (
     except Exception:
         pass
 
+
 # Clear any event bus handlers created at import time (avoid side-effects).
 class _NoopEventBus:
     def subscribe(self, *a, **kw):
@@ -40,6 +41,7 @@ class _NoopEventBus:
 
     def clear_handlers(self, *a, **kw):
         return None
+
 
 # Replace any global event bus with a noop instance to avoid side-effects
 try:

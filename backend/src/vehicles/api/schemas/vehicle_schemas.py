@@ -34,7 +34,7 @@ class VehicleListItemDTO(BaseModel):
         description="Noms des services inclus",
     )
 
-    @field_serializer('monthly_rent')
+    @field_serializer("monthly_rent")
     def serialize_monthly_rent(self, value: Decimal | None) -> str | None:
         if value is None:
             return None
@@ -55,7 +55,7 @@ class VehicleDetailDTO(VehicleListItemDTO):
         description="Services disponibles avec coût et catégorie",
     )
 
-    @field_serializer('price')
+    @field_serializer("price")
     def serialize_price(self, value: Decimal | None) -> str | None:
         if value is None:
             return None

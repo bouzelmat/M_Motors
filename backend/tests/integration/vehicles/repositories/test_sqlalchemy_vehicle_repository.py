@@ -105,7 +105,7 @@ async def test_find_by_criteria_rental(db_session: AsyncSession):
 
     # Recherche des locations avec un loyer maximal de 350 €
     criteria = VehicleSearchCriteria(
-        mode='rental',
+        mode="rental",
         max_monthly_rent=350.0,
     )
 
@@ -116,14 +116,14 @@ async def test_find_by_criteria_rental(db_session: AsyncSession):
     assert results[0].monthly_rent.value == 300.0
 
     # Recherche de toutes les locations
-    criteria = VehicleSearchCriteria(mode='rental')
+    criteria = VehicleSearchCriteria(mode="rental")
 
     results = await repo.find_by_criteria(criteria)
 
     assert len(results) == 2
 
     # Recherche des véhicules à la vente
-    criteria = VehicleSearchCriteria(mode='sale')  # <-- correction : mode='sale'
+    criteria = VehicleSearchCriteria(mode="sale")  # <-- correction : mode='sale'
 
     results = await repo.find_by_criteria(criteria)
 
