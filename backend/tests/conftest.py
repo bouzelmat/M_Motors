@@ -1,8 +1,10 @@
 """Fixtures partagées pour les tests d'intégration."""
 
+import os
 from collections.abc import AsyncIterator
 from importlib import import_module
 
+import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
@@ -12,6 +14,20 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from sqlalchemy.pool import NullPool
+
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_test_env() -> None:
+    """Injecte les variables d'environnement obligatoires avant les imports de l'application."""
+    os.environ.setdefault(
+        "DATABASE_URL",
+        "postgresql+asyncpg://m_motors:m_motors@localhost:5432/test_m_motors",
+    )
+    os.environ.setdefault(
+        "JWT_SECRET_KEY", "fake_secret_key_for_testing_only_123456789"
+    )
+    os.environ.setdefault("JWT_ALGORITHM", "HS256")
+
 
 import src.shared.infrastructure.event_bus as event_bus_module
 from src.api.dependencies import get_db_session
@@ -54,8 +70,9 @@ except Exception:
 
 from src.api.main import app
 
-TEST_DATABASE_URL = (
-    "postgresql+asyncpg://m_motors:m_motors@localhost:5432/test_m_motors"
+TEST_DATABASE_URL = os.environ.get(
+    "DATABASE_URL",
+    "postgresql+asyncpg://m_motors:m_motors@localhost:5432/test_m_motors",
 )
 
 engine = create_async_engine(
