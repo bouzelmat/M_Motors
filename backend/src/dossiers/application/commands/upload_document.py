@@ -1,1 +1,1 @@
-﻿"""Skeleton module"""
+"""Skeleton module"""

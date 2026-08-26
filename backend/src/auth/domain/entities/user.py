@@ -3,9 +3,8 @@
 from datetime import datetime, timezone
 from uuid import UUID
 
-from src.shared.domain.entity import Entity
-
 from src.auth.domain.value_objects import Email, Role
+from src.shared.domain.entity import Entity
 
 
 class User(Entity):

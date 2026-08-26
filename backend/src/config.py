@@ -1,4 +1,4 @@
-﻿"""Application settings."""
+"""Application settings."""
 
 from functools import lru_cache
 from typing import Literal
@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     app_name: str = "M-Motors API"
     environment: Literal["development", "staging", "production"] = "development"
 
-    # ---- Database (strictement nécessaire pour le health check et la session SQLAlchemy) ----
+    # ---- Database (strictement ncessaire pour le health check et la session SQLAlchemy) ----
     database_url: str
 
     # ---- Security ----

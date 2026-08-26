@@ -1,7 +1,6 @@
 """SQLAlchemy implementation of UserRepository."""
 
 from uuid import UUID
-from typing import cast
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
