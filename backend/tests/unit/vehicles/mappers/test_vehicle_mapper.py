@@ -8,8 +8,13 @@ from src.vehicles.domain.value_objects.energy_type import EnergyType
 from src.vehicles.domain.value_objects.mileage import Mileage
 from src.vehicles.domain.value_objects.price import Price
 from src.vehicles.domain.value_objects.vehicle_status import VehicleStatus
+from src.vehicles.domain.value_objects.service_inclusion import ServiceInclusion
 from src.vehicles.infrastructure.mappers.vehicle_mapper import VehicleMapper
 from src.vehicles.infrastructure.orm.vehicle_model import VehicleModel
+from src.vehicles.infrastructure.orm.service_model import (
+    ServiceModel,
+    VehicleServiceAssociation,
+)
 
 
 class TestVehicleMapper:
@@ -182,3 +187,180 @@ class TestVehicleMapper:
         assert updated_orm.description is None
         assert updated_orm.created_at == now
         assert updated_orm.updated_at == now
+
+    def test_to_domain_with_services(self):
+        """Vérifie la conversion des associations ORM vers les services du domaine."""
+
+        vehicle_id = uuid4()
+        service_id = uuid4()
+        now = datetime.now(timezone.utc)
+
+        service = ServiceModel(
+            id=service_id,
+            name="Assurance tous risques",
+            monthly_cost=Decimal("49.90"),
+            category="insurance",
+        )
+
+        association = VehicleServiceAssociation(
+            vehicle_id=vehicle_id,
+            service_id=service_id,
+            included=True,
+            service=service,
+        )
+
+        orm = VehicleModel(
+            id=vehicle_id,
+            brand="Tesla",
+            model="Model 3",
+            year=2023,
+            price=Decimal("45990.00"),
+            mileage=15000,
+            energy_type=EnergyType.ELECTRIQUE.value,
+            status=VehicleStatus.AVAILABLE.value,
+            catalog_type=CatalogType.RENTAL.value,
+            monthly_rent=Decimal("350.00"),
+            description="Superbe voiture électrique",
+            created_at=now,
+            updated_at=now,
+            service_associations=[association],
+        )
+
+        entity = VehicleMapper.to_domain(orm)
+
+        assert len(entity.services) == 1
+        assert entity.services[0].service_id == service_id
+        assert entity.services[0].name == "Assurance tous risques"
+        assert entity.services[0].monthly_cost == Decimal("49.90")
+        assert entity.services[0].included is True
+
+    def test_to_orm_with_services(self):
+        """Vérifie la conversion des services du domaine vers les associations ORM."""
+
+        vehicle_id = uuid4()
+        service_id = uuid4()
+        now = datetime.now(timezone.utc)
+
+        entity = Vehicle(
+            id=vehicle_id,
+            brand="Renault",
+            model="Clio",
+            year=2022,
+            price=Price(18990.99),
+            mileage=Mileage(25000),
+            energy_type=EnergyType.DIESEL,
+            status=VehicleStatus.AVAILABLE,
+            catalog_type=CatalogType.RENTAL,
+            monthly_rent=Price(350.00),
+            description="Petite citadine économique",
+            created_at=now,
+            updated_at=now,
+            services=[
+                ServiceInclusion(
+                    service_id=service_id,
+                    name="Assistance dépannage",
+                    monthly_cost=Decimal("19.90"),
+                    category="assistance",
+                    included=False,
+                )
+            ],
+        )
+
+        orm = VehicleMapper.to_orm(entity)
+
+        assert len(orm.service_associations) == 1
+
+        association = orm.service_associations[0]
+
+        assert association.vehicle_id == vehicle_id
+        assert association.service_id == service_id
+        assert association.included is False
+
+    def test_to_orm_updates_existing_service_association(self):
+        """Vérifie la mise à jour du statut included d'une association existante."""
+
+        vehicle_id = uuid4()
+        service_id = uuid4()
+        now = datetime.now(timezone.utc)
+
+        existing_association = VehicleServiceAssociation(
+            vehicle_id=vehicle_id,
+            service_id=service_id,
+            included=True,
+        )
+
+        existing_orm = VehicleModel(
+            id=vehicle_id,
+            service_associations=[existing_association],
+        )
+
+        entity = Vehicle(
+            id=vehicle_id,
+            brand="Citroën",
+            model="C3",
+            year=2020,
+            price=Price(12900.00),
+            mileage=Mileage(45000),
+            energy_type=EnergyType.DIESEL,
+            status=VehicleStatus.MAINTENANCE,
+            catalog_type=CatalogType.RENTAL,
+            monthly_rent=Price(350.00),
+            description=None,
+            created_at=now,
+            updated_at=now,
+            services=[
+                ServiceInclusion(
+                    service_id=service_id,
+                    name="Assurance",
+                    monthly_cost=Decimal("49.90"),
+                    category="insurance",
+                    included=False,
+                )
+            ],
+        )
+
+        updated_orm = VehicleMapper.to_orm(entity, existing_orm)
+
+        assert updated_orm is existing_orm
+        assert len(updated_orm.service_associations) == 1
+        assert updated_orm.service_associations[0] is existing_association
+        assert updated_orm.service_associations[0].included is False
+
+    def test_to_orm_removes_services_not_present_in_entity(self):
+        """Vérifie la suppression des associations absentes du domaine."""
+
+        vehicle_id = uuid4()
+        existing_service_id = uuid4()
+        now = datetime.now(timezone.utc)
+
+        existing_association = VehicleServiceAssociation(
+            vehicle_id=vehicle_id,
+            service_id=existing_service_id,
+            included=True,
+        )
+
+        existing_orm = VehicleModel(
+            id=vehicle_id,
+            service_associations=[existing_association],
+        )
+
+        entity = Vehicle(
+            id=vehicle_id,
+            brand="Peugeot",
+            model="208",
+            year=2021,
+            price=Price(15990.50),
+            mileage=Mileage(32000),
+            energy_type=EnergyType.ESSENCE,
+            status=VehicleStatus.AVAILABLE,
+            catalog_type=CatalogType.RENTAL,
+            monthly_rent=Price(350.00),
+            description="Idéale pour la ville",
+            created_at=now,
+            updated_at=now,
+            services=[],
+        )
+
+        updated_orm = VehicleMapper.to_orm(entity, existing_orm)
+
+        assert updated_orm.service_associations == []

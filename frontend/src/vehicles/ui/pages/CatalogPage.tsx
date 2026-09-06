@@ -2,6 +2,7 @@ import React from 'react';
 import {
   Alert,
   Box,
+  Button,
   CircularProgress,
   Container,
   Grid,
@@ -13,14 +14,20 @@ import {
 import { useVehicleFilterStore } from '../../application/stores/useVehicleFilterStore';
 import { useVehiclesQuery } from '../../application/hooks/useVehiclesQuery';
 import { VehicleCard } from '../components/VehicleCard';
+import { FilterBar } from '../components/FilterBar';
 
 import type { CatalogMode } from '../../application/stores/useVehicleFilterStore';
 
 export const CatalogPage: React.FC = () => {
   const {
     mode,
+    brand,
+    maxPrice,
+    maxMileage,
+    fuelType,
     maxMonthlyRent,
     setMode,
+    resetFilters,
   } = useVehicleFilterStore();
 
   const {
@@ -29,6 +36,10 @@ export const CatalogPage: React.FC = () => {
     error,
   } = useVehiclesQuery({
     mode,
+    brand,
+    maxPrice,
+    maxMileage,
+    fuelType,
     maxMonthlyRent,
   });
 
@@ -53,6 +64,7 @@ export const CatalogPage: React.FC = () => {
           alignItems: 'center',
           mb: 4,
           flexWrap: 'wrap',
+          gap: 2,
         }}
       >
         <Typography
@@ -79,6 +91,9 @@ export const CatalogPage: React.FC = () => {
           </ToggleButton>
         </ToggleButtonGroup>
       </Box>
+
+      {/* Barre de filtres */}
+      <FilterBar />
 
       {isLoading && (
         <Box
@@ -120,9 +135,18 @@ export const CatalogPage: React.FC = () => {
               <Typography
                 variant="h6"
                 color="text.secondary"
+                gutterBottom
               >
-                Aucun véhicule disponible pour le moment.
+                Aucun véhicule ne correspond à vos critères.
               </Typography>
+              <Button
+                variant="text"
+                color="primary"
+                onClick={resetFilters}
+                sx={{ mt: 1 }}
+              >
+                Modifier mes filtres
+              </Button>
             </Box>
           ) : (
             <Grid

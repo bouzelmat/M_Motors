@@ -14,6 +14,10 @@ describe("useVehicleFilterStore", () => {
 
     expect(state.mode).toBe(DEFAULT_MODE);
     expect(state.maxMonthlyRent).toBeNull();
+    expect(state.brand).toBeNull();
+    expect(state.maxPrice).toBeNull();
+    expect(state.maxMileage).toBeNull();
+    expect(state.fuelType).toBeNull();
   });
 
   it("should update mode", () => {
@@ -36,15 +40,71 @@ describe("useVehicleFilterStore", () => {
     expect(useVehicleFilterStore.getState().maxMonthlyRent).toBeNull();
   });
 
-  it("should reset filters to default values", () => {
+  it("should update brand", () => {
+    const { setBrand } = useVehicleFilterStore.getState();
+
+    setBrand("Renault");
+
+    expect(useVehicleFilterStore.getState().brand).toBe("Renault");
+
+    setBrand(null);
+
+    expect(useVehicleFilterStore.getState().brand).toBeNull();
+  });
+
+  it("should update maxPrice", () => {
+    const { setMaxPrice } = useVehicleFilterStore.getState();
+
+    setMaxPrice(25000);
+
+    expect(useVehicleFilterStore.getState().maxPrice).toBe(25000);
+
+    setMaxPrice(null);
+
+    expect(useVehicleFilterStore.getState().maxPrice).toBeNull();
+  });
+
+  it("should update maxMileage", () => {
+    const { setMaxMileage } = useVehicleFilterStore.getState();
+
+    setMaxMileage(80000);
+
+    expect(useVehicleFilterStore.getState().maxMileage).toBe(80000);
+
+    setMaxMileage(null);
+
+    expect(useVehicleFilterStore.getState().maxMileage).toBeNull();
+  });
+
+  it("should update fuelType", () => {
+    const { setFuelType } = useVehicleFilterStore.getState();
+
+    setFuelType("ELECTRIQUE");
+
+    expect(useVehicleFilterStore.getState().fuelType).toBe("ELECTRIQUE");
+
+    setFuelType(null);
+
+    expect(useVehicleFilterStore.getState().fuelType).toBeNull();
+  });
+
+  it("should reset all filters to default values", () => {
     const {
       setMode,
       setMaxMonthlyRent,
+      setBrand,
+      setMaxPrice,
+      setMaxMileage,
+      setFuelType,
       resetFilters,
     } = useVehicleFilterStore.getState();
 
     setMode("sale");
     setMaxMonthlyRent(400);
+    setBrand("Peugeot");
+    setMaxPrice(30000);
+    setMaxMileage(60000);
+    setFuelType("ESSENCE");
 
     resetFilters();
 
@@ -52,5 +112,9 @@ describe("useVehicleFilterStore", () => {
 
     expect(state.mode).toBe(DEFAULT_MODE);
     expect(state.maxMonthlyRent).toBeNull();
+    expect(state.brand).toBeNull();
+    expect(state.maxPrice).toBeNull();
+    expect(state.maxMileage).toBeNull();
+    expect(state.fuelType).toBeNull();
   });
 });

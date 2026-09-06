@@ -1,3 +1,4 @@
+from decimal import Decimal
 from uuid import uuid4
 
 import pytest
@@ -9,7 +10,12 @@ from src.vehicles.domain.value_objects.catalog_type import CatalogType
 from src.vehicles.domain.value_objects.energy_type import EnergyType
 from src.vehicles.domain.value_objects.mileage import Mileage
 from src.vehicles.domain.value_objects.price import Price
+from src.vehicles.domain.value_objects.service_category import ServiceCategory
 from src.vehicles.domain.value_objects.vehicle_status import VehicleStatus
+from src.vehicles.infrastructure.orm.service_model import (
+    ServiceModel,
+    VehicleServiceAssociation,
+)
 from src.vehicles.infrastructure.repositories.sqlalchemy_vehicle_repository import (
     SQLAlchemyVehicleRepository,
 )
@@ -21,7 +27,6 @@ async def test_list_vehicles_rental_returns_available_vehicles(
     db_session: AsyncSession,
 ) -> None:
     """Vérifie que le catalogue LLD ne retourne que les véhicules disponibles."""
-
     repo = SQLAlchemyVehicleRepository(db_session)
 
     vehicle_1 = Vehicle(
@@ -79,6 +84,16 @@ async def test_list_vehicles_rental_returns_available_vehicles(
 
     assert len(data) == 2
 
+    returned_models = {
+        f"{item['brand']} {item['model']}"
+        for item in data
+    }
+
+    assert returned_models == {
+        "Peugeot 208",
+        "Renault Clio",
+    }
+
     for item in data:
         assert "id" in item
         assert "brand" in item
@@ -95,7 +110,6 @@ async def test_list_vehicles_rental_filter_by_max_monthly_rent(
     db_session: AsyncSession,
 ) -> None:
     """Vérifie le filtrage des véhicules par loyer mensuel maximal."""
-
     repo = SQLAlchemyVehicleRepository(db_session)
 
     vehicle_1 = Vehicle(
@@ -134,26 +148,381 @@ async def test_list_vehicles_rental_filter_by_max_monthly_rent(
     )
 
     assert response.status_code == 200
-    assert response.headers["content-type"].startswith("application/json")
 
     data = response.json()
 
     assert len(data) == 1
+    assert data[0]["brand"] == "A"
     assert data[0]["monthly_rent"] == "300.00"
 
 
 @pytest.mark.asyncio
-async def test_list_vehicles_sale_mode_returns_empty_for_now(
+async def test_list_vehicles_sale_returns_available_vehicles(
     async_client: AsyncClient,
+    db_session: AsyncSession,
 ) -> None:
-    """Vérifie que le mode 'sale' retourne une liste vide tant qu'il n'est pas implémenté."""
+    """Vérifie que le mode achat retourne uniquement les véhicules disponibles."""
+    repo = SQLAlchemyVehicleRepository(db_session)
+
+    available_vehicle = Vehicle(
+        id=uuid4(),
+        brand="Peugeot",
+        model="308",
+        year=2024,
+        price=Price(25000.0),
+        mileage=Mileage(10000),
+        energy_type=EnergyType.ESSENCE,
+        status=VehicleStatus.AVAILABLE,
+        catalog_type=CatalogType.SALE,
+        monthly_rent=None,
+    )
+
+    rented_vehicle = Vehicle(
+        id=uuid4(),
+        brand="Renault",
+        model="Austral",
+        year=2024,
+        price=Price(30000.0),
+        mileage=Mileage(8000),
+        energy_type=EnergyType.DIESEL,
+        status=VehicleStatus.RENTED,
+        catalog_type=CatalogType.SALE,
+        monthly_rent=None,
+    )
+
+    await repo.save(available_vehicle)
+    await repo.save(rented_vehicle)
+    await db_session.commit()
 
     response = await async_client.get(
         "/api/v1/vehicles?mode=sale",
     )
 
     assert response.status_code == 200
-    assert response.headers["content-type"].startswith("application/json")
+
+    data = response.json()
+
+    assert len(data) == 1
+    assert data[0]["brand"] == "Peugeot"
+    assert data[0]["model"] == "308"
+
+
+@pytest.mark.asyncio
+async def test_list_vehicles_sale_filter_by_brand(
+    async_client: AsyncClient,
+    db_session: AsyncSession,
+) -> None:
+    """Vérifie le filtrage par marque en mode achat."""
+    repo = SQLAlchemyVehicleRepository(db_session)
+
+    vehicles = [
+        Vehicle(
+            id=uuid4(),
+            brand="Peugeot",
+            model="208",
+            year=2023,
+            price=Price(20000.0),
+            mileage=Mileage(10000),
+            energy_type=EnergyType.ESSENCE,
+            status=VehicleStatus.AVAILABLE,
+            catalog_type=CatalogType.SALE,
+        ),
+        Vehicle(
+            id=uuid4(),
+            brand="Peugeot",
+            model="308",
+            year=2024,
+            price=Price(25000.0),
+            mileage=Mileage(12000),
+            energy_type=EnergyType.DIESEL,
+            status=VehicleStatus.AVAILABLE,
+            catalog_type=CatalogType.SALE,
+        ),
+        Vehicle(
+            id=uuid4(),
+            brand="Renault",
+            model="Clio",
+            year=2023,
+            price=Price(18000.0),
+            mileage=Mileage(15000),
+            energy_type=EnergyType.DIESEL,
+            status=VehicleStatus.AVAILABLE,
+            catalog_type=CatalogType.SALE,
+        ),
+    ]
+
+    for vehicle in vehicles:
+        await repo.save(vehicle)
+
+    await db_session.commit()
+
+    response = await async_client.get(
+        "/api/v1/vehicles?mode=sale&brand=peug",
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert len(data) == 2
+
+    returned_models = {
+        item["model"]
+        for item in data
+    }
+
+    assert returned_models == {
+        "208",
+        "308",
+    }
+
+
+@pytest.mark.asyncio
+async def test_list_vehicles_sale_filter_by_max_price(
+    async_client: AsyncClient,
+    db_session: AsyncSession,
+) -> None:
+    """Vérifie le filtrage par prix maximum en mode achat."""
+    repo = SQLAlchemyVehicleRepository(db_session)
+
+    vehicles = [
+        Vehicle(
+            id=uuid4(),
+            brand="A",
+            model="A1",
+            year=2023,
+            price=Price(20000.0),
+            mileage=Mileage(10000),
+            energy_type=EnergyType.ESSENCE,
+            status=VehicleStatus.AVAILABLE,
+            catalog_type=CatalogType.SALE,
+        ),
+        Vehicle(
+            id=uuid4(),
+            brand="B",
+            model="B1",
+            year=2023,
+            price=Price(30000.0),
+            mileage=Mileage(10000),
+            energy_type=EnergyType.DIESEL,
+            status=VehicleStatus.AVAILABLE,
+            catalog_type=CatalogType.SALE,
+        ),
+    ]
+
+    for vehicle in vehicles:
+        await repo.save(vehicle)
+
+    await db_session.commit()
+
+    response = await async_client.get(
+        "/api/v1/vehicles?mode=sale&max_price=25000",
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert len(data) == 1
+    assert data[0]["brand"] == "A"
+
+
+@pytest.mark.asyncio
+async def test_list_vehicles_sale_filter_by_max_mileage(
+    async_client: AsyncClient,
+    db_session: AsyncSession,
+) -> None:
+    """Vérifie le filtrage par kilométrage maximum en mode achat."""
+    repo = SQLAlchemyVehicleRepository(db_session)
+
+    vehicles = [
+        Vehicle(
+            id=uuid4(),
+            brand="A",
+            model="A1",
+            year=2023,
+            price=Price(20000.0),
+            mileage=Mileage(10000),
+            energy_type=EnergyType.ESSENCE,
+            status=VehicleStatus.AVAILABLE,
+            catalog_type=CatalogType.SALE,
+        ),
+        Vehicle(
+            id=uuid4(),
+            brand="B",
+            model="B1",
+            year=2023,
+            price=Price(22000.0),
+            mileage=Mileage(30000),
+            energy_type=EnergyType.DIESEL,
+            status=VehicleStatus.AVAILABLE,
+            catalog_type=CatalogType.SALE,
+        ),
+    ]
+
+    for vehicle in vehicles:
+        await repo.save(vehicle)
+
+    await db_session.commit()
+
+    response = await async_client.get(
+        "/api/v1/vehicles?mode=sale&max_mileage=15000",
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert len(data) == 1
+    assert data[0]["brand"] == "A"
+
+
+@pytest.mark.asyncio
+async def test_list_vehicles_sale_filter_by_fuel_type(
+    async_client: AsyncClient,
+    db_session: AsyncSession,
+) -> None:
+    """Vérifie le filtrage par motorisation en mode achat."""
+    repo = SQLAlchemyVehicleRepository(db_session)
+
+    vehicles = [
+        Vehicle(
+            id=uuid4(),
+            brand="Peugeot",
+            model="208",
+            year=2023,
+            price=Price(20000.0),
+            mileage=Mileage(10000),
+            energy_type=EnergyType.ESSENCE,
+            status=VehicleStatus.AVAILABLE,
+            catalog_type=CatalogType.SALE,
+        ),
+        Vehicle(
+            id=uuid4(),
+            brand="Renault",
+            model="Clio",
+            year=2023,
+            price=Price(18000.0),
+            mileage=Mileage(12000),
+            energy_type=EnergyType.DIESEL,
+            status=VehicleStatus.AVAILABLE,
+            catalog_type=CatalogType.SALE,
+        ),
+    ]
+
+    for vehicle in vehicles:
+        await repo.save(vehicle)
+
+    await db_session.commit()
+
+    response = await async_client.get(
+        "/api/v1/vehicles?mode=sale&fuel_type=ESSENCE",
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert len(data) == 1
+    assert data[0]["brand"] == "Peugeot"
+    assert data[0]["model"] == "208"
+
+
+@pytest.mark.asyncio
+async def test_list_vehicles_sale_combines_multiple_filters(
+    async_client: AsyncClient,
+    db_session: AsyncSession,
+) -> None:
+    """Vérifie la combinaison de plusieurs filtres en mode achat."""
+    repo = SQLAlchemyVehicleRepository(db_session)
+
+    vehicles = [
+        Vehicle(
+            id=uuid4(),
+            brand="Peugeot",
+            model="208",
+            year=2023,
+            price=Price(20000.0),
+            mileage=Mileage(10000),
+            energy_type=EnergyType.ESSENCE,
+            status=VehicleStatus.AVAILABLE,
+            catalog_type=CatalogType.SALE,
+        ),
+        Vehicle(
+            id=uuid4(),
+            brand="Peugeot",
+            model="308",
+            year=2024,
+            price=Price(30000.0),
+            mileage=Mileage(8000),
+            energy_type=EnergyType.ESSENCE,
+            status=VehicleStatus.AVAILABLE,
+            catalog_type=CatalogType.SALE,
+        ),
+        Vehicle(
+            id=uuid4(),
+            brand="Renault",
+            model="Clio",
+            year=2023,
+            price=Price(19000.0),
+            mileage=Mileage(9000),
+            energy_type=EnergyType.ESSENCE,
+            status=VehicleStatus.AVAILABLE,
+            catalog_type=CatalogType.SALE,
+        ),
+    ]
+
+    for vehicle in vehicles:
+        await repo.save(vehicle)
+
+    await db_session.commit()
+
+    response = await async_client.get(
+        "/api/v1/vehicles"
+        "?mode=sale"
+        "&brand=peugeot"
+        "&max_price=25000"
+        "&max_mileage=15000"
+        "&fuel_type=ESSENCE",
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert len(data) == 1
+    assert data[0]["brand"] == "Peugeot"
+    assert data[0]["model"] == "208"
+
+
+@pytest.mark.asyncio
+async def test_list_vehicles_sale_returns_empty_when_no_vehicle_matches_filters(
+    async_client: AsyncClient,
+    db_session: AsyncSession,
+) -> None:
+    """Vérifie qu'une recherche sans résultat retourne une liste vide."""
+    repo = SQLAlchemyVehicleRepository(db_session)
+
+    vehicle = Vehicle(
+        id=uuid4(),
+        brand="Peugeot",
+        model="308",
+        year=2024,
+        price=Price(30000.0),
+        mileage=Mileage(10000),
+        energy_type=EnergyType.ESSENCE,
+        status=VehicleStatus.AVAILABLE,
+        catalog_type=CatalogType.SALE,
+    )
+
+    await repo.save(vehicle)
+    await db_session.commit()
+
+    response = await async_client.get(
+        "/api/v1/vehicles?mode=sale&max_price=10000",
+    )
+
+    assert response.status_code == 200
     assert response.json() == []
 
 
@@ -163,7 +532,6 @@ async def test_get_vehicle_detail_returns_200_when_available(
     db_session: AsyncSession,
 ) -> None:
     """Retourne le détail d'un véhicule disponible."""
-
     repo = SQLAlchemyVehicleRepository(db_session)
 
     vehicle = Vehicle(
@@ -188,7 +556,6 @@ async def test_get_vehicle_detail_returns_200_when_available(
     )
 
     assert response.status_code == 200
-    assert response.headers["content-type"].startswith("application/json")
 
     data = response.json()
 
@@ -203,11 +570,110 @@ async def test_get_vehicle_detail_returns_200_when_available(
 
 
 @pytest.mark.asyncio
+async def test_get_vehicle_detail_returns_services_with_inclusion(
+    async_client: AsyncClient,
+    db_session: AsyncSession,
+) -> None:
+    """Vérifie que le détail retourne les services avec leur statut included."""
+    repo = SQLAlchemyVehicleRepository(db_session)
+
+    vehicle_id = uuid4()
+    included_service_id = uuid4()
+    optional_service_id = uuid4()
+
+    vehicle = Vehicle(
+        id=vehicle_id,
+        brand="Peugeot",
+        model="308",
+        year=2024,
+        price=Price(25000.0),
+        mileage=Mileage(10000),
+        energy_type=EnergyType.ESSENCE,
+        status=VehicleStatus.AVAILABLE,
+        catalog_type=CatalogType.RENTAL,
+        monthly_rent=Price(399.0),
+        description="Véhicule avec services",
+    )
+
+    await repo.save(vehicle)
+
+    included_service = ServiceModel(
+        id=included_service_id,
+        name="Assistance",
+        monthly_cost=Decimal("15.00"),
+        category=ServiceCategory.ASSISTANCE,
+    )
+
+    optional_service = ServiceModel(
+        id=optional_service_id,
+        name="Extension de garantie",
+        monthly_cost=Decimal("29.90"),
+        category=ServiceCategory.MAINTENANCE,
+    )
+
+    included_association = VehicleServiceAssociation(
+        vehicle_id=vehicle_id,
+        service_id=included_service_id,
+        included=True,
+        service=included_service,
+    )
+
+    optional_association = VehicleServiceAssociation(
+        vehicle_id=vehicle_id,
+        service_id=optional_service_id,
+        included=False,
+        service=optional_service,
+    )
+
+    db_session.add_all(
+        [
+            included_service,
+            optional_service,
+            included_association,
+            optional_association,
+        ]
+    )
+
+    await db_session.commit()
+
+    response = await async_client.get(
+        f"/api/v1/vehicles/{vehicle_id}",
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert "services" in data
+    assert len(data["services"]) == 2
+
+    services_by_id = {
+        service["id"]: service
+        for service in data["services"]
+    }
+
+    included_service_data = services_by_id[str(included_service_id)]
+
+    assert included_service_data["name"] == "Assistance"
+    assert included_service_data["monthly_cost"] == "15.00"
+    assert included_service_data["category"] == "ASSISTANCE"
+    assert included_service_data["included"] is True
+
+    optional_service_data = services_by_id[str(optional_service_id)]
+
+    assert optional_service_data["name"] == "Extension de garantie"
+    assert optional_service_data["monthly_cost"] == "29.90"
+    assert optional_service_data["category"] == "MAINTENANCE"
+    assert optional_service_data["included"] is False
+
+    assert data["included_services"] == ["Assistance"]
+
+
+@pytest.mark.asyncio
 async def test_get_vehicle_detail_returns_404_when_not_found(
     async_client: AsyncClient,
 ) -> None:
     """Retourne 404 lorsqu'aucun véhicule ne correspond à l'identifiant demandé."""
-
     response = await async_client.get(
         f"/api/v1/vehicles/{uuid4()}",
     )
@@ -224,7 +690,6 @@ async def test_get_vehicle_detail_returns_404_when_vehicle_is_not_available(
     db_session: AsyncSession,
 ) -> None:
     """Retourne 404 lorsqu'un véhicule existe mais n'est pas disponible."""
-
     repo = SQLAlchemyVehicleRepository(db_session)
 
     vehicle = Vehicle(

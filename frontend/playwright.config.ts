@@ -3,7 +3,7 @@
 export default defineConfig({
   testDir: './tests/e2e',
 
-  fullyParallel: true,
+  fullyParallel: false,
 
   forbidOnly: !!process.env.CI,
 

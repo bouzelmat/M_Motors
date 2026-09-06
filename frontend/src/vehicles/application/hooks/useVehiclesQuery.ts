@@ -8,19 +8,31 @@ const STALE_TIME_MS = 5 * 60 * 1000;
 
 export interface UseVehiclesQueryParams {
   mode: CatalogMode;
+  brand?: string | null;
+  maxPrice?: number | null;
+  maxMileage?: number | null;
+  fuelType?: string | null;
   maxMonthlyRent?: number | null;
 }
 
 /**
- * Récupère le catalogue des véhicules selon les filtres demandés.
+ * Récupère le catalogue des véhicules selon l'ensemble des filtres demandés.
  */
 export function useVehiclesQuery({
   mode,
+  brand,
+  maxPrice,
+  maxMileage,
+  fuelType,
   maxMonthlyRent,
 }: UseVehiclesQueryParams): UseQueryResult<VehicleListItemDTO[], Error> {
   const queryKey = [
     "vehicles",
     mode,
+    brand,
+    maxPrice,
+    maxMileage,
+    fuelType,
     maxMonthlyRent,
   ] as const;
 
@@ -29,6 +41,10 @@ export function useVehiclesQuery({
     queryFn: () =>
       vehiclesClient.getCatalog({
         mode,
+        brand: brand ?? undefined,
+        max_price: maxPrice ?? undefined,
+        max_mileage: maxMileage ?? undefined,
+        fuel_type: fuelType ?? undefined,
         max_monthly_rent: maxMonthlyRent ?? undefined,
       }),
     staleTime: STALE_TIME_MS,

@@ -18,6 +18,7 @@ export type ServiceDTO = {
     readonly name: string;
     readonly monthly_cost: string; // Decimal sérialisé en chaîne
     readonly category: string;
+    readonly included: boolean;
 };
 
 /** DTO représentant le détail complet d'un véhicule. */
@@ -33,5 +34,8 @@ export type VehicleDetailDTO = VehicleListItemDTO & {
 export type GetCatalogParams = {
     readonly mode: CatalogMode;
     readonly max_monthly_rent?: number;
-    // D'autres filtres (brand, fuel_type, max_mileage...) seront ajoutés ultérieurement.
+    readonly brand?: string;
+    readonly max_price?: number;
+    readonly max_mileage?: number;
+    readonly fuel_type?: string;
 };
