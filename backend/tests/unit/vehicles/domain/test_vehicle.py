@@ -48,6 +48,7 @@ def test_vehicle_contains_services_with_inclusion_status() -> None:
     assert services[0].category == ServiceCategory.INSURANCE
     assert services[0].included is True
 
+
 def test_vehicle_has_empty_services_by_default() -> None:
     """Verify that a vehicle created without explicit services defaults to an empty list."""
     vehicle = Vehicle(

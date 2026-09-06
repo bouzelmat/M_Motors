@@ -69,12 +69,9 @@ class SQLAlchemyVehicleRepository(VehicleRepository):
     ) -> list[Vehicle]:
         """Retourne les véhicules correspondant aux critères de recherche."""
 
-        stmt = (
-            select(VehicleModel)
-            .options(
-                selectinload(VehicleModel.service_associations).selectinload(
-                    VehicleServiceAssociation.service
-                )
+        stmt = select(VehicleModel).options(
+            selectinload(VehicleModel.service_associations).selectinload(
+                VehicleServiceAssociation.service
             )
         )
 
@@ -92,8 +89,7 @@ class SQLAlchemyVehicleRepository(VehicleRepository):
             # Filtre spécifique à la location.
             if criteria.max_monthly_rent is not None:
                 conditions.append(
-                    VehicleModel.monthly_rent
-                    <= criteria.max_monthly_rent,
+                    VehicleModel.monthly_rent <= criteria.max_monthly_rent,
                 )
 
         elif criteria.mode == "sale":
@@ -109,9 +105,7 @@ class SQLAlchemyVehicleRepository(VehicleRepository):
                 )
 
         else:
-            raise ValueError(
-                f"Mode de recherche non supporté : {criteria.mode}"
-            )
+            raise ValueError(f"Mode de recherche non supporté : {criteria.mode}")
 
         # Filtres optionnels communs aux deux modes.
 

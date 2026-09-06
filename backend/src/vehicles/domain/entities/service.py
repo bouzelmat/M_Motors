@@ -24,6 +24,4 @@ class Service(Entity):
             raise ValueError("Le nom du service est obligatoire.")
 
         if self.monthly_cost < 0:
-            raise ValueError(
-                "Le coût mensuel du service ne peut pas être négatif."
-            )
+            raise ValueError("Le coût mensuel du service ne peut pas être négatif.")

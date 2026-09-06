@@ -84,10 +84,7 @@ async def test_list_vehicles_rental_returns_available_vehicles(
 
     assert len(data) == 2
 
-    returned_models = {
-        f"{item['brand']} {item['model']}"
-        for item in data
-    }
+    returned_models = {f"{item['brand']} {item['model']}" for item in data}
 
     assert returned_models == {
         "Peugeot 208",
@@ -266,10 +263,7 @@ async def test_list_vehicles_sale_filter_by_brand(
 
     assert len(data) == 2
 
-    returned_models = {
-        item["model"]
-        for item in data
-    }
+    returned_models = {item["model"] for item in data}
 
     assert returned_models == {
         "208",
@@ -647,10 +641,7 @@ async def test_get_vehicle_detail_returns_services_with_inclusion(
     assert "services" in data
     assert len(data["services"]) == 2
 
-    services_by_id = {
-        service["id"]: service
-        for service in data["services"]
-    }
+    services_by_id = {service["id"]: service for service in data["services"]}
 
     included_service_data = services_by_id[str(included_service_id)]
 

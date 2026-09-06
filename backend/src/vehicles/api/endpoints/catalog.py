@@ -94,9 +94,7 @@ async def list_vehicles(
             model=vehicle.model,
             year=vehicle.year,
             monthly_rent=(
-                vehicle.monthly_rent.value
-                if vehicle.monthly_rent
-                else Decimal("0.00")
+                vehicle.monthly_rent.value if vehicle.monthly_rent else Decimal("0.00")
             ),
             photo_url=None,
             included_services=[],
@@ -156,9 +154,7 @@ async def get_vehicle_detail(
         model=vehicle.model,
         year=vehicle.year,
         monthly_rent=(
-            vehicle.monthly_rent.value
-            if vehicle.monthly_rent
-            else Decimal("0.00")
+            vehicle.monthly_rent.value if vehicle.monthly_rent else Decimal("0.00")
         ),
         price=vehicle.price.value,
         mileage=vehicle.mileage.value,
@@ -166,9 +162,7 @@ async def get_vehicle_detail(
         description=vehicle.description,
         photo_url=None,
         included_services=[
-            service.name
-            for service in vehicle.services
-            if service.included
+            service.name for service in vehicle.services if service.included
         ],
         services=services,
     )

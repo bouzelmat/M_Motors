@@ -40,9 +40,7 @@ class VehicleMapper:
             status=VehicleStatus(orm.status),
             catalog_type=CatalogType(orm.catalog_type),
             monthly_rent=(
-                Price(float(orm.monthly_rent))
-                if orm.monthly_rent is not None
-                else None
+                Price(float(orm.monthly_rent)) if orm.monthly_rent is not None else None
             ),
             description=orm.description,
             created_at=orm.created_at,
@@ -70,9 +68,7 @@ class VehicleMapper:
         orm.status = entity.status.value
         orm.catalog_type = entity.catalog_type.value
         orm.monthly_rent = (
-            Decimal(str(entity.monthly_rent.value))
-            if entity.monthly_rent
-            else None
+            Decimal(str(entity.monthly_rent.value)) if entity.monthly_rent else None
         )
         orm.description = entity.description
         orm.created_at = entity.created_at
@@ -83,9 +79,7 @@ class VehicleMapper:
             for association in orm.service_associations
         }
 
-        domain_service_ids = {
-            service.service_id for service in entity.services
-        }
+        domain_service_ids = {service.service_id for service in entity.services}
 
         orm.service_associations = [
             association
