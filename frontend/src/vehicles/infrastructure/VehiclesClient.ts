@@ -6,7 +6,7 @@ export class VehiclesClient {
     private static readonly BASE_URL = "/api/v1/vehicles";
 
     /**
-     * Récupère le catalogue des véhicules.
+     * Récupère le catalogue des véhicules avec les filtres optionnels.
      */
     async getCatalog(
         params: GetCatalogParams,

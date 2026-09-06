@@ -9,6 +9,9 @@ from src.vehicles.application.queries.get_rental_catalog_query import (
 from src.vehicles.application.queries.get_vehicle_detail_query import (
     GetVehicleDetailQueryHandler,
 )
+from src.vehicles.application.queries.search_vehicles_query import (
+    SearchVehiclesQueryHandler,
+)
 from src.vehicles.infrastructure.repositories.sqlalchemy_vehicle_repository import (
     SQLAlchemyVehicleRepository,
 )
@@ -26,6 +29,14 @@ async def get_vehicle_detail_handler(
     repository: SQLAlchemyVehicleRepository = Depends(get_vehicle_repository),
 ) -> GetVehicleDetailQueryHandler:
     return GetVehicleDetailQueryHandler(repository)
+
+
+async def get_search_vehicles_query_handler(
+    repository: SQLAlchemyVehicleRepository = Depends(get_vehicle_repository),
+) -> SearchVehiclesQueryHandler:
+    """Return the generic vehicle search query handler."""
+
+    return SearchVehiclesQueryHandler(repository)
 
 
 async def get_rental_catalog_query_handler(

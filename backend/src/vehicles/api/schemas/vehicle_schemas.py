@@ -7,12 +7,13 @@ from pydantic import BaseModel, ConfigDict, Field, field_serializer  # <-- AJOUT
 
 
 class ServiceDTO(BaseModel):
-    """Représentation d'un service optionnel."""
+    """Représentation d'un service disponible."""
 
     id: UUID
     name: str
     monthly_cost: Decimal
     category: str  # INSURANCE, ASSISTANCE, MAINTENANCE, INSPECTION
+    included: bool
 
     model_config = ConfigDict(from_attributes=True)
 

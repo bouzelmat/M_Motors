@@ -7,7 +7,7 @@ from decimal import Decimal
 from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
-from sqlalchemy import Column, DateTime, Enum, ForeignKey, Numeric, String, Table, func
+from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Numeric, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.shared.infrastructure.database import Base
@@ -15,6 +15,35 @@ from src.vehicles.domain.value_objects.service_category import ServiceCategory
 
 if TYPE_CHECKING:
     from src.vehicles.infrastructure.orm.vehicle_model import VehicleModel
+
+
+class VehicleServiceAssociation(Base):
+    """Modèle ORM d'association entre un véhicule et un service (Association Object)."""
+
+    __tablename__ = "vehicle_services"
+
+    vehicle_id: Mapped[UUID] = mapped_column(
+        ForeignKey("vehicles.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    service_id: Mapped[UUID] = mapped_column(
+        ForeignKey("services.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    included: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default="false",
+    )
+
+    # Navigation vers les entités
+    vehicle: Mapped[VehicleModel] = relationship(
+        back_populates="service_associations",
+    )
+    service: Mapped[ServiceModel] = relationship(
+        back_populates="vehicle_associations",
+    )
 
 
 class ServiceModel(Base):
@@ -44,25 +73,8 @@ class ServiceModel(Base):
         nullable=False,
     )
 
-    # Relation many-to-many via la table d'association
-    vehicles: Mapped[list[VehicleModel]] = relationship(
-        secondary="vehicle_services",
-        back_populates="services",
+    # Relation vers la table d'association
+    vehicle_associations: Mapped[list[VehicleServiceAssociation]] = relationship(
+        back_populates="service",
+        cascade="all, delete-orphan",
     )
-
-
-# Table d'association (sans modèle dédié)
-vehicle_services = Table(
-    "vehicle_services",
-    Base.metadata,
-    Column(
-        "vehicle_id",
-        ForeignKey("vehicles.id", ondelete="CASCADE"),
-        primary_key=True,
-    ),
-    Column(
-        "service_id",
-        ForeignKey("services.id", ondelete="CASCADE"),
-        primary_key=True,
-    ),
-)

@@ -6,16 +6,19 @@ from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
 from sqlalchemy import DateTime, Enum, Index, Integer, Numeric, String, Text, func
+from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.shared.infrastructure.database import Base
 from src.vehicles.domain.value_objects.catalog_type import CatalogType
 from src.vehicles.domain.value_objects.energy_type import EnergyType
 from src.vehicles.domain.value_objects.vehicle_status import VehicleStatus
-from src.vehicles.infrastructure.orm.service_model import vehicle_services
 
 if TYPE_CHECKING:
-    from src.vehicles.infrastructure.orm.service_model import ServiceModel
+    from src.vehicles.infrastructure.orm.service_model import (
+        ServiceModel,
+        VehicleServiceAssociation,
+    )
 
 
 class VehicleModel(Base):
@@ -61,10 +64,17 @@ class VehicleModel(Base):
         nullable=False,
     )
 
-    services: Mapped[list["ServiceModel"]] = relationship(
-        "ServiceModel",
-        secondary=vehicle_services,
-        back_populates="vehicles",
+    # 1. Relation vers la table d'association (contient le champ 'included')
+    service_associations: Mapped[list["VehicleServiceAssociation"]] = relationship(
+        "VehicleServiceAssociation",
+        back_populates="vehicle",
+        cascade="all, delete-orphan",
+    )
+
+    # 2. Proxy d'accès direct optionnel aux objets ServiceModel
+    services: AssociationProxy[list["ServiceModel"]] = association_proxy(
+        "service_associations",
+        "service",
     )
 
     __table_args__ = (Index("ix_vehicles_catalog_status", "catalog_type", "status"),)

@@ -1,6 +1,6 @@
 """Entité métier représentant un véhicule du catalogue."""
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 from uuid import UUID
 
@@ -11,6 +11,7 @@ from src.vehicles.domain.value_objects.energy_type import EnergyType
 from src.vehicles.domain.value_objects.mileage import Mileage
 from src.vehicles.domain.value_objects.price import Price
 from src.vehicles.domain.value_objects.vehicle_status import VehicleStatus
+from src.vehicles.domain.value_objects.service_inclusion import ServiceInclusion
 
 
 @dataclass(frozen=True)
@@ -28,6 +29,7 @@ class Vehicle(Entity):
     description: str | None = None
     created_at: datetime = None
     updated_at: datetime = None
+    services: list[ServiceInclusion] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         if not self.brand or not self.model:
@@ -88,3 +90,8 @@ class Vehicle(Entity):
         return replace(
             self, status=VehicleStatus.AVAILABLE, updated_at=datetime.now(timezone.utc)
         )
+
+    def get_services_with_inclusion(self) -> list[ServiceInclusion]:
+        """Return the services available for this vehicle with their inclusion status."""
+
+        return list(self.services)

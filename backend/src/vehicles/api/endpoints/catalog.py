@@ -10,16 +10,19 @@ from src.vehicles.api.schemas.vehicle_schemas import (
     VehicleDetailDTO,
     VehicleListItemDTO,
 )
-from src.vehicles.application.queries.get_rental_catalog_query import (
-    GetRentalCatalogQuery,
-    GetRentalCatalogQueryHandler,
-)
 from src.vehicles.application.queries.get_vehicle_detail_query import (
     GetVehicleDetailQuery,
     GetVehicleDetailQueryHandler,
 )
+from src.vehicles.application.queries.search_vehicles_query import (
+    SearchVehiclesQuery,
+    SearchVehiclesQueryHandler,
+)
+from src.vehicles.domain.value_objects.vehicle_search_criteria import (
+    VehicleSearchCriteria,
+)
 from src.vehicles.infrastructure.dependencies import (
-    get_rental_catalog_query_handler,
+    get_search_vehicles_query_handler,
     get_vehicle_detail_handler,
 )
 
@@ -33,8 +36,11 @@ router = APIRouter(
     "",
     response_model=list[VehicleListItemDTO],
     status_code=status.HTTP_200_OK,
-    summary="Catalogue des véhicules disponibles en location (LLD)",
-    description="Retourne la liste des véhicules disponibles avec leurs loyers mensuels.",
+    summary="Catalogue des véhicules disponibles",
+    description=(
+        "Retourne la liste des véhicules disponibles selon "
+        "les critères de recherche."
+    ),
 )
 async def list_vehicles(
     mode: str = Query(
@@ -42,25 +48,44 @@ async def list_vehicles(
         pattern="^(rental|sale)$",
         description="Mode de catalogue : rental ou sale",
     ),
+    brand: str | None = Query(
+        default=None,
+        description="Marque du véhicule",
+    ),
+    max_price: Decimal | None = Query(
+        default=None,
+        description="Prix de vente maximum",
+    ),
+    max_mileage: int | None = Query(
+        default=None,
+        description="Kilométrage maximum",
+    ),
+    fuel_type: str | None = Query(
+        default=None,
+        description="Type d'énergie",
+    ),
     max_monthly_rent: Decimal | None = Query(
         default=None,
-        description="Loyer mensuel maximum (pour rental)",
+        description="Loyer mensuel maximum",
     ),
-    handler: GetRentalCatalogQueryHandler = Depends(
-        get_rental_catalog_query_handler,
+    handler: SearchVehiclesQueryHandler = Depends(
+        get_search_vehicles_query_handler,
     ),
 ) -> list[VehicleListItemDTO]:
-    """Retourne les véhicules disponibles selon le mode de catalogue demandé."""
+    """Retourne les véhicules disponibles selon les critères."""
 
-    if mode == "rental":
-        query = GetRentalCatalogQuery(
-            max_monthly_rent=max_monthly_rent,
-        )
-    else:
-        # Un QueryHandler dédié sera implémenté pour le catalogue de vente.
-        return []
+    criteria = VehicleSearchCriteria(
+        mode=mode,
+        brand=brand,
+        max_price=max_price,
+        max_mileage=max_mileage,
+        fuel_type=fuel_type,
+        max_monthly_rent=max_monthly_rent,
+    )
 
-    vehicles = await handler.handle(query)
+    vehicles = await handler.handle(
+        SearchVehiclesQuery(criteria=criteria),
+    )
 
     return [
         VehicleListItemDTO(
@@ -114,12 +139,13 @@ async def get_vehicle_detail(
 
     services = [
         ServiceDTO(
-            id=service.id,
+            id=service.service_id,
             name=service.name,
             monthly_cost=service.monthly_cost,
             category=service.category.value,
+            included=service.included,
         )
-        for service in service_orms
+        for service in vehicle.services
     ]
 
     return VehicleDetailDTO(
@@ -135,6 +161,8 @@ async def get_vehicle_detail(
         energy_type=vehicle.energy_type.value,
         description=vehicle.description,
         photo_url=None,
-        included_services=[service.name for service in service_orms],
+        included_services=[
+            service.name for service in vehicle.services if service.included
+        ],
         services=services,
     )

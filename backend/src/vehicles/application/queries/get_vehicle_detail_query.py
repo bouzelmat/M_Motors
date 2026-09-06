@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 from uuid import UUID
 
-from src.vehicles.domain.entities.service import Service
 from src.vehicles.domain.entities.vehicle import Vehicle
 from src.vehicles.domain.ports.vehicle_repository import VehicleRepository
+from src.vehicles.domain.value_objects.service_inclusion import ServiceInclusion
 
 
 @dataclass(frozen=True, slots=True)
@@ -25,8 +25,8 @@ class GetVehicleDetailQueryHandler:
     async def handle(
         self,
         query: GetVehicleDetailQuery,
-    ) -> tuple[Vehicle, list[Service]] | None:
-        """Retourne le véhicule demandé avec ses services."""
+    ) -> tuple[Vehicle, list[ServiceInclusion]] | None:
+        """Retourne le véhicule demandé avec ses services et leur statut d'inclusion."""
 
         return await self._repository.find_by_id_with_services(
             query.vehicle_id,

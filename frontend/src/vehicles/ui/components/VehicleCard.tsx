@@ -6,6 +6,7 @@
   Chip,
   Typography,
 } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 
 import type { VehicleListItemDTO } from "../../infrastructure/vehicle.types";
 
@@ -16,6 +17,8 @@ interface VehicleCardProps {
 export function VehicleCard({
   vehicle,
 }: VehicleCardProps) {
+  const navigate = useNavigate();
+
   const {
     brand,
     model,
@@ -27,16 +30,30 @@ export function VehicleCard({
 
   const imageUrl = photo_url ?? "/placeholder-car.png";
 
+  const handleClick = () => {
+    navigate(`/catalogue/${vehicle.id}`);
+  };
+
   return (
     <Card
-      data-testid="vehicle-card" // for test
-      data-vehicle-id={vehicle.id} // for test
+      data-testid="vehicle-card"
+      data-vehicle-id={vehicle.id}
+      role="button"
+      tabIndex={0}
+      onClick={handleClick}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          handleClick();
+        }
+      }}
       sx={{
         maxWidth: 345,
         height: "100%",
         display: "flex",
         flexDirection: "column",
         transition: "transform 0.2s",
+        cursor: "pointer",
         "&:hover": {
           transform: "scale(1.02)",
         },

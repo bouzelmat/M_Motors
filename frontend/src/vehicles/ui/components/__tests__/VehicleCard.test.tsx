@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 
 import { VehicleCard } from "../VehicleCard";
 
@@ -16,7 +17,11 @@ describe("VehicleCard", () => {
   };
 
   it("should render vehicle information", () => {
-    render(<VehicleCard vehicle={mockVehicle} />);
+    render(
+      <MemoryRouter>
+        <VehicleCard vehicle={mockVehicle} />
+      </MemoryRouter>,
+    );
 
     expect(
       screen.getByText("Peugeot 208"),
@@ -42,7 +47,11 @@ describe("VehicleCard", () => {
   });
 
   it("should display the placeholder image when no photo is provided", () => {
-    render(<VehicleCard vehicle={mockVehicle} />);
+    render(
+      <MemoryRouter>
+        <VehicleCard vehicle={mockVehicle} />
+      </MemoryRouter>,
+    );
 
     const image = screen.getByRole("img", {
       name: "Peugeot 208",
@@ -61,7 +70,9 @@ describe("VehicleCard", () => {
     };
 
     render(
-      <VehicleCard vehicle={vehicleWithPhoto} />,
+      <MemoryRouter>
+        <VehicleCard vehicle={vehicleWithPhoto} />
+      </MemoryRouter>,
     );
 
     const image = screen.getByRole("img", {
