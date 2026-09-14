@@ -1,4 +1,3 @@
-
 """Tests d'intégration pour le script de seed des données de test E2E."""
 
 import pytest
