@@ -229,6 +229,8 @@ describe("CatalogPage with FilterBar", () => {
       }),
     );
 
+    useVehicleFilterStore.setState({ mode: "sale" });
+
     renderWithQueryClient(<CatalogPage />);
 
     const priceInput = screen.getByLabelText(/filtrer par budget max/i);

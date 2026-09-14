@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Alert,
   Box,
@@ -19,6 +20,8 @@ import { FilterBar } from '../components/FilterBar';
 import type { CatalogMode } from '../../application/stores/useVehicleFilterStore';
 
 export const CatalogPage: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const {
     mode,
     brand,
@@ -29,6 +32,19 @@ export const CatalogPage: React.FC = () => {
     setMode,
     resetFilters,
   } = useVehicleFilterStore();
+
+  // Synchronisation URL -> Store au premier chargement
+  useEffect(() => {
+    const urlMode = searchParams.get('mode') as CatalogMode | null;
+    if (urlMode === 'rental' || urlMode === 'sale') {
+      if (urlMode !== mode) {
+        setMode(urlMode);
+      }
+    } else {
+      // Si l'URL n'a pas de mode valide, on inscrit la valeur du store par défaut
+      setSearchParams({ mode }, { replace: true });
+    }
+  }, []);
 
   const {
     data: vehicles,
@@ -49,14 +65,12 @@ export const CatalogPage: React.FC = () => {
   ) => {
     if (newMode !== null) {
       setMode(newMode);
+      setSearchParams({ mode: newMode });
     }
   };
 
   return (
-    <Container
-      maxWidth="lg"
-      sx={{ py: 4 }}
-    >
+    <Container maxWidth="lg" sx={{ py: 4 }}>
       <Box
         sx={{
           display: 'flex',
@@ -67,11 +81,7 @@ export const CatalogPage: React.FC = () => {
           gap: 2,
         }}
       >
-        <Typography
-          variant="h4"
-          component="h1"
-          gutterBottom
-        >
+        <Typography variant="h4" component="h1" gutterBottom>
           Catalogue des véhicules
         </Typography>
 
@@ -104,19 +114,12 @@ export const CatalogPage: React.FC = () => {
             py: 8,
           }}
         >
-          <CircularProgress
-            data-testid="loading-spinner"
-            size={60}
-          />
+          <CircularProgress data-testid="loading-spinner" size={60} />
         </Box>
       )}
 
       {error && (
-        <Alert
-          data-testid="catalog-error"
-          severity="error"
-          sx={{ my: 2 }}
-        >
+        <Alert data-testid="catalog-error" severity="error" sx={{ my: 2 }}>
           Une erreur est survenue lors du chargement du catalogue.
           Veuillez réessayer plus tard.
         </Alert>
@@ -132,11 +135,7 @@ export const CatalogPage: React.FC = () => {
                 py: 8,
               }}
             >
-              <Typography
-                variant="h6"
-                color="text.secondary"
-                gutterBottom
-              >
+              <Typography variant="h6" color="text.secondary" gutterBottom>
                 Aucun véhicule ne correspond à vos critères.
               </Typography>
               <Button
@@ -149,20 +148,9 @@ export const CatalogPage: React.FC = () => {
               </Button>
             </Box>
           ) : (
-            <Grid
-              container
-              spacing={3}
-              data-testid="vehicle-catalog"
-            >
+            <Grid container spacing={3} data-testid="vehicle-catalog">
               {vehicles?.map((vehicle) => (
-                <Grid
-                  item
-                  key={vehicle.id}
-                  xs={12}
-                  sm={6}
-                  md={4}
-                  lg={3}
-                >
+                <Grid item key={vehicle.id} xs={12} sm={6} md={4} lg={3}>
                   <VehicleCard vehicle={vehicle} />
                 </Grid>
               ))}

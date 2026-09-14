@@ -1,14 +1,25 @@
-"""Endpoints publics pour le catalogue véhicules."""
+"""Endpoints publics et d'administration pour le catalogue véhicules."""
 
 from decimal import Decimal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
+# Remplacement de l'import erroné par le système générique de rôles
+from src.api.dependencies import require_role
+from src.auth.domain.value_objects import Role
+from src.auth.domain.entities import User
+from src.shared.domain.exceptions import DomainError
 from src.vehicles.api.schemas.vehicle_schemas import (
+    CreateVehicleRequest,
     ServiceDTO,
     VehicleDetailDTO,
     VehicleListItemDTO,
+    VehicleResponse,
+)
+from src.vehicles.application.commands.add_vehicle import (
+    AddVehicleCommand,
+    AddVehicleCommandHandler,
 )
 from src.vehicles.application.queries.get_vehicle_detail_query import (
     GetVehicleDetailQuery,
@@ -22,6 +33,7 @@ from src.vehicles.domain.value_objects.vehicle_search_criteria import (
     VehicleSearchCriteria,
 )
 from src.vehicles.infrastructure.dependencies import (
+    get_add_vehicle_command_handler,
     get_search_vehicles_query_handler,
     get_vehicle_detail_handler,
 )
@@ -73,7 +85,6 @@ async def list_vehicles(
     ),
 ) -> list[VehicleListItemDTO]:
     """Retourne les véhicules disponibles selon les critères."""
-
     criteria = VehicleSearchCriteria(
         mode=mode,
         brand=brand,
@@ -96,7 +107,7 @@ async def list_vehicles(
             monthly_rent=(
                 vehicle.monthly_rent.value if vehicle.monthly_rent else Decimal("0.00")
             ),
-            photo_url=None,
+            photo_url=vehicle.photo_url,
             included_services=[],
         )
         for vehicle in vehicles
@@ -116,7 +127,6 @@ async def get_vehicle_detail(
     ),
 ) -> VehicleDetailDTO:
     """Retourne les informations détaillées d'un véhicule."""
-
     query = GetVehicleDetailQuery(
         vehicle_id=vehicle_id,
     )
@@ -131,7 +141,7 @@ async def get_vehicle_detail(
 
     vehicle, service_orms = result
 
-    if not vehicle.is_available_for_rental():
+    if not (vehicle.is_available_for_rental() or vehicle.is_available_for_sale()):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Véhicule non disponible",
@@ -156,13 +166,52 @@ async def get_vehicle_detail(
         monthly_rent=(
             vehicle.monthly_rent.value if vehicle.monthly_rent else Decimal("0.00")
         ),
-        price=vehicle.price.value,
+        price=vehicle.price.value if vehicle.price else None,
         mileage=vehicle.mileage.value,
         energy_type=vehicle.energy_type.value,
         description=vehicle.description,
-        photo_url=None,
+        photo_url=vehicle.photo_url,
         included_services=[
             service.name for service in vehicle.services if service.included
         ],
         services=services,
     )
+
+
+@router.post(
+    "",
+    response_model=VehicleResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Ajouter un véhicule au catalogue",
+    description="Permet à un administrateur d'ajouter un nouveau véhicule.",
+)
+async def add_vehicle(
+    payload: CreateVehicleRequest,
+    # Utilisation de require_role(Role.ADMIN) validée par notre architecture globale
+    current_user: User = Depends(require_role(Role.ADMIN)),
+    handler: AddVehicleCommandHandler = Depends(
+        get_add_vehicle_command_handler,
+    ),
+) -> VehicleResponse:
+    """Ajoute un véhicule dans le système."""
+    command = AddVehicleCommand(
+        brand=payload.brand,
+        model=payload.model,
+        year=payload.year,
+        mileage=payload.mileage,
+        energy_type=payload.energy_type,
+        catalog_type=payload.catalog_type,
+        price=payload.price,
+        monthly_rent=payload.monthly_rent,
+        description=payload.description,
+    )
+
+    try:
+        created_vehicle = await handler.handle(command)
+        return VehicleResponse.model_validate(created_vehicle)
+    except DomainError as err:
+        # Aligné sur 422 Unprocessable Entity demandé par le ticket en cas de données invalides
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(err),
+        ) from err

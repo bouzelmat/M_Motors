@@ -5,9 +5,8 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr, Field
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.api.dependencies import get_current_user, get_db_session
+from src.api.dependencies import get_current_user
 from src.auth.application.commands import (
     RegisterUserCommand,
     RegisterUserCommandHandler,
@@ -18,6 +17,9 @@ from src.auth.infrastructure.repositories import SQLAlchemyUserRepository
 from src.auth.infrastructure.security.jwt_service import JWTService
 from src.auth.infrastructure.security.password_service import PasswordService
 from src.shared.domain.exceptions import ValidationError
+
+# Remplacement par la dépendance partagée centralisée
+from src.shared.infrastructure.dependencies import SessionDep
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
@@ -65,7 +67,7 @@ class UserResponse(BaseModel):
 )
 async def register(
     request: RegisterRequest,
-    session: Annotated[AsyncSession, Depends(get_db_session)],
+    session: SessionDep,  # Utilisation directe du SessionDep typé et annoté
 ) -> RegisterResponse:
     """Register a new user account."""
     user_repository = SQLAlchemyUserRepository(session)
@@ -101,7 +103,7 @@ async def register(
 @router.post("/login", response_model=LoginResponse)
 async def login(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-    session: Annotated[AsyncSession, Depends(get_db_session)],
+    session: SessionDep,  # Utilisation directe du SessionDep typé et annoté
 ) -> LoginResponse:
     """Authenticate user and return access token."""
     user_repository = SQLAlchemyUserRepository(session)

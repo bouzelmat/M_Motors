@@ -34,7 +34,7 @@ class VehicleMapper:
             brand=orm.brand,
             model=orm.model,
             year=orm.year,
-            price=Price(float(orm.price)),
+            price=Price(float(orm.price)) if orm.price is not None else None,
             mileage=Mileage(orm.mileage),
             energy_type=EnergyType(orm.energy_type),
             status=VehicleStatus(orm.status),
@@ -46,6 +46,10 @@ class VehicleMapper:
             created_at=orm.created_at,
             updated_at=orm.updated_at,
             services=services,
+            photo_url=next(
+                (photo.photo_url for photo in orm.photos if photo.is_uploaded),
+                None,
+            ),
         )
 
     @staticmethod
@@ -62,7 +66,7 @@ class VehicleMapper:
         orm.brand = entity.brand
         orm.model = entity.model
         orm.year = entity.year
-        orm.price = Decimal(str(entity.price.value))
+        orm.price = Decimal(str(entity.price.value)) if entity.price else None
         orm.mileage = entity.mileage.value
         orm.energy_type = entity.energy_type.value
         orm.status = entity.status.value

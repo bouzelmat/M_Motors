@@ -2,7 +2,7 @@
 
 from collections.abc import Callable
 
-from src.shared.domain.domain_event import DomainEvent
+from src.shared.domain.events.domain_event import DomainEvent
 
 
 class EventBus:

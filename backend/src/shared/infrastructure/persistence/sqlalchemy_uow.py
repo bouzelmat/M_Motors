@@ -7,7 +7,7 @@ Typical use inside a use-case
 -----------------------------
 ::
 
-    async with SqlAlchemyUnitOfWork(session_factory) as uow:
+    async with SqlAlchemyUnitOfWork(session) as uow:
         uow.vehicles.add(vehicle)
         await uow.commit()
 
@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from typing import Self
 
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.shared.domain.ports.unit_of_work import AbstractUnitOfWork
 
@@ -29,12 +29,10 @@ class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
 
     Parameters
     ----------
-    session_factory:
-        An ``async_sessionmaker`` instance (typically created once at startup
-        via :func:`src.shared.infrastructure.database.get_session_factory`).
-        A fresh session is created each time this UoW is used as an async
-        context manager, so each use-case invocation gets its own isolated
-        transactional scope.
+    session:
+        The request-scoped ``AsyncSession`` shared with repositories used by
+        the use-case.  Sharing this session is essential: a repository flush
+        and the unit of work commit must operate on the same transaction.
 
     Attributes
     ----------
@@ -45,38 +43,27 @@ class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
 
     Notes
     -----
-    * ``expire_on_commit=False`` is set on the session factory (see
-      ``database.py``) so that ORM objects remain accessible after ``commit``
+    * ``expire_on_commit=False`` keeps ORM objects accessible after ``commit``
       without triggering an extra SELECT.
     * The ``__aenter__`` / ``__aexit__`` lifecycle is managed by the parent
       class :class:`~src.shared.domain.ports.unit_of_work.AbstractUnitOfWork`;
       this adapter only needs to override ``commit`` and ``rollback``.
     """
 
-    def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
-        self._session_factory = session_factory
-        self.session: AsyncSession  # assigned in __aenter__
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
 
     # ------------------------------------------------------------------
     # Async context manager — lifecycle
     # ------------------------------------------------------------------
 
     async def __aenter__(self) -> Self:
-        """Open a new ``AsyncSession`` and begin an implicit transaction."""
-        self.session = self._session_factory()
+        """Enter the transaction associated with the request session."""
         return await super().__aenter__()
 
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
-        """Delegate to parent (rollback on error) then close the session.
-
-        The session is always closed in the ``finally`` block to guarantee
-        that the connection is returned to the pool even when an exception
-        occurs during rollback itself.
-        """
-        try:
-            await super().__aexit__(exc_type, exc_val, exc_tb)
-        finally:
-            await self.session.close()
+        """Rollback on error; FastAPI closes the request session afterwards."""
+        await super().__aexit__(exc_type, exc_val, exc_tb)
 
     # ------------------------------------------------------------------
     # AbstractUnitOfWork implementation
