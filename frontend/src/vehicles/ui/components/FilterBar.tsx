@@ -17,12 +17,15 @@ const DEBOUNCE_DELAY_MS = 300;
 
 export const FilterBar: React.FC = () => {
   const {
+    mode,
     brand,
     maxPrice,
+    maxMonthlyRent,
     maxMileage,
     fuelType,
     setBrand,
     setMaxPrice,
+    setMaxMonthlyRent,
     setMaxMileage,
     setFuelType,
     resetFilters,
@@ -33,6 +36,9 @@ export const FilterBar: React.FC = () => {
   const [localMaxPrice, setLocalMaxPrice] = useState<string>(
     maxPrice !== null ? String(maxPrice) : ''
   );
+  const [localMaxMonthlyRent, setLocalMaxMonthlyRent] = useState<string>(
+    maxMonthlyRent !== null ? String(maxMonthlyRent) : ''
+  );
   const [localMaxMileage, setLocalMaxMileage] = useState<string>(
     maxMileage !== null ? String(maxMileage) : ''
   );
@@ -41,8 +47,9 @@ export const FilterBar: React.FC = () => {
   useEffect(() => {
     setLocalBrand(brand ?? '');
     setLocalMaxPrice(maxPrice !== null ? String(maxPrice) : '');
+    setLocalMaxMonthlyRent(maxMonthlyRent !== null ? String(maxMonthlyRent) : '');
     setLocalMaxMileage(maxMileage !== null ? String(maxMileage) : '');
-  }, [brand, maxPrice, maxMileage]);
+  }, [brand, maxPrice, maxMonthlyRent, maxMileage]);
 
   // Debounce Brand
   useEffect(() => {
@@ -56,7 +63,7 @@ export const FilterBar: React.FC = () => {
     return () => clearTimeout(timer);
   }, [localBrand, setBrand, brand]);
 
-  // Debounce MaxPrice
+  // Debounce MaxPrice (mode sale)
   useEffect(() => {
     const timer = setTimeout(() => {
       const parsedValue = localMaxPrice !== '' ? Number(localMaxPrice) : null;
@@ -67,6 +74,19 @@ export const FilterBar: React.FC = () => {
 
     return () => clearTimeout(timer);
   }, [localMaxPrice, setMaxPrice, maxPrice]);
+
+  // Debounce MaxMonthlyRent (mode rental)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const parsedValue =
+        localMaxMonthlyRent !== '' ? Number(localMaxMonthlyRent) : null;
+      if (parsedValue !== maxMonthlyRent) {
+        setMaxMonthlyRent(parsedValue);
+      }
+    }, DEBOUNCE_DELAY_MS);
+
+    return () => clearTimeout(timer);
+  }, [localMaxMonthlyRent, setMaxMonthlyRent, maxMonthlyRent]);
 
   // Debounce MaxMileage
   useEffect(() => {
@@ -81,10 +101,7 @@ export const FilterBar: React.FC = () => {
   }, [localMaxMileage, setMaxMileage, maxMileage]);
 
   return (
-    <Paper
-      elevation={1}
-      sx={{ p: 2, mb: 4, borderRadius: 2 }}
-    >
+    <Paper elevation={1} sx={{ p: 2, mb: 4, borderRadius: 2 }}>
       <Box
         sx={{
           display: 'grid',
@@ -107,16 +124,29 @@ export const FilterBar: React.FC = () => {
           inputProps={{ 'aria-label': 'Filtrer par marque' }}
         />
 
-        <TextField
-          label="Budget max (€)"
-          variant="outlined"
-          size="small"
-          type="number"
-          value={localMaxPrice}
-          onChange={(e) => setLocalMaxPrice(e.target.value)}
-          placeholder="ex: 25000"
-          inputProps={{ 'aria-label': 'Filtrer par budget max', min: 0 }}
-        />
+        {mode === 'rental' ? (
+          <TextField
+            label="Loyer max (€/mois)"
+            variant="outlined"
+            size="small"
+            type="number"
+            value={localMaxMonthlyRent}
+            onChange={(e) => setLocalMaxMonthlyRent(e.target.value)}
+            placeholder="ex: 300"
+            inputProps={{ 'aria-label': 'Filtrer par loyer mensuel max', min: 0 }}
+          />
+        ) : (
+          <TextField
+            label="Budget max (€)"
+            variant="outlined"
+            size="small"
+            type="number"
+            value={localMaxPrice}
+            onChange={(e) => setLocalMaxPrice(e.target.value)}
+            placeholder="ex: 25000"
+            inputProps={{ 'aria-label': 'Filtrer par budget max', min: 0 }}
+          />
+        )}
 
         <TextField
           label="Kilométrage max (km)"
@@ -133,6 +163,7 @@ export const FilterBar: React.FC = () => {
           <InputLabel id="fuel-type-select-label">Motorisation</InputLabel>
           <Select
             labelId="fuel-type-select-label"
+            id="fuel-type-select"
             label="Motorisation"
             value={fuelType ?? ''}
             onChange={(e) => setFuelType(e.target.value ? e.target.value : null)}

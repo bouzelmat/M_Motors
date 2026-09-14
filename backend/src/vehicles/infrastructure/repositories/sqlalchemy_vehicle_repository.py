@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime, timezone
 from uuid import UUID
 
 from sqlalchemy import and_, select
@@ -6,19 +7,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from src.vehicles.domain.entities.vehicle import Vehicle
+from src.vehicles.domain.ports.vehicle_repository import VehicleRepository
 from src.vehicles.domain.value_objects.catalog_type import CatalogType
 from src.vehicles.domain.value_objects.service_inclusion import ServiceInclusion
 from src.vehicles.domain.value_objects.vehicle_search_criteria import (
     VehicleSearchCriteria,
 )
 from src.vehicles.domain.value_objects.vehicle_status import VehicleStatus
-from src.vehicles.domain.ports.vehicle_repository import VehicleRepository
 from src.vehicles.infrastructure.mappers.service_mapper import ServiceMapper
 from src.vehicles.infrastructure.mappers.vehicle_mapper import VehicleMapper
 from src.vehicles.infrastructure.orm.service_model import (
     VehicleServiceAssociation,
 )
 from src.vehicles.infrastructure.orm.vehicle_model import VehicleModel
+from src.vehicles.infrastructure.orm.vehicle_photo_model import VehiclePhotoModel
 
 logger = logging.getLogger(__name__)
 
@@ -98,7 +100,6 @@ class SQLAlchemyVehicleRepository(VehicleRepository):
             )
 
             # Filtre spécifique à la vente.
-            # Le modèle ORM utilise "price" et non "sale_price".
             if criteria.max_price is not None:
                 conditions.append(
                     VehicleModel.price <= criteria.max_price,
@@ -108,14 +109,11 @@ class SQLAlchemyVehicleRepository(VehicleRepository):
             raise ValueError(f"Mode de recherche non supporté : {criteria.mode}")
 
         # Filtres optionnels communs aux deux modes.
-
-        # Recherche partielle insensible à la casse.
         if criteria.brand is not None:
             conditions.append(
                 VehicleModel.brand.ilike(f"%{criteria.brand}%"),
             )
 
-        # Le modèle ORM utilise "energy_type" et non "fuel_type".
         if criteria.fuel_type is not None:
             conditions.append(
                 VehicleModel.energy_type == criteria.fuel_type,
@@ -158,3 +156,52 @@ class SQLAlchemyVehicleRepository(VehicleRepository):
         vehicle = self._mapper.to_domain(vehicle_model)
 
         return vehicle, vehicle.services
+
+    async def create_pending_photo(
+        self,
+        vehicle_id: UUID,
+        object_key: str,
+        photo_url: str,
+        content_type: str,
+        uploaded_by: UUID,
+    ) -> VehiclePhotoModel:
+        """Reserve a photo key until the direct S3 upload is confirmed."""
+        photo = VehiclePhotoModel(
+            vehicle_id=vehicle_id,
+            object_key=object_key,
+            photo_url=photo_url,
+            content_type=content_type,
+            uploaded_by=uploaded_by,
+        )
+        self._session.add(photo)
+        await self._session.flush()
+        return photo
+
+    async def get_photo(
+        self,
+        vehicle_id: UUID,
+        photo_id: UUID,
+    ) -> VehiclePhotoModel | None:
+        statement = select(VehiclePhotoModel).where(
+            VehiclePhotoModel.id == photo_id,
+            VehiclePhotoModel.vehicle_id == vehicle_id,
+        )
+        result = await self._session.execute(statement)
+        return result.scalar_one_or_none()
+
+    async def confirm_photo(self, photo: VehiclePhotoModel) -> None:
+        """Mark an uploaded photo as visible and make the first one primary."""
+        photo.is_uploaded = True
+        photo.uploaded_at = datetime.now(timezone.utc)
+
+        primary_statement = select(VehiclePhotoModel).where(
+            VehiclePhotoModel.vehicle_id == photo.vehicle_id,
+            VehiclePhotoModel.is_uploaded.is_(True),
+            VehiclePhotoModel.is_primary.is_(True),
+            VehiclePhotoModel.id != photo.id,
+        )
+        result = await self._session.execute(primary_statement)
+        if result.scalar_one_or_none() is None:
+            photo.is_primary = True
+
+        await self._session.flush()

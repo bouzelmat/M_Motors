@@ -19,6 +19,7 @@ if TYPE_CHECKING:
         ServiceModel,
         VehicleServiceAssociation,
     )
+    from src.vehicles.infrastructure.orm.vehicle_photo_model import VehiclePhotoModel
 
 
 class VehicleModel(Base):
@@ -30,7 +31,7 @@ class VehicleModel(Base):
     brand: Mapped[str] = mapped_column(String(100), nullable=False)
     model: Mapped[str] = mapped_column(String(100), nullable=False)
     year: Mapped[int] = mapped_column(Integer, nullable=False)
-    price: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
+    price: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
     mileage: Mapped[int] = mapped_column(Integer, nullable=False)
     energy_type: Mapped[EnergyType] = mapped_column(
         Enum(EnergyType, name="energytype"),
@@ -75,6 +76,14 @@ class VehicleModel(Base):
     services: AssociationProxy[list["ServiceModel"]] = association_proxy(
         "service_associations",
         "service",
+    )
+
+    photos: Mapped[list["VehiclePhotoModel"]] = relationship(
+        "VehiclePhotoModel",
+        back_populates="vehicle",
+        cascade="all, delete-orphan",
+        order_by="VehiclePhotoModel.created_at",
+        lazy="selectin",
     )
 
     __table_args__ = (Index("ix_vehicles_catalog_status", "catalog_type", "status"),)

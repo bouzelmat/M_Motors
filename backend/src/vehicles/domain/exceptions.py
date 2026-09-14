@@ -19,3 +19,21 @@ class VehicleNotAvailableError(DomainError):
             f"Le véhicule {vehicle_id} n'est pas disponible pour la location."
         )
         self.vehicle_id = vehicle_id
+
+
+class InvalidImageFormatError(DomainError):
+    """Levée lorsque le type MIME du fichier n'est pas une image autorisée."""
+
+    def __init__(self, content_type: str) -> None:
+        super().__init__(
+            f"Format de fichier non autorisé : '{content_type}'. Formats acceptés : JPEG, PNG, WEBP."
+        )
+
+
+class FileSizeExceededError(DomainError):
+    """Levée lorsque la taille déclarée dépasse 10 Mo."""
+
+    def __init__(self, size: int, max_size: int = 10 * 1024 * 1024) -> None:
+        super().__init__(
+            f"Taille de fichier ({size} octets) supérieure à la limite ({max_size} octets)."
+        )

@@ -7,7 +7,7 @@ from importlib import import_module
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy import text
+from sqlalchemy import event, text
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
@@ -18,7 +18,7 @@ from sqlalchemy.pool import NullPool
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_env() -> None:
-    """Injecte les variables d'environnement obligatoires avant les imports de l'application."""
+    """Injecte TOUTES les variables d'environnement obligatoires avant les imports de l'application."""
     os.environ.setdefault(
         "DATABASE_URL",
         "postgresql+asyncpg://m_motors:m_motors@localhost:5432/test_m_motors",
@@ -28,18 +28,22 @@ def setup_test_env() -> None:
     )
     os.environ.setdefault("JWT_ALGORITHM", "HS256")
 
+    os.environ.setdefault("s3_bucket_name", "m-motors-photos-test")
+    os.environ.setdefault("aws_access_key_id", "testing")
+    os.environ.setdefault("aws_secret_access_key", "testing")
+    os.environ.setdefault("aws_region", "eu-west-3")
+
 
 import src.shared.infrastructure.event_bus as event_bus_module
-from src.api.dependencies import get_db_session
 from src.shared.infrastructure.database import Base, get_session
 from src.shared.infrastructure.messaging.in_memory_event_bus import get_event_bus
 
-# Import ORM models early so they register with Base.metadata before the
-# application (and any subscribers) are imported.
+# Enregistrement précoce des modèles ORM
 for _mod in (
     "src.auth.infrastructure.orm.user_model",
     "src.vehicles.infrastructure.orm.ServiceModel",
     "src.vehicles.infrastructure.orm.VehicleModel",
+    "src.vehicles.infrastructure.orm.vehicle_photo_model",
 ):
     try:
         import_module(_mod)
@@ -47,7 +51,6 @@ for _mod in (
         pass
 
 
-# Clear any event bus handlers created at import time (avoid side-effects).
 class _NoopEventBus:
     def subscribe(self, *a, **kw):
         return None
@@ -59,7 +62,6 @@ class _NoopEventBus:
         return None
 
 
-# Replace any global event bus with a noop instance to avoid side-effects
 try:
     event_bus_module._event_bus = _NoopEventBus()
 except Exception:
@@ -91,19 +93,16 @@ TestingSessionLocal = async_sessionmaker(
 @pytest_asyncio.fixture(scope="session", autouse=True)
 async def create_database() -> AsyncIterator[None]:
     """Crée le schéma de test au démarrage et le supprime à la fin."""
-    # Ensure all ORM models are imported so they register on Base.metadata
-    # Import paths are explicit to avoid lazy-import ordering issues.
     model_modules = [
         "src.auth.infrastructure.orm.user_model",
         "src.vehicles.infrastructure.orm.ServiceModel",
         "src.vehicles.infrastructure.orm.VehicleModel",
+        "src.vehicles.infrastructure.orm.vehicle_photo_model",
     ]
     for mod in model_modules:
         try:
             import_module(mod)
         except Exception:
-            # Import errors here should not block test setup; they will surface
-            # during tests if a module truly is missing.
             pass
 
     async with engine.begin() as connection:
@@ -118,7 +117,7 @@ async def create_database() -> AsyncIterator[None]:
 
 @pytest_asyncio.fixture(scope="function")
 async def db_session() -> AsyncIterator[AsyncSession]:
-    """Fournit une session isolée dans une transaction rollback."""
+    """Fournit une session entièrement isolée via une transaction et un SAVEPOINT imbriqué."""
     async with engine.connect() as connection:
         transaction = await connection.begin()
 
@@ -126,10 +125,16 @@ async def db_session() -> AsyncIterator[AsyncSession]:
             await session.execute(text("SET TIME ZONE 'UTC';"))
             nested = await session.begin_nested()
 
+            @event.listens_for(session.sync_session, "after_transaction_end")
+            def restart_savepoint(sync_session, transaction_arg):
+                nonlocal nested
+                if transaction_arg.nested and not nested.is_active:
+                    nested = session.begin_nested()
+
             yield session
 
-            if nested.is_active:
-                await nested.rollback()
+            if session.is_active:
+                await session.close()
 
         await transaction.rollback()
 
@@ -141,12 +146,8 @@ async def async_client(db_session: AsyncSession) -> AsyncIterator[AsyncClient]:
     async def override_get_session() -> AsyncIterator[AsyncSession]:
         yield db_session
 
-    # Override route dependencies that yield DB sessions so all route code
-    # (auth and vehicles) uses the test session/engine instead of the real one.
-    app.dependency_overrides[get_db_session] = override_get_session
     app.dependency_overrides[get_session] = override_get_session
 
-    # Ensure EventBus has no test-unfriendly handlers registered (emails, external)
     try:
         get_event_bus().clear_handlers()
     except Exception:

@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
 
-@dataclass
+@dataclass(frozen=True, kw_only=True)  # <-- Ajout de kw_only=True ici !
 class DomainEvent:
     """Base class for domain events."""
 

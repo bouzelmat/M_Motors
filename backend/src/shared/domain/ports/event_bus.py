@@ -21,7 +21,7 @@ import abc
 from collections.abc import Awaitable, Callable
 from typing import TypeVar
 
-from src.shared.domain.domain_event import DomainEvent
+from src.shared.domain.events.domain_event import DomainEvent
 
 # Generic type variable for concrete event sub-types
 E = TypeVar("E", bound=DomainEvent)

@@ -29,7 +29,7 @@ from __future__ import annotations
 import logging
 from collections import defaultdict
 
-from src.shared.domain.domain_event import DomainEvent
+from src.shared.domain.events.domain_event import DomainEvent
 from src.shared.domain.ports.event_bus import AbstractEventBus, EventHandler
 
 logger = logging.getLogger(__name__)

@@ -564,6 +564,34 @@ async def test_get_vehicle_detail_returns_200_when_available(
 
 
 @pytest.mark.asyncio
+async def test_get_vehicle_detail_returns_200_for_available_sale_vehicle(
+    async_client: AsyncClient,
+    db_session: AsyncSession,
+) -> None:
+    """A vehicle listed for sale also has an accessible detail page."""
+    repo = SQLAlchemyVehicleRepository(db_session)
+    vehicle = Vehicle(
+        id=uuid4(),
+        brand="Peugeot",
+        model="308",
+        year=2024,
+        price=Price(25000.0),
+        mileage=Mileage(10000),
+        energy_type=EnergyType.ESSENCE,
+        status=VehicleStatus.AVAILABLE,
+        catalog_type=CatalogType.SALE,
+    )
+    await repo.save(vehicle)
+    await db_session.commit()
+
+    response = await async_client.get(f"/api/v1/vehicles/{vehicle.id}")
+
+    assert response.status_code == 200
+    assert response.json()["id"] == str(vehicle.id)
+    assert response.json()["price"] == "25000.00"
+
+
+@pytest.mark.asyncio
 async def test_get_vehicle_detail_returns_services_with_inclusion(
     async_client: AsyncClient,
     db_session: AsyncSession,
