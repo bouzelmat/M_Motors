@@ -4,9 +4,12 @@ from datetime import datetime, timezone
 from uuid import UUID
 
 from sqlalchemy import DateTime, Enum
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.dossiers.domain.value_objects.dossier_status import DossierStatus
+from src.dossiers.infrastructure.models.dossier_service_model import DossierServiceModel
+from src.dossiers.infrastructure.models.financing_plan_model import FinancingPlanModel
+from src.dossiers.infrastructure.models.trade_in_model import TradeInModel
 from src.shared.infrastructure.database import Base
 
 
@@ -36,4 +39,19 @@ class DossierModel(Base):
         DateTime(timezone=True),
         nullable=False,
         default=lambda: datetime.now(timezone.utc),
+    )
+
+    financing_plan: Mapped[FinancingPlanModel | None] = relationship(
+        back_populates="dossier",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
+    trade_in: Mapped[TradeInModel | None] = relationship(
+        back_populates="dossier",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
+    services: Mapped[list[DossierServiceModel]] = relationship(
+        back_populates="dossier",
+        cascade="all, delete-orphan",
     )

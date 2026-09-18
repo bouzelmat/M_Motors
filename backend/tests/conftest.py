@@ -41,8 +41,8 @@ from src.shared.infrastructure.messaging.in_memory_event_bus import get_event_bu
 # Enregistrement précoce des modèles ORM
 for _mod in (
     "src.auth.infrastructure.orm.user_model",
-    "src.vehicles.infrastructure.orm.ServiceModel",
-    "src.vehicles.infrastructure.orm.VehicleModel",
+    "src.vehicles.infrastructure.orm.service_model",
+    "src.vehicles.infrastructure.orm.vehicle_model",
     "src.vehicles.infrastructure.orm.vehicle_photo_model",
 ):
     try:
@@ -95,8 +95,8 @@ async def create_database() -> AsyncIterator[None]:
     """Crée le schéma de test au démarrage et le supprime à la fin."""
     model_modules = [
         "src.auth.infrastructure.orm.user_model",
-        "src.vehicles.infrastructure.orm.ServiceModel",
-        "src.vehicles.infrastructure.orm.VehicleModel",
+        "src.vehicles.infrastructure.orm.service_model",
+        "src.vehicles.infrastructure.orm.vehicle_model",
         "src.vehicles.infrastructure.orm.vehicle_photo_model",
     ]
     for mod in model_modules:

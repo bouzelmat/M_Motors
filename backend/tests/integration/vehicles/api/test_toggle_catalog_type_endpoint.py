@@ -11,7 +11,7 @@ from src.vehicles.api.dependencies import (
     get_current_admin_user,
     get_toggle_vehicle_type_handler,
 )
-from src.vehicles.api.routes.vehicle_routes import router
+from src.vehicles.api.rest.vehicle_routes import router
 from src.vehicles.application.commands.toggle_vehicle_type import (
     ToggleVehicleTypeCommandHandler,
 )
