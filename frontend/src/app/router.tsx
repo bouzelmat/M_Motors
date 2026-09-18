@@ -1,15 +1,15 @@
 import { createBrowserRouter } from "react-router-dom";
 
-import App from "./App";
-import { LoginPage } from "./auth/ui/pages/LoginPage";
-import { RegisterPage } from "./auth/ui/pages/RegisterPage";
-import { ProtectedRoute } from "./auth/ui/components/ProtectedRoute";
-import { DossiersPage } from "./dossiers/ui/pages/DossiersPage";
-import { SubscriptionConfirmationPage } from "./dossiers/ui/pages/SubscriptionConfirmationPage";
-import { CatalogPage } from "./vehicles/ui/pages/CatalogPage";
-import { VehicleDetailPage } from "./vehicles/ui/pages/VehicleDetailPage";
-import { AddVehiclePage } from "./vehicles/ui/pages/AddVehiclePage";
-import { VehiclePhotoUploadPage } from "./vehicles/ui/pages/VehiclePhotoUploadPage";
+import App from "../App";
+import { LoginPage } from "../auth/ui/pages/LoginPage";
+import { RegisterPage } from "../auth/ui/pages/RegisterPage";
+import { ProtectedRoute } from "../auth/ui/components/ProtectedRoute";
+import { DossiersPage } from "../dossiers/ui/pages/DossiersPage";
+import { SubscriptionConfirmationPage } from "../dossiers/ui/pages/SubscriptionConfirmationPage";
+import { CatalogPage } from "../vehicles/ui/pages/CatalogPage";
+import { VehicleDetailPage } from "../vehicles/ui/pages/VehicleDetailPage";
+import { AddVehiclePage } from "../vehicles/ui/pages/AddVehiclePage";
+import { VehiclePhotoUploadPage } from "../vehicles/ui/pages/VehiclePhotoUploadPage";
 
 export const router = createBrowserRouter([
   {
