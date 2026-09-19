@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 # Remplacement de l'import erroné par le système générique de rôles
 from src.api.dependencies import require_role
 from src.auth.domain.value_objects import Role
-from src.auth.domain.entities import User
+from src.auth.domain.entities.user import User
 from src.shared.domain.exceptions import DomainError
 from src.vehicles.api.schemas.vehicle_schemas import (
     CreateVehicleRequest,

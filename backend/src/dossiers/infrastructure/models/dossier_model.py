@@ -55,3 +55,7 @@ class DossierModel(Base):
         back_populates="dossier",
         cascade="all, delete-orphan",
     )
+    documents: Mapped[list["DocumentModel"]] = relationship(
+        back_populates="dossier",
+        cascade="all, delete-orphan",
+    )

@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 # Imports de sécurité globaux corrigés
 from src.api.dependencies import require_role
 from src.auth.domain.value_objects import Role
-from src.auth.domain.entities import User
+from src.auth.domain.entities.user import User
 from src.shared.infrastructure.dependencies import SessionDep
 
 from src.vehicles.application.use_cases.generate_presigned_url import (

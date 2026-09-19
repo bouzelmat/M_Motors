@@ -14,7 +14,7 @@ export type RegisterResponse = {
 
 /** Requête de connexion. */
 export type LoginRequest = {
-    email: string;
+    username: string;
     password: string;
 };
 

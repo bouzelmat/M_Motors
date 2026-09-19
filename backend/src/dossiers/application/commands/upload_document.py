@@ -6,7 +6,7 @@ from typing import BinaryIO
 from uuid import UUID
 
 from src.dossiers.domain.entities.dossier import Dossier
-from src.dossiers.domain.ports.document_storage_ports import DocumentStoragePort
+from src.dossiers.domain.ports.document_storage_port import DocumentStoragePort
 from src.dossiers.domain.ports.dossier_repository import DossierRepository
 from src.dossiers.domain.value_objects.dossier_status import DossierStatus
 from src.shared.domain.exceptions import DomainError

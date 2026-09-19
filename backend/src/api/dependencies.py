@@ -5,7 +5,7 @@ from typing import Annotated, Callable
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from src.auth.domain.entities import User
+from src.auth.domain.entities.user import User
 from src.auth.domain.value_objects import Role
 from src.auth.infrastructure.repositories import SQLAlchemyUserRepository
 from src.auth.infrastructure.security.jwt_service import JWTService

@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from uuid import UUID
 
-from src.shared.domain.events import DomainEvent
+from src.shared.domain.events.domain_event import DomainEvent
 
 
 @dataclass(frozen=True)

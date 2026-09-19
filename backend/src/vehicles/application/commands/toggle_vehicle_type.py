@@ -50,7 +50,7 @@ class ToggleVehicleTypeCommandHandler:
             ActiveDossierWarningException: Si un dossier actif existe et que
                 bypass_warning est False.
         """
-        vehicle = await self._repository.get_by_id(command.vehicle_id)
+        vehicle = await self._repository.find_by_id(command.vehicle_id)
         if vehicle is None:
             raise DomainError(f"Véhicule introuvable : {command.vehicle_id}")
 

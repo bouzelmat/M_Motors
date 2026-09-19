@@ -18,9 +18,18 @@ export class AuthClient {
     async login(
         request: LoginRequest,
     ): Promise<LoginResponse> {
+        const formData = new URLSearchParams();
+        formData.append('username', request.username);
+        formData.append('password', request.password);
+
         const response = await apiClient.post<LoginResponse>(
             `${AuthClient.BASE_URL}/login`,
-            request,
+            formData,
+            {
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+            },
         );
 
         return response.data;

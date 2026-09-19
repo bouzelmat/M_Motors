@@ -37,6 +37,21 @@ class SQLAlchemyDossierRepository(DossierRepository):
             return None
         return DossierMapper.to_domain(model)
 
+    async def list_by_user(self, user_id: UUID) -> list[Dossier]:
+        """Récupère tous les dossiers appartenant à un utilisateur triés par date de création."""
+        statement = (
+            select(DossierModel)
+            .options(
+                joinedload(DossierModel.trade_in),
+                joinedload(DossierModel.financing_plan),
+            )
+            .where(DossierModel.user_id == user_id)
+            .order_by(DossierModel.created_at.desc())
+        )
+        result = await self._session.execute(statement)
+        models = result.unique().scalars().all()
+        return [DossierMapper.to_domain(model) for model in models]
+
     async def save(self, dossier: Dossier) -> None:
         """Insère ou met à jour un dossier et ses relations puis synchronise la session."""
         statement = (
