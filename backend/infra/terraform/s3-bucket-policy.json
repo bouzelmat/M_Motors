@@ -1,0 +1,89 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Politique de sécurité du bucket S3 - M-Motors Documents",
+  "description": "Documentation de la configuration de sécurité du bucket 'm-motors-documents' pour le stockage des pièces justificatives (US-304).",
+  "bucket_name": "m-motors-documents",
+  "policies": [
+    {
+      "name": "BlockPublicAccess",
+      "description": "Bloque tout accès public au bucket et à ses objets (4 options activées).",
+      "status": "ENABLED",
+      "settings": {
+        "block_public_acls": true,
+        "block_public_policy": true,
+        "ignore_public_acls": true,
+        "restrict_public_buckets": true
+      }
+    },
+    {
+      "name": "ServerSideEncryption",
+      "description": "Chiffrement automatique des objets côté serveur (SSE-S3).",
+      "status": "ENABLED",
+      "algorithm": "AES256",
+      "type": "SSE-S3"
+    },
+    {
+      "name": "EnforceTLS",
+      "description": "Refuse les requêtes non chiffrées (HTTPS obligatoire).",
+      "status": "ENABLED",
+      "condition": {
+        "aws:SecureTransport": "false"
+      },
+      "action": "Deny",
+      "applies_to": ["s3:*"]
+    },
+    {
+      "name": "DenyPublicGetObject",
+      "description": "Refuse explicitement s3:GetObject aux principaux publics ou non autorisés (via IAM).",
+      "status": "ENABLED",
+      "effect": "Deny",
+      "action": "s3:GetObject",
+      "principal": {
+        "AWS": "*",
+        "Federated": "*"
+      },
+      "condition": {
+        "StringNotEquals": {
+          "aws:PrincipalArn": ["arn:aws:iam::ACCOUNT_ID:role/APPLICATION_ROLE"]
+        }
+      },
+      "note": "Remplacer ACCOUNT_ID et APPLICATION_ROLE par les valeurs réelles de votre infrastructure Terraform."
+    }
+  ],
+  "additional_checks": [
+    {
+      "name": "WebsiteHosting",
+      "status": "DISABLED",
+      "description": "Le website hosting est désactivé pour ce bucket (pas de configuration définie)."
+    },
+    {
+      "name": "PublicACLs",
+      "status": "NOT_USED",
+      "description": "Aucun ACL public n'est utilisé. Tous les ACLs sont privés (enforcé par block_public_acls)."
+    },
+    {
+      "name": "AccessMethod",
+      "description": "Les accès applicatifs doivent utiliser uniquement :",
+      "methods": [
+        "URLs pré-signées générées côté serveur (via generate_download_url)",
+        "Credentials IAM pour les opérations serveurs (via boto3)"
+      ]
+    }
+  ],
+  "testing": {
+    "staging": {
+      "anonymous_access_test": {
+        "description": "Test d'accès anonyme direct à un objet S3 (attendu: HTTP 403).",
+        "command": "curl -v https://m-motors-documents.s3.REGION.amazonaws.com/dossiers/1234/IDENTITY_CARD/doc.pdf",
+        "expected_result": "HTTP 403 Forbidden",
+        "status": "PENDING",
+        "note": "À exécuter lorsque l'environnement AWS ou S3 compatible (LocalStack/MinIO) est disponible."
+      }
+    }
+  },
+  "notes": [
+    "Ce bucket est dédié uniquement au stockage des pièces justificatives des dossiers clients.",
+    "Conforme aux exigences RGPD : pas d'accès public, chiffrement activé, TLS obligatoire.",
+    "Les URLs de consultation sont générées via des URLs pré-signées avec une expiration de 60 secondes (US-304)."
+  ]
+}

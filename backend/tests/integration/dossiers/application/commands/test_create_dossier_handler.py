@@ -6,7 +6,7 @@ from uuid import uuid4
 
 import pytest
 
-from src.dossiers.application.ports.vehicle_availability_port import VehicleAvailabilityPort
+from src.dossiers.domain.ports.vehicle_availability_port import VehicleAvailabilityPort
 from src.dossiers.application.use_cases.create_dossier import (
     CreateDossierCommand,
     CreateDossierCommandHandler,

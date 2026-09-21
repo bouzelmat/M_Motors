@@ -7,7 +7,6 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.dossiers.domain.entities.dossier import Dossier
-from src.dossiers.domain.value_objects.dossier_status import DossierStatus
 from src.dossiers.domain.value_objects.financing_plan import FinancingPlan
 from src.dossiers.domain.value_objects.trade_in import TradeIn
 from src.dossiers.infrastructure.models.dossier_model import DossierModel

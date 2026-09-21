@@ -11,9 +11,6 @@ from src.dossiers.application.commands.confirm_document_upload import (
 )
 from src.dossiers.domain.entities.document import Document
 from src.dossiers.domain.exceptions import (
-    DocumentNotFoundException,
-    DossierAccessDeniedException,
-    DossierNotFoundException,
     InvalidDocumentStateException,
 )
 from src.dossiers.domain.value_objects.document_status import DocumentStatus
@@ -38,7 +35,7 @@ async def test_confirm_document_upload_success() -> None:
     )
 
     dossier_repo = AsyncMock()
-    dossier_repo.find_by_id.return_value = mock_dossier
+    dossier_repo.get_by_id.return_value = mock_dossier
 
     doc_repo = AsyncMock()
     doc_repo.find_by_id.return_value = doc
@@ -71,7 +68,7 @@ async def test_confirm_document_already_uploaded_raises_exception() -> None:
     )
     doc.mark_as_uploaded()  # Déjà uploadé
 
-    dossier_repo = AsyncMock(find_by_id=AsyncMock(return_value=mock_dossier))
+    dossier_repo = AsyncMock(get_by_id=AsyncMock(return_value=mock_dossier))
     doc_repo = AsyncMock(find_by_id=AsyncMock(return_value=doc))
 
     handler = ConfirmDocumentUploadCommandHandler(dossier_repo, doc_repo)

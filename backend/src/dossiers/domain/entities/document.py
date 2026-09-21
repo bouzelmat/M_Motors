@@ -36,11 +36,12 @@ class Document:
         size: int,
         document_id: Optional[UUID] = None,
         now: Optional[datetime] = None,
+        id: Optional[UUID] = None,
     ) -> "Document":
         """Instancie un document au statut PENDING."""
         current_time = now or datetime.now(timezone.utc)
         return cls(
-            id=document_id or uuid4(),
+            id=document_id or id or uuid4(),
             dossier_id=dossier_id,
             type=type,
             s3_key=s3_key,
@@ -54,13 +55,13 @@ class Document:
 
     def mark_as_uploaded(self, now: Optional[datetime] = None) -> None:
         """Passe le statut du document à UPLOADED.
-        
+
         La transition n'est autorisée que depuis le statut PENDING.
         """
         if self.status != DocumentStatus.PENDING:
             raise DomainError(
                 f"Impossible de marquer comme téléversé un document au statut '{self.status.value}'."
             )
-        
+
         self.status = DocumentStatus.UPLOADED
         self.uploaded_at = now or datetime.now(timezone.utc)

@@ -87,3 +87,10 @@ class DocumentListItemResponse(BaseModel):
     uploaded_at: datetime | None = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ViewUrlResponse(BaseModel):
+    """Réponse contenant une URL temporaire de consultation (US-304 - Contrat API)."""
+
+    url: str
+    expires_in: int

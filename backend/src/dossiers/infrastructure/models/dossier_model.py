@@ -1,6 +1,7 @@
 """Modèle SQLAlchemy ORM pour la table dossiers."""
 
 from datetime import datetime, timezone
+from typing import TYPE_CHECKING  # 1. Ajout de l'import de typage
 from uuid import UUID
 
 from sqlalchemy import DateTime, Enum
@@ -11,6 +12,9 @@ from src.dossiers.infrastructure.models.dossier_service_model import DossierServ
 from src.dossiers.infrastructure.models.financing_plan_model import FinancingPlanModel
 from src.dossiers.infrastructure.models.trade_in_model import TradeInModel
 from src.shared.infrastructure.database import Base
+
+if TYPE_CHECKING:  # 2. Import masqué pour l'analyse statique et Ruff
+    from src.dossiers.infrastructure.models.document_model import DocumentModel
 
 
 class DossierModel(Base):

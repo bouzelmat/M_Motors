@@ -1,6 +1,7 @@
 """Modèle SQLAlchemy ORM pour la table documents."""
 
 from datetime import datetime, timezone
+from typing import TYPE_CHECKING  # 1. Ajout de l'import de typage
 from uuid import UUID
 
 from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String
@@ -10,6 +11,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.dossiers.domain.value_objects.document_status import DocumentStatus
 from src.dossiers.domain.value_objects.document_type import DocumentType
 from src.shared.infrastructure.database import Base
+
+if TYPE_CHECKING:  # 2. Import masqué pour Ruff et le typage
+    from src.dossiers.infrastructure.models.dossier_model import DossierModel
 
 
 class DocumentModel(Base):
@@ -47,4 +51,7 @@ class DocumentModel(Base):
         default=lambda: datetime.now(timezone.utc),
     )
 
-    dossier = relationship("DossierModel", back_populates="documents")
+    # 3. Relation typée de façon moderne avec Mapped
+    dossier: Mapped["DossierModel"] = relationship(
+        "DossierModel", back_populates="documents"
+    )

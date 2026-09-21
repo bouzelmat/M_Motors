@@ -7,7 +7,7 @@ from src.dossiers.domain.entities.document import Document
 from src.dossiers.domain.value_objects.document_status import DocumentStatus
 from src.dossiers.domain.value_objects.document_type import DocumentType
 from src.dossiers.infrastructure.models.document_model import DocumentModel
-from src.dossiers.infrastructure.persistence.document_mapper import DocumentMapper
+from src.dossiers.infrastructure.mapper.document_mapper import DocumentMapper
 
 
 def test_mapper_to_domain_preserves_none_uploaded_at() -> None:

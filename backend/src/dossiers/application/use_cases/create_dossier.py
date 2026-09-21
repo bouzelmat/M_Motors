@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from uuid import UUID
 
-from src.dossiers.application.ports.vehicle_availability_port import VehicleAvailabilityPort
+from src.dossiers.domain.ports.vehicle_availability_port import VehicleAvailabilityPort
 from src.dossiers.domain.entities.dossier import Dossier
 from src.dossiers.domain.events.dossier_initialized import DossierInitialized
 from src.dossiers.domain.exceptions import (
@@ -13,7 +13,7 @@ from src.dossiers.domain.exceptions import (
 )
 from src.dossiers.domain.value_objects.financing_plan import FinancingPlan
 from src.dossiers.domain.value_objects.trade_in import TradeIn
-from src.shared.application.unit_of_work import AbstractUnitOfWork
+from src.shared.domain.ports.unit_of_work import AbstractUnitOfWork
 from src.shared.infrastructure.event_bus import EventBus
 
 

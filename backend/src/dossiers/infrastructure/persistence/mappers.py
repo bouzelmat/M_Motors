@@ -76,8 +76,12 @@ class DossierMapper:
             if model.financing_plan is None:
                 model.financing_plan = FinancingPlanModel(dossier_id=dossier.id)
             model.financing_plan.down_payment = dossier.financing_plan.down_payment
-            model.financing_plan.duration_months = dossier.financing_plan.duration_months
-            model.financing_plan.monthly_payment = dossier.financing_plan.monthly_payment
+            model.financing_plan.duration_months = (
+                dossier.financing_plan.duration_months
+            )
+            model.financing_plan.monthly_payment = (
+                dossier.financing_plan.monthly_payment
+            )
         else:
             model.financing_plan = None
 

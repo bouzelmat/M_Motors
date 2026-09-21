@@ -3,6 +3,7 @@
 import os
 from collections.abc import AsyncIterator
 from importlib import import_module
+from uuid import uuid4
 
 import pytest
 import pytest_asyncio
@@ -14,6 +15,15 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from sqlalchemy.pool import NullPool
+
+from src.auth.domain.entities.user import User
+from src.auth.domain.value_objects import Email, Role
+from src.auth.infrastructure.orm.user_model import UserModel
+from src.auth.infrastructure.security.jwt_service import JWTService
+from src.vehicles.domain.value_objects.catalog_type import CatalogType
+from src.vehicles.domain.value_objects.energy_type import EnergyType
+from src.vehicles.domain.value_objects.vehicle_status import VehicleStatus
+from src.vehicles.infrastructure.orm.vehicle_model import VehicleModel
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -160,3 +170,96 @@ async def async_client(db_session: AsyncSession) -> AsyncIterator[AsyncClient]:
         yield client
 
     app.dependency_overrides.clear()
+
+
+async def _create_test_user(
+    db_session: AsyncSession,
+    role: Role,
+    email: str,
+) -> User:
+    user = User(
+        id=uuid4(),
+        email=Email(email),
+        hashed_password="hashed_password_sample",
+        first_name=role.value.title(),
+        last_name="Test",
+        role=role,
+    )
+    db_session.add(
+        UserModel(
+            id=str(user.id),
+            email=user.email.value,
+            hashed_password=user.hashed_password,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            role=user.role.value,
+            is_active=user.is_active,
+            created_at=user.created_at,
+        )
+    )
+    await db_session.flush()
+    return user
+
+
+@pytest_asyncio.fixture
+async def test_user(db_session: AsyncSession) -> User:
+    return await _create_test_user(db_session, Role.CLIENT, "test-user@example.com")
+
+
+@pytest_asyncio.fixture
+async def other_user(db_session: AsyncSession) -> User:
+    return await _create_test_user(db_session, Role.CLIENT, "other-user@example.com")
+
+
+@pytest_asyncio.fixture
+async def test_admin(db_session: AsyncSession) -> User:
+    return await _create_test_user(db_session, Role.ADMIN, "test-admin@example.com")
+
+
+@pytest.fixture
+def test_user_token(test_user: User) -> str:
+    return JWTService().create_access_token(
+        data={"sub": str(test_user.id), "email": test_user.email.value}
+    )
+
+
+@pytest.fixture
+def test_admin_token(test_admin: User) -> str:
+    return JWTService().create_access_token(
+        data={"sub": str(test_admin.id), "email": test_admin.email.value}
+    )
+
+
+@pytest_asyncio.fixture
+async def client(async_client: AsyncClient) -> AsyncIterator[AsyncClient]:
+    yield async_client
+
+
+@pytest_asyncio.fixture
+async def authenticated_client(
+    async_client: AsyncClient,
+    test_user_token: str,
+) -> AsyncIterator[AsyncClient]:
+    async_client.headers.update({"Authorization": f"Bearer {test_user_token}"})
+    yield async_client
+
+
+@pytest_asyncio.fixture
+async def existing_available_vehicle_id(db_session: AsyncSession) -> str:
+    vehicle_id = uuid4()
+    db_session.add(
+        VehicleModel(
+            id=vehicle_id,
+            brand="BMW",
+            model="M3",
+            year=2023,
+            price=85000,
+            mileage=15000,
+            energy_type=EnergyType.ESSENCE,
+            status=VehicleStatus.AVAILABLE,
+            catalog_type=CatalogType.SALE,
+            monthly_rent=None,
+        )
+    )
+    await db_session.flush()
+    return str(vehicle_id)

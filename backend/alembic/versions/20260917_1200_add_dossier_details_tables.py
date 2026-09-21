@@ -29,9 +29,15 @@ def upgrade() -> None:
         sa.Column("down_payment", sa.Numeric(10, 2), nullable=False),
         sa.Column("duration_months", sa.Integer(), nullable=False),
         sa.Column("monthly_payment", sa.Numeric(10, 2), nullable=False),
-        sa.CheckConstraint("down_payment >= 0", name="ck_financing_plans_down_payment_positive"),
-        sa.CheckConstraint("duration_months > 0", name="ck_financing_plans_duration_positive"),
-        sa.CheckConstraint("monthly_payment >= 0", name="ck_financing_plans_monthly_payment_positive"),
+        sa.CheckConstraint(
+            "down_payment >= 0", name="ck_financing_plans_down_payment_positive"
+        ),
+        sa.CheckConstraint(
+            "duration_months > 0", name="ck_financing_plans_duration_positive"
+        ),
+        sa.CheckConstraint(
+            "monthly_payment >= 0", name="ck_financing_plans_monthly_payment_positive"
+        ),
     )
 
     op.create_table(
@@ -61,7 +67,9 @@ def upgrade() -> None:
         ),
         sa.Column("service_code", sa.String(length=50), nullable=False),
     )
-    op.create_index("ix_dossier_services_dossier_id", "dossier_services", ["dossier_id"])
+    op.create_index(
+        "ix_dossier_services_dossier_id", "dossier_services", ["dossier_id"]
+    )
 
 
 def downgrade() -> None:

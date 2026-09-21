@@ -91,8 +91,7 @@ class SQLAlchemyDossierRepository(DossierRepository):
         )
         result = await self._session.execute(statement)
         return [
-            DossierMapper.to_domain(model)
-            for model in result.unique().scalars().all()
+            DossierMapper.to_domain(model) for model in result.unique().scalars().all()
         ]
 
     async def has_active_for_vehicle(self, vehicle_id: UUID) -> bool:

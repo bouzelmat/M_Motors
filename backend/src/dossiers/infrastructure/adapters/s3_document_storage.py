@@ -16,14 +16,19 @@ class S3DocumentStorageAdapter(DocumentStoragePort):
 
     def __init__(self, settings: Settings) -> None:
         self._bucket_name = settings.s3_documents_bucket_name
-        self._client = boto3.client(
-            "s3",
-            region_name=settings.aws_region,
-            aws_access_key_id=settings.aws_access_key_id,
-            aws_secret_access_key=settings.aws_secret_access_key,
-            endpoint_url=settings.aws_endpoint_url,
-            config=Config(signature_version="s3v4", s3={"addressing_style": "path"}),
-        )
+        self._client = None
+        self._client_options = {
+            "region_name": settings.aws_region,
+            "aws_access_key_id": settings.aws_access_key_id,
+            "aws_secret_access_key": settings.aws_secret_access_key,
+            "endpoint_url": settings.aws_endpoint_url,
+            "config": Config(signature_version="s3v4", s3={"addressing_style": "path"}),
+        }
+
+    def _get_client(self):
+        if self._client is None:
+            self._client = boto3.client("s3", **self._client_options)
+        return self._client
 
     async def upload(
         self,
@@ -37,7 +42,7 @@ class S3DocumentStorageAdapter(DocumentStoragePort):
         loop = asyncio.get_running_loop()
         await loop.run_in_executor(
             None,
-            lambda: self._client.upload_fileobj(content, self._bucket_name, key),
+            lambda: self._get_client().upload_fileobj(content, self._bucket_name, key),
         )
         return key
 
@@ -51,12 +56,40 @@ class S3DocumentStorageAdapter(DocumentStoragePort):
         loop = asyncio.get_running_loop()
         url = await loop.run_in_executor(
             None,
-            lambda: self._client.generate_presigned_url(
+            lambda: self._get_client().generate_presigned_url(
                 ClientMethod="put_object",
                 Params={
                     "Bucket": self._bucket_name,
                     "Key": s3_key,
                     "ContentType": content_type,
+                },
+                ExpiresIn=expires_in,
+            ),
+        )
+        return url
+
+    async def generate_download_url(
+        self,
+        s3_key: str,
+        expires_in: int = 60,
+    ) -> str:
+        """Génère une URL pré-signée GET pour consulter un document (US-304 - Critère 7).
+
+        Args:
+            s3_key: Clé S3 du document.
+            expires_in: Durée de validité de l'URL en secondes (défaut: 60).
+
+        Returns:
+            URL pré-signée pour télécharger le document.
+        """
+        loop = asyncio.get_running_loop()
+        url = await loop.run_in_executor(
+            None,
+            lambda: self._get_client().generate_presigned_url(
+                ClientMethod="get_object",
+                Params={
+                    "Bucket": self._bucket_name,
+                    "Key": s3_key,
                 },
                 ExpiresIn=expires_in,
             ),

@@ -25,3 +25,11 @@ class DocumentStoragePort(Protocol):
     ) -> str:
         """Génère une URL pré-signée S3 pour le téléversement direct d'une pièce justificative."""
         ...
+
+    async def generate_download_url(
+        self,
+        s3_key: str,
+        expires_in: int = 60,
+    ) -> str:
+        """Génère une URL pré-signée GET pour consulter un document (US-304 - Critère 7)."""
+        ...

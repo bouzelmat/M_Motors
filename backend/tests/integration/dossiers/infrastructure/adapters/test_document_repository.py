@@ -7,7 +7,6 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.dossiers.domain.entities.document import Document
-from src.dossiers.domain.value_objects.document_status import DocumentStatus
 from src.dossiers.domain.value_objects.document_type import DocumentType
 from src.dossiers.domain.value_objects.dossier_status import DossierStatus
 from src.dossiers.infrastructure.models.dossier_model import DossierModel
@@ -20,7 +19,7 @@ from src.dossiers.infrastructure.adapters.document_repository import (
 async def test_repository_save_and_find_by_id(db_session: AsyncSession) -> None:
     repo = SqlAlchemyDocumentRepository(db_session)
     dossier_id = uuid4()
-    
+
     # Création du dossier englobant
     dossier = DossierModel(
         id=dossier_id,

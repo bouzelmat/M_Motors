@@ -1,11 +1,15 @@
 """Modèle SQLAlchemy ORM pour la table dossier_services."""
 
+from typing import TYPE_CHECKING  # 1. Ajout de l'import de typage
 from uuid import UUID, uuid4
 
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.shared.infrastructure.database import Base
+
+if TYPE_CHECKING:  # 2. Import masqué pour Ruff et l'analyse statique
+    from src.dossiers.infrastructure.models.dossier_model import DossierModel
 
 
 class DossierServiceModel(Base):
@@ -21,4 +25,7 @@ class DossierServiceModel(Base):
     )
     service_code: Mapped[str] = mapped_column(String(50), nullable=False)
 
-    dossier: Mapped["DossierModel"] = relationship(back_populates="services")
+    # 3. Ajout de "DossierModel" dans le relationship pour SQLAlchemy
+    dossier: Mapped["DossierModel"] = relationship(
+        "DossierModel", back_populates="services"
+    )

@@ -4,7 +4,6 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from uuid import uuid4
 
-import pytest
 
 from src.dossiers.domain.entities.dossier import Dossier
 from src.dossiers.domain.value_objects.dossier_status import DossierStatus

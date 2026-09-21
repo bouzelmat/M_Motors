@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from decimal import Decimal
 from uuid import uuid4
 
@@ -115,7 +115,9 @@ def test_financing_plan_negative_down_payment_raises_domain_error() -> None:
 
 
 def test_financing_plan_invalid_duration_raises_domain_error() -> None:
-    with pytest.raises(DomainError, match="La durée du financement doit être supérieure à 0"):
+    with pytest.raises(
+        DomainError, match="La durée du financement doit être supérieure à 0"
+    ):
         FinancingPlan(
             down_payment=Decimal("1000.00"),
             duration_months=0,
@@ -139,12 +141,18 @@ def test_trade_in_valid_instantiation() -> None:
 
 
 def test_trade_in_empty_registration_raises_domain_error() -> None:
-    with pytest.raises(DomainError, match="L'immatriculation du véhicule de reprise ne peut pas être vide"):
+    with pytest.raises(
+        DomainError,
+        match="L'immatriculation du véhicule de reprise ne peut pas être vide",
+    ):
         TradeIn(registration="   ", mileage=50000)
 
 
 def test_trade_in_negative_mileage_raises_domain_error() -> None:
-    with pytest.raises(DomainError, match="Le kilométrage du véhicule de reprise ne peut pas être négatif"):
+    with pytest.raises(
+        DomainError,
+        match="Le kilométrage du véhicule de reprise ne peut pas être négatif",
+    ):
         TradeIn(registration="AB-123-CD", mileage=-10)
 
 
@@ -162,7 +170,9 @@ def test_expire_non_draft_dossier_raises_domain_error() -> None:
     dossier = Dossier.create(user_id=uuid4(), vehicle_id=uuid4())
     expired_dossier = dossier.expire()
 
-    with pytest.raises(DomainError, match="Impossible d'expirer un dossier au statut EXPIRED"):
+    with pytest.raises(
+        DomainError, match="Impossible d'expirer un dossier au statut EXPIRED"
+    ):
         expired_dossier.expire()
 
 

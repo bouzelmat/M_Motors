@@ -27,6 +27,8 @@ def s3_env(monkeypatch):
     monkeypatch.setenv("aws_access_key_id", "testing")
     monkeypatch.setenv("aws_secret_access_key", "testing")
     monkeypatch.setenv("aws_region", AWS_REGION)
+    monkeypatch.setenv("aws_endpoint_url", "")
+    monkeypatch.setenv("AWS_ENDPOINT_URL", "")
     get_settings.cache_clear()
 
     with mock_aws():

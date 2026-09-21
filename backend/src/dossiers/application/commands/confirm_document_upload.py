@@ -12,6 +12,7 @@ from src.dossiers.domain.exceptions import (
 )
 from src.dossiers.domain.ports.document_repository import DocumentRepository
 from src.dossiers.domain.ports.dossier_repository import DossierRepository
+from src.shared.domain.exceptions import DomainError
 
 
 @dataclass(frozen=True)
@@ -60,7 +61,10 @@ class ConfirmDocumentUploadCommandHandler:
             )
 
         # 5. Transition vers l'état UPLOADED
-        document.mark_as_uploaded()
+        try:
+            document.mark_as_uploaded()
+        except DomainError as exc:
+            raise InvalidDocumentStateException(str(exc)) from exc
 
         # 6. Persistence du statut mis à jour
         await self._document_repository.save(document)

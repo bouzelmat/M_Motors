@@ -2,7 +2,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { vi } from "vitest";
 import axios from "axios";
 import { DocumentUploader } from "../DocumentUploader";
-import { DossiersClient } from "../../../api/clients/DossiersClient";
+import { DossiersClient } from "../../../../api/clients/DossiersClient";
 
 vi.mock("axios");
 vi.mock("../../../api/clients/DossiersClient");

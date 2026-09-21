@@ -26,11 +26,13 @@ async def test_request_document_upload_success() -> None:
     mock_dossier.user_id = user_id
 
     dossier_repo = AsyncMock()
-    dossier_repo.find_by_id.return_value = mock_dossier
+    dossier_repo.get_by_id.return_value = mock_dossier
 
     document_repo = AsyncMock()
     storage_port = AsyncMock()
-    storage_port.generate_upload_url.return_value = "https://s3.amazonaws.com/presigned-url"
+    storage_port.generate_upload_url.return_value = (
+        "https://s3.amazonaws.com/presigned-url"
+    )
 
     handler = RequestDocumentUploadCommandHandler(
         dossier_repository=dossier_repo,
@@ -58,7 +60,7 @@ async def test_request_document_upload_success() -> None:
 @pytest.mark.asyncio
 async def test_request_document_upload_dossier_not_found() -> None:
     dossier_repo = AsyncMock()
-    dossier_repo.find_by_id.return_value = None
+    dossier_repo.get_by_id.return_value = None
 
     handler = RequestDocumentUploadCommandHandler(
         dossier_repository=dossier_repo,

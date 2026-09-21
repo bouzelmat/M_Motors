@@ -19,7 +19,11 @@ class TradeIn:
     def __post_init__(self) -> None:
         """Valide les contraintes de l'offre de reprise."""
         if not self.registration or not self.registration.strip():
-            raise DomainError("L'immatriculation du véhicule de reprise ne peut pas être vide.")
+            raise DomainError(
+                "L'immatriculation du véhicule de reprise ne peut pas être vide."
+            )
 
         if self.mileage < 0:
-            raise DomainError("Le kilométrage du véhicule de reprise ne peut pas être négatif.")
+            raise DomainError(
+                "Le kilométrage du véhicule de reprise ne peut pas être négatif."
+            )
