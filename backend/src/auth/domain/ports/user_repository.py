@@ -3,7 +3,7 @@
 from typing import Protocol
 from uuid import UUID
 
-from src.auth.domain.entities import User
+from src.auth.domain.entities.user import User
 from src.auth.domain.value_objects import Email
 
 

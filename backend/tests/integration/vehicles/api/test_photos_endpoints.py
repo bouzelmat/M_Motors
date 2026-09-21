@@ -54,6 +54,8 @@ def s3_setup(monkeypatch):
     monkeypatch.setenv("AWS_SESSION_TOKEN", "testing")
     monkeypatch.setenv("aws_region", AWS_REGION)
     monkeypatch.setenv("AWS_DEFAULT_REGION", AWS_REGION)
+    monkeypatch.setenv("aws_endpoint_url", "")
+    monkeypatch.setenv("AWS_ENDPOINT_URL", "")
     get_settings.cache_clear()
 
     with mock_aws():

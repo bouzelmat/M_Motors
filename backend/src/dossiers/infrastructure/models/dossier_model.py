@@ -1,13 +1,20 @@
 """Modèle SQLAlchemy ORM pour la table dossiers."""
 
 from datetime import datetime, timezone
+from typing import TYPE_CHECKING  # 1. Ajout de l'import de typage
 from uuid import UUID
 
 from sqlalchemy import DateTime, Enum
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.dossiers.domain.value_objects.dossier_status import DossierStatus
+from src.dossiers.infrastructure.models.dossier_service_model import DossierServiceModel
+from src.dossiers.infrastructure.models.financing_plan_model import FinancingPlanModel
+from src.dossiers.infrastructure.models.trade_in_model import TradeInModel
 from src.shared.infrastructure.database import Base
+
+if TYPE_CHECKING:  # 2. Import masqué pour l'analyse statique et Ruff
+    from src.dossiers.infrastructure.models.document_model import DocumentModel
 
 
 class DossierModel(Base):
@@ -36,4 +43,23 @@ class DossierModel(Base):
         DateTime(timezone=True),
         nullable=False,
         default=lambda: datetime.now(timezone.utc),
+    )
+
+    financing_plan: Mapped[FinancingPlanModel | None] = relationship(
+        back_populates="dossier",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
+    trade_in: Mapped[TradeInModel | None] = relationship(
+        back_populates="dossier",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
+    services: Mapped[list[DossierServiceModel]] = relationship(
+        back_populates="dossier",
+        cascade="all, delete-orphan",
+    )
+    documents: Mapped[list["DocumentModel"]] = relationship(
+        back_populates="dossier",
+        cascade="all, delete-orphan",
     )

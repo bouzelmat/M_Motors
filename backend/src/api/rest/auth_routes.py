@@ -11,7 +11,7 @@ from src.auth.application.commands import (
     RegisterUserCommand,
     RegisterUserCommandHandler,
 )
-from src.auth.domain.entities import User
+from src.auth.domain.entities.user import User
 from src.auth.domain.value_objects import Email
 from src.auth.infrastructure.repositories import SQLAlchemyUserRepository
 from src.auth.infrastructure.security.jwt_service import JWTService

@@ -31,6 +31,9 @@ class FakeVehicleRepository(VehicleRepository):
     async def get_by_id(self, vehicle_id: UUID) -> Vehicle | None:
         return self.vehicles.get(vehicle_id)
 
+    async def find_by_id(self, vehicle_id: UUID) -> Vehicle | None:
+        return self.vehicles.get(vehicle_id)
+
     async def save(self, vehicle: Vehicle) -> None:
         self.vehicles[vehicle.id] = vehicle
         self.saved_vehicles.append(vehicle)
