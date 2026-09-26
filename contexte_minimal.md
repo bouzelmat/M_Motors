@@ -353,17 +353,13 @@ automatiquement et s'achève en moins de 5 minutes.
 version, Then les sondes de disponibilité (health checks) répondent avec un code
 HTTP 200 sur la route /health.
 • Estimation : 8 points story | Priorité : Critique
-US-602 — Mise en place de la stratégie de sauvegarde (RPO < 5 min)
-En tant que DevOps, je veux configurer des sauvegardes automatiques de la base de données
-PostgreSQL toutes les 5 minutes afin de respecter le RPO (Recovery Point Objective) défini avec le
-Product Owner.
+US-602 — Stratégie de sauvegarde et restauration PostgreSQL
+En tant que DevOps, je veux definir et tester une strategie de sauvegarde adaptee au fournisseur PostgreSQL de chaque environnement, afin de respecter les objectifs RPO/RTO valides avec le Product Owner.
 • Critères d'acceptation :
-• Given la base de données en production, When 5 minutes s'écoulent, Then un
-snapshot incrémental est créé et stocké sur un compartiment S3 sécurisé avec une
-politique de rétention de 30 jours.
-• Given un snapshot existant sur S3, When un exercice de restauration d'urgence est
-effectué, Then la base de données est restaurée dans un état cohérent et opérationnel
-en moins de 4 heures (RTO - Recovery Time Objective).
+• Les capacites, la frequence, la retention et les limites de sauvegarde de Render pour le MVP et de RDS pour la cible AWS sont documentees. Un RPO inferieur a 5 minutes et un RTO inferieur a 4 heures restent des objectifs a confirmer, et non des garanties presumees.
+• La configuration RDS cible distingue haute disponibilite Multi-AZ, sauvegardes automatisees et PITR. Les sauvegardes gerees par RDS ne sont pas presentees comme des snapshots toutes les 5 minutes ni comme des objets du bucket S3 applicatif.
+• Un exercice en environnement isole restaure un point choisi, mesure le temps et verifie l'integrite sans modifier ni supprimer la base source.
+• Le runbook de restauration, la mesure du RTO et les ecarts constates sont documentes dans `docs/tickets/US-602.md`.
 • Estimation : 5 points story | Priorité : Critique
 US-603 — Script de migration sécurisé des données historiques (1987-2026)
 En tant que DevOps, je veux exécuter un script d'extraction, transformation et chargement (ETL)

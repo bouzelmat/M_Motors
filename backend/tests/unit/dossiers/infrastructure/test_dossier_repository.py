@@ -1,18 +1,25 @@
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
-from uuid import uuid4
+from uuid import uuid4, UUID
 
 import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.auth.infrastructure.orm.user_model import UserModel
 from src.dossiers.domain.entities.dossier import Dossier
+from src.dossiers.domain.value_objects.dossier_status import DossierStatus
 from src.dossiers.domain.value_objects.financing_plan import FinancingPlan
 from src.dossiers.domain.value_objects.trade_in import TradeIn
 from src.dossiers.infrastructure.models.dossier_model import DossierModel
-from src.dossiers.infrastructure.persistence.dossier_repository import (
+from src.dossiers.infrastructure.repository.sqlalchemy_dossier_repository import (
     SQLAlchemyDossierRepository,
 )
+from src.shared.domain.exceptions import DomainError
+from src.vehicles.infrastructure.orm.vehicle_model import VehicleModel
+from src.vehicles.domain.value_objects.catalog_type import CatalogType
+from src.vehicles.domain.value_objects.energy_type import EnergyType
+from src.vehicles.domain.value_objects.vehicle_status import VehicleStatus
 
 
 @pytest.mark.asyncio
@@ -153,3 +160,82 @@ async def test_get_stale_draft_dossiers_filtering(db_session: AsyncSession) -> N
 
     assert stale_dossier.id in stale_ids
     assert recent_dossier.id not in stale_ids
+
+
+async def _create_test_user_and_vehicle(
+    db_session: AsyncSession, email: str, brand: str, model_name: str
+) -> tuple[UUID, UUID]:
+    user_id = uuid4()
+    vehicle_id = uuid4()
+
+    user = UserModel(
+        id=user_id,
+        email=email,
+        hashed_password="hashed_pw",
+        first_name="John",
+        last_name="Doe",
+    )
+    vehicle = VehicleModel(
+        id=vehicle_id,
+        brand=brand,
+        model=model_name,
+        year=2024,
+        price=Decimal("25000.00"),
+        mileage=15000,
+        energy_type=EnergyType.ELECTRIQUE,  # <-- CORRECTION ICI
+        status=VehicleStatus.AVAILABLE,
+        catalog_type=CatalogType.RENTAL,
+        monthly_rent=Decimal("350.00"),
+    )
+    db_session.add(user)
+    db_session.add(vehicle)
+    await db_session.flush()
+    return user_id, vehicle_id
+
+
+@pytest.mark.asyncio
+async def test_list_pending_returns_only_submitted_dossiers_sorted(
+    db_session: AsyncSession,
+) -> None:
+    repository = SQLAlchemyDossierRepository(db_session)
+    user_id, vehicle_id = await _create_test_user_and_vehicle(
+        db_session, "client1@example.com", "Peugeot", "208"
+    )
+
+    now = datetime.now(timezone.utc)
+
+    # Dossier SUBMITTED il y a 2 heures
+    dossier_submitted_1 = Dossier.create(user_id=user_id, vehicle_id=vehicle_id).submit(
+        now=now - timedelta(hours=2)
+    )
+    # Dossier SUBMITTED il y a 10 minutes
+    dossier_submitted_2 = Dossier.create(user_id=user_id, vehicle_id=vehicle_id).submit(
+        now=now - timedelta(minutes=10)
+    )
+    # Dossier DRAFT (exclu)
+    dossier_draft = Dossier.create(user_id=user_id, vehicle_id=vehicle_id)
+
+    await repository.save(dossier_submitted_1)
+    await repository.save(dossier_submitted_2)
+    await repository.save(dossier_draft)
+    await db_session.commit()
+
+    pending_list = await repository.list_pending(sort_by="submitted_at")
+
+    assert len(pending_list) == 2
+    assert pending_list[0].id == dossier_submitted_2.id  # <-- CORRECTION INDEXATION
+    assert pending_list[1].id == dossier_submitted_1.id  # <-- CORRECTION INDEXATION
+    assert pending_list[0].client_email == "client1@example.com"
+    assert pending_list[0].vehicle_brand == "Peugeot"
+    assert pending_list[0].vehicle_model == "208"
+    assert pending_list[0].status == DossierStatus.SUBMITTED
+
+
+@pytest.mark.asyncio
+async def test_list_pending_raises_domain_error_on_invalid_sort(
+    db_session: AsyncSession,
+) -> None:
+    repository = SQLAlchemyDossierRepository(db_session)
+
+    with pytest.raises(DomainError, match="Champ de tri invalide"):
+        await repository.list_pending(sort_by="invalid_field")

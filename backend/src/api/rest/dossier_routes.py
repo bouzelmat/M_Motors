@@ -47,10 +47,15 @@ from src.dossiers.domain.exceptions import (
 from src.dossiers.infrastructure.adapters.document_repository import (
     SqlAlchemyDocumentRepository,
 )
-from src.dossiers.infrastructure.adapters.s3_document_storage import (
-    S3DocumentStorageAdapter,
-)
-from src.dossiers.infrastructure.persistence.dossier_repository import (
+
+try:
+    from src.dossiers.infrastructure.adapters.s3_document_storage import (
+        S3DocumentStorageAdapter,
+    )
+except ImportError:
+    # Fallback for environments without boto3
+    S3DocumentStorageAdapter = None
+from src.dossiers.infrastructure.repository.sqlalchemy_dossier_repository import (
     SQLAlchemyDossierRepository,
 )
 from src.shared.infrastructure.dependencies import SessionDep
@@ -177,6 +182,11 @@ async def request_presigned_url(
     current_user: User = Depends(get_current_user),
 ) -> PresignedUrlResponse:
     """Génère une URL pré-signée S3 pour le téléversement d'un document."""
+    if S3DocumentStorageAdapter is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Service de stockage S3 non disponible (boto3 non installé)",
+        )
     dossier_repo = SQLAlchemyDossierRepository(session)
     document_repo = SqlAlchemyDocumentRepository(session)
     storage_adapter = S3DocumentStorageAdapter(get_settings())
@@ -311,6 +321,11 @@ async def get_document_view_url(
     - 403 : Utilisateur non autorisé (Critères 5,6).
     - 200 : URL pré-signée valide 60s (Critère 7).
     """
+    if S3DocumentStorageAdapter is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Service de stockage S3 non disponible (boto3 non installé)",
+        )
     # Initialisation des dépendances
     dossier_repo = SQLAlchemyDossierRepository(session)
     document_repo = SqlAlchemyDocumentRepository(session)

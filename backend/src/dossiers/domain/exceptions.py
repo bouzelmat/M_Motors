@@ -17,6 +17,8 @@ __all__ = [
     "DocumentNotFoundException",
     "DossierAccessDeniedException",
     "InvalidDocumentStateException",
+    "DocumentPendingPurgeNotAllowedException",
+    "DocumentPurgeNotAllowedException",
 ]
 
 
@@ -68,3 +70,21 @@ class InvalidDocumentStateException(DossierDomainException):
 
     def __init__(self, message: str = "État du document invalide.") -> None:
         super().__init__(message)
+
+
+class DocumentPendingPurgeNotAllowedException(InvalidDocumentStateException):
+    """Levée lorsqu'un document ne peut pas passer au statut PENDING_PURGE."""
+
+    def __init__(self, current_status: str) -> None:
+        super().__init__(
+            f"Impossible de passer en attente de purge un document au statut '{current_status}'."
+        )
+
+
+class DocumentPurgeNotAllowedException(InvalidDocumentStateException):
+    """Levée lorsqu'un document ne peut pas passer au statut PURGED."""
+
+    def __init__(self, current_status: str) -> None:
+        super().__init__(
+            f"Impossible de purger un document au statut '{current_status}'. Seuls les documents 'PENDING_PURGE' peuvent être purgés."
+        )

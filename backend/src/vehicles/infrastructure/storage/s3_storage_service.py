@@ -1,6 +1,12 @@
 from typing import Any
-import boto3
-from botocore.config import Config
+
+try:
+    import boto3
+    from botocore.config import Config
+
+    BOTO3_AVAILABLE = True
+except ImportError:
+    BOTO3_AVAILABLE = False
 
 from src.config import get_settings
 from src.vehicles.domain.ports.storage_service import StorageService
@@ -10,6 +16,10 @@ class S3StorageService(StorageService):
     """Adaptateur S3 implémentant le port StorageService via boto3."""
 
     def __init__(self) -> None:
+        if not BOTO3_AVAILABLE:
+            raise ImportError(
+                "boto3 is not installed. S3StorageService requires boto3."
+            )
         settings = get_settings()
         self._bucket_name = settings.s3_bucket_name
 

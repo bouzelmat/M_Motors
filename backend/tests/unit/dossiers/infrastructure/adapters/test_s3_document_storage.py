@@ -1,9 +1,10 @@
-"""Tests unitaires pour S3DocumentStorageAdapter (US-304 - Tâche 3)."""
+"""Tests unitaires pour S3DocumentStorageAdapter (US-304 / US-305)."""
 
 import asyncio
 from unittest.mock import MagicMock, patch
 
 import pytest
+from botocore.exceptions import ClientError
 
 from src.config import Settings
 from src.dossiers.infrastructure.adapters.s3_document_storage import (
@@ -119,3 +120,39 @@ class TestGenerateDownloadUrl:
 
         call_args = mock_client.generate_presigned_url.call_args
         assert call_args[1]["ExpiresIn"] == custom_expires_in
+
+
+class TestDeleteObject:
+    """Tests pour delete_object (US-305 - Tâche 3)."""
+
+    @patch("boto3.client")
+    def test_delete_object_calls_boto3_with_correct_bucket_and_key(
+        self, mock_boto3, s3_adapter: S3DocumentStorageAdapter
+    ) -> None:
+        """Vérifie que delete_object est appelé avec le bon bucket et la bonne clé."""
+        mock_client = MagicMock()
+        mock_boto3.return_value = mock_client
+        s3_key = "dossiers/1234/IDENTITY_CARD/doc.pdf"
+
+        asyncio.run(s3_adapter.delete_object(s3_key))
+
+        mock_client.delete_object.assert_called_once_with(
+            Bucket="m-motors-documents",
+            Key=s3_key,
+        )
+
+    @patch("boto3.client")
+    def test_delete_object_propagates_s3_error(
+        self, mock_boto3, s3_adapter: S3DocumentStorageAdapter
+    ) -> None:
+        """Vérifie que les erreurs ClientError de S3 sont bien propagées."""
+        mock_client = MagicMock()
+        mock_boto3.return_value = mock_client
+        mock_client.delete_object.side_effect = ClientError(
+            {"Error": {"Code": "500", "Message": "S3 Internal Error"}},
+            "DeleteObject",
+        )
+        s3_key = "dossiers/1234/IDENTITY_CARD/doc.pdf"
+
+        with pytest.raises(ClientError):
+            asyncio.run(s3_adapter.delete_object(s3_key))

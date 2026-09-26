@@ -24,7 +24,11 @@ from src.vehicles.application.queries.search_vehicles_query import (
 from src.vehicles.infrastructure.repositories.sqlalchemy_vehicle_repository import (
     SQLAlchemyVehicleRepository,
 )
-from src.vehicles.infrastructure.storage.s3_storage_service import S3StorageService
+
+try:
+    from src.vehicles.infrastructure.storage.s3_storage_service import S3StorageService
+except ImportError:
+    S3StorageService = None
 
 
 async def get_vehicle_repository(
@@ -34,7 +38,9 @@ async def get_vehicle_repository(
     return SQLAlchemyVehicleRepository(session)
 
 
-def get_storage_service() -> S3StorageService:
+def get_storage_service():
+    if S3StorageService is None:
+        raise ImportError("S3StorageService requires boto3 to be installed")
     return S3StorageService()
 
 
