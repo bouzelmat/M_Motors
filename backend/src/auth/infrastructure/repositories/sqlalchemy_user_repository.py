@@ -1,12 +1,11 @@
 """SQLAlchemy implementation of UserRepository."""
 
 from uuid import UUID
-from typing import cast
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.auth.domain.entities import User
+from src.auth.domain.entities.user import User
 from src.auth.domain.ports import UserRepository
 from src.auth.domain.value_objects import Email
 from src.auth.infrastructure.mappers import UserMapper

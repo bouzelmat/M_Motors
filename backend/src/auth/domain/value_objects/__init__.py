@@ -1,6 +1,6 @@
 """Value objects for auth domain."""
 
-from .role import Role
 from .email import Email
+from .role import Role
 
-__all__ = ["Role", "Email"]
+__all__ = ["Email", "Role"]

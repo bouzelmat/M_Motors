@@ -1,4 +1,4 @@
-﻿"""Authentication routes for register and login."""
+"""Authentication routes for register and login."""
 
 from typing import Annotated
 
@@ -6,16 +6,20 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr, Field
 
-from src.api.dependencies import get_current_user, get_db_session
-from src.auth.application.commands import RegisterUserCommand, RegisterUserCommandHandler
-from src.auth.domain.entities import User
-from src.auth.domain.ports import UserRepository
+from src.api.dependencies import get_current_user
+from src.auth.application.commands import (
+    RegisterUserCommand,
+    RegisterUserCommandHandler,
+)
+from src.auth.domain.entities.user import User
 from src.auth.domain.value_objects import Email
-from src.auth.infrastructure.jwt_service import JWTService
-from src.auth.infrastructure.password_service import PasswordService
 from src.auth.infrastructure.repositories import SQLAlchemyUserRepository
+from src.auth.infrastructure.security.jwt_service import JWTService
+from src.auth.infrastructure.security.password_service import PasswordService
 from src.shared.domain.exceptions import ValidationError
-from sqlalchemy.ext.asyncio import AsyncSession
+
+# Remplacement par la dépendance partagée centralisée
+from src.shared.infrastructure.dependencies import SessionDep
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
@@ -58,10 +62,12 @@ class UserResponse(BaseModel):
     is_active: bool
 
 
-@router.post("/register", response_model=RegisterResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register", response_model=RegisterResponse, status_code=status.HTTP_201_CREATED
+)
 async def register(
     request: RegisterRequest,
-    session: Annotated[AsyncSession, Depends(get_db_session)],
+    session: SessionDep,  # Utilisation directe du SessionDep typé et annoté
 ) -> RegisterResponse:
     """Register a new user account."""
     user_repository = SQLAlchemyUserRepository(session)
@@ -77,7 +83,9 @@ async def register(
 
     try:
         user = await handler.handle(command)
+        await session.commit()
     except ValidationError as e:
+        await session.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=str(e),
@@ -95,7 +103,7 @@ async def register(
 @router.post("/login", response_model=LoginResponse)
 async def login(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-    session: Annotated[AsyncSession, Depends(get_db_session)],
+    session: SessionDep,  # Utilisation directe du SessionDep typé et annoté
 ) -> LoginResponse:
     """Authenticate user and return access token."""
     user_repository = SQLAlchemyUserRepository(session)
@@ -146,4 +154,3 @@ async def get_me(
         last_name=current_user.last_name,
         is_active=current_user.is_active,
     )
-

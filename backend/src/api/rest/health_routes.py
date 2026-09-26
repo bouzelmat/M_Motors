@@ -1,19 +1,19 @@
 """HTTP health routes."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, HTTPException, status
 
-from src.api.dependencies import get_db_session
 from src.api.schemas.health_schemas import HealthResponse
 from src.shared.infrastructure.database import execute_health_check
 
+# Remplacement par la dépendance partagée centralisée
+from src.shared.infrastructure.dependencies import SessionDep
 
 router = APIRouter(tags=["health"])
 
 
 @router.get("/health", response_model=HealthResponse, status_code=status.HTTP_200_OK)
 async def read_health(
-    session: AsyncSession = Depends(get_db_session),
+    session: SessionDep,  # Utilisation de SessionDep à la place de get_db_session
 ) -> HealthResponse:
     """Validate the database connectivity with a lightweight query."""
 

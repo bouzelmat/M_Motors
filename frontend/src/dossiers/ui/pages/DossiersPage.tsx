@@ -1,6 +1,5 @@
 ﻿// Dashboard page (protected route)
 
-import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -12,17 +11,12 @@ import {
   Card,
   CardContent,
 } from '@mui/material';
-import { useAuthStore } from '../../auth/ui/hooks/useAuth';
+import AddIcon from '@mui/icons-material/Add';
+import { useAuthStore } from '../../../auth/ui/hooks/useAuth';
 
 export function DossiersPage() {
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuthStore();
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/login');
-    }
-  }, [isAuthenticated, navigate]);
 
   const handleLogout = () => {
     logout();
@@ -78,8 +72,30 @@ export function DossiersPage() {
             </CardContent>
           </Card>
         </Grid>
+
+        {user.role === 'ADMIN' && (
+          <Grid item xs={12}>
+            <Card sx={{ bgcolor: 'action.hover', border: '1px dashed grey' }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom color="primary">
+                  Administration des véhicules
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  Espace de gestion réservé aux administrateurs M-Motors.
+                </Typography>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={<AddIcon />}
+                  onClick={() => navigate('/admin/vehicles/new')}
+                >
+                  Ajouter un véhicule
+                </Button>
+              </CardContent>
+            </Card>
+          </Grid>
+        )}
       </Grid>
     </Container>
   );
 }
-

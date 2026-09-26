@@ -5,7 +5,8 @@ from unittest.mock import AsyncMock
 
 from fastapi.testclient import TestClient
 
-from src.api.dependencies import get_db_session
+# Remplacement de l'ancienne dépendance API par le point d'entrée de la DB
+from src.shared.infrastructure.database import get_session
 from src.api.main import app
 
 
@@ -26,7 +27,8 @@ async def override_get_db_session() -> AsyncIterator[DummySession]:
 def test_health_endpoint_reports_database_reachable() -> None:
     """The health endpoint should confirm a working database connection."""
 
-    app.dependency_overrides[get_db_session] = override_get_db_session
+    # Surcharge de get_session pour intercepter SessionDep proprement
+    app.dependency_overrides[get_session] = override_get_db_session
 
     try:
         client = TestClient(app)

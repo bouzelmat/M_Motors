@@ -1,17 +1,41 @@
 """Integration tests for auth endpoints."""
 
+from unittest.mock import AsyncMock
+
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.api.rest.auth_routes import router
-from src.auth.domain.value_objects import Email
-from src.auth.infrastructure.password_service import PasswordService
-from src.auth.infrastructure.repositories import SQLAlchemyUserRepository
+
+@pytest.fixture(autouse=True)
+def mock_notification_or_email_service(monkeypatch):
+    """Intercepte et simule automatiquement n'importe quel appel à .send()
+
+    dans les routes d'authentification.
+    """
+    mock_send = AsyncMock(return_value=True)
+
+    # OPTION A : Si l'objet à l'origine du .send est importé dans un module d'infrastructure
+    # Adaptez le chemin selon la structure exacte de votre projet (ex: src.shared... ou src.api...)
+    try:
+        from src.shared.infrastructure.email import EmailService  # Exemple de chemin
+
+        monkeypatch.setattr(EmailService, "send", mock_send)
+    except ImportError:
+        pass
+
+    # OPTION B : Si le service est injecté via une dépendance FastAPI, surchargez-la :
+    # from src.api.dependencies import get_email_service
+    # from src.api.main import app
+    # app.dependency_overrides[get_email_service] = lambda: AsyncMock(send=mock_send)
+
+    return mock_send
 
 
 @pytest.mark.asyncio
-async def test_register_user_success(async_client: AsyncClient, db_session: AsyncSession) -> None:
+async def test_register_user_success(
+    async_client: AsyncClient, db_session: AsyncSession
+) -> None:
     """Test successful user registration."""
     response = await async_client.post(
         "/api/v1/auth/register",
@@ -22,7 +46,7 @@ async def test_register_user_success(async_client: AsyncClient, db_session: Asyn
             "last_name": "Doe",
         },
     )
-    assert response.status_code == 201
+    assert response.status_code == 201, response.json()
     data = response.json()
     assert data["email"] == "test@example.com"
     assert data["first_name"] == "John"
@@ -32,7 +56,9 @@ async def test_register_user_success(async_client: AsyncClient, db_session: Asyn
 
 
 @pytest.mark.asyncio
-async def test_register_user_duplicate_email(async_client: AsyncClient, db_session: AsyncSession) -> None:
+async def test_register_user_duplicate_email(
+    async_client: AsyncClient, db_session: AsyncSession
+) -> None:
     """Test registration with duplicate email returns 409."""
     # First registration
     await async_client.post(
@@ -90,7 +116,9 @@ async def test_register_user_weak_password(async_client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_login_success(async_client: AsyncClient, db_session: AsyncSession) -> None:
+async def test_login_success(
+    async_client: AsyncClient, db_session: AsyncSession
+) -> None:
     """Test successful login."""
     # First register a user
     await async_client.post(
@@ -118,7 +146,9 @@ async def test_login_success(async_client: AsyncClient, db_session: AsyncSession
 
 
 @pytest.mark.asyncio
-async def test_login_wrong_password(async_client: AsyncClient, db_session: AsyncSession) -> None:
+async def test_login_wrong_password(
+    async_client: AsyncClient, db_session: AsyncSession
+) -> None:
     """Test login with wrong password returns 401."""
     # First register a user
     await async_client.post(
@@ -165,7 +195,9 @@ async def test_get_me_without_token(async_client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_get_me_with_valid_token(async_client: AsyncClient, db_session: AsyncSession) -> None:
+async def test_get_me_with_valid_token(
+    async_client: AsyncClient, db_session: AsyncSession
+) -> None:
     """Test accessing /me with valid token returns user info."""
     # Register and login
     await async_client.post(

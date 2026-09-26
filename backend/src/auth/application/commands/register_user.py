@@ -3,11 +3,11 @@
 from dataclasses import dataclass
 from uuid import uuid4
 
-from src.auth.domain.entities import User
+from src.auth.domain.entities.user import User
 from src.auth.domain.events import UserRegistered
 from src.auth.domain.ports import UserRepository
 from src.auth.domain.value_objects import Email, Role
-from src.auth.infrastructure.password_service import PasswordService
+from src.auth.infrastructure.security.password_service import PasswordService
 from src.shared.domain.exceptions import ValidationError
 from src.shared.infrastructure.event_bus import get_event_bus
 

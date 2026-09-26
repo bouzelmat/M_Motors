@@ -3,10 +3,10 @@
 from dataclasses import dataclass, field
 from uuid import UUID
 
-from src.shared.domain.domain_event import DomainEvent
+from src.shared.domain.events.domain_event import DomainEvent
 
 
-@dataclass
+@dataclass(frozen=True)
 class UserRegistered(DomainEvent):
     """Event raised when a new user is registered."""
 

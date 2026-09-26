@@ -1,5 +1,7 @@
 """Unit tests for Email value object."""
 
+from dataclasses import FrozenInstanceError
+
 import pytest
 
 from src.auth.domain.value_objects import Email
@@ -46,5 +48,5 @@ def test_email_inequality() -> None:
 def test_email_immutability() -> None:
     """Should be immutable (frozen dataclass)."""
     email = Email("test@example.com")
-    with pytest.raises(Exception):  # FrozenInstanceError
+    with pytest.raises(FrozenInstanceError):
         email.value = "other@example.com"
