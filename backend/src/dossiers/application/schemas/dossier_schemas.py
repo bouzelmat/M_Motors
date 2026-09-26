@@ -2,10 +2,9 @@
 
 from decimal import Decimal
 from uuid import UUID
-
 from pydantic import BaseModel, ConfigDict, Field
-
 from src.dossiers.domain.value_objects.dossier_status import DossierStatus
+from src.dossiers.domain.value_objects.document_type import DocumentType
 
 
 class TradeInRequest(BaseModel):
@@ -41,3 +40,21 @@ class DossierResponse(BaseModel):
     status: DossierStatus
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+
+class ValidateDossierRequest(BaseModel):
+    """Payload de validation d'un dossier par un administrateur."""
+
+    comment: str | None = Field(None, max_length=1000)
+
+
+class RejectDossierRequest(BaseModel):
+    """Payload de rejet d'un dossier par un administrateur."""
+
+    reason: str = Field(..., min_length=10, max_length=1000)
+
+
+class RequestDocumentsRequest(BaseModel):
+    """Payload de demande de documents complémentaires."""
+
+    document_types: list[DocumentType] = Field(..., min_length=1)

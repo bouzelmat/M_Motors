@@ -12,7 +12,7 @@ from src.dossiers.domain.value_objects.document_type import DocumentType
 from src.dossiers.infrastructure.adapters.document_repository import (
     SqlAlchemyDocumentRepository,
 )
-from src.dossiers.infrastructure.persistence.dossier_repository import (
+from src.dossiers.infrastructure.repository.sqlalchemy_dossier_repository import (
     SQLAlchemyDossierRepository,
 )
 

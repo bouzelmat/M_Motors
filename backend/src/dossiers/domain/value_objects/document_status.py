@@ -10,3 +10,5 @@ class DocumentStatus(str, Enum):
     UPLOADED = "UPLOADED"
     VALIDATED = "VALIDATED"
     REJECTED = "REJECTED"
+    PENDING_PURGE = "PENDING_PURGE"
+    PURGED = "PURGED"

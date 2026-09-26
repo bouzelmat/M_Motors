@@ -1,19 +1,18 @@
 """Modèle SQLAlchemy ORM pour la table dossiers."""
 
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING  # 1. Ajout de l'import de typage
+from typing import TYPE_CHECKING
 from uuid import UUID
-
-from sqlalchemy import DateTime, Enum
+from sqlalchemy import DateTime, Enum, String, Text
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
 from src.dossiers.domain.value_objects.dossier_status import DossierStatus
 from src.dossiers.infrastructure.models.dossier_service_model import DossierServiceModel
 from src.dossiers.infrastructure.models.financing_plan_model import FinancingPlanModel
 from src.dossiers.infrastructure.models.trade_in_model import TradeInModel
 from src.shared.infrastructure.database import Base
 
-if TYPE_CHECKING:  # 2. Import masqué pour l'analyse statique et Ruff
+if TYPE_CHECKING:
     from src.dossiers.infrastructure.models.document_model import DocumentModel
 
 
@@ -32,6 +31,36 @@ class DossierModel(Base):
     )
     upload_started_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
+        nullable=True,
+    )
+    submitted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        index=True,
+    )
+    rejected_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        index=True,
+    )
+    comment: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+    rejection_reason: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+    requested_document_types: Mapped[list[str] | None] = mapped_column(
+        ARRAY(String),
+        nullable=True,
+    )
+    validated_by_admin_id: Mapped[UUID | None] = mapped_column(
+        index=True,
+        nullable=True,
+    )
+    rejected_by_admin_id: Mapped[UUID | None] = mapped_column(
+        index=True,
         nullable=True,
     )
     created_at: Mapped[datetime] = mapped_column(

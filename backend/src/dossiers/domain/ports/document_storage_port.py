@@ -33,3 +33,7 @@ class DocumentStoragePort(Protocol):
     ) -> str:
         """Génère une URL pré-signée GET pour consulter un document (US-304 - Critère 7)."""
         ...
+
+    async def delete_object(self, s3_key: str) -> None:
+        """Supprime un objet S3 de manière asynchrone via un executor thread."""
+        ...

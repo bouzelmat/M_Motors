@@ -12,7 +12,7 @@ from src.dossiers.domain.value_objects.trade_in import TradeIn
 from src.dossiers.infrastructure.models.dossier_model import DossierModel
 from src.dossiers.infrastructure.models.financing_plan_model import FinancingPlanModel
 from src.dossiers.infrastructure.models.trade_in_model import TradeInModel
-from src.dossiers.infrastructure.persistence.mappers import DossierMapper
+from src.dossiers.infrastructure.mapper.dossier_mapper import DossierMapper
 
 
 def test_to_domain_with_minimal_model() -> None:

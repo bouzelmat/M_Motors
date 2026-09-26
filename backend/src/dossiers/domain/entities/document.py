@@ -1,10 +1,14 @@
 """Entité métier Document représentant une pièce justificative."""
 
-from datetime import datetime, timezone
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID, uuid4
 
+from src.dossiers.domain.exceptions import (
+    DocumentPendingPurgeNotAllowedException,
+    DocumentPurgeNotAllowedException,
+)
 from src.dossiers.domain.value_objects.document_status import DocumentStatus
 from src.dossiers.domain.value_objects.document_type import DocumentType
 from src.shared.domain.exceptions import DomainError
@@ -54,10 +58,7 @@ class Document:
         )
 
     def mark_as_uploaded(self, now: Optional[datetime] = None) -> None:
-        """Passe le statut du document à UPLOADED.
-
-        La transition n'est autorisée que depuis le statut PENDING.
-        """
+        """Passe le statut du document à UPLOADED."""
         if self.status != DocumentStatus.PENDING:
             raise DomainError(
                 f"Impossible de marquer comme téléversé un document au statut '{self.status.value}'."
@@ -65,3 +66,28 @@ class Document:
 
         self.status = DocumentStatus.UPLOADED
         self.uploaded_at = now or datetime.now(timezone.utc)
+
+    def mark_as_pending_purge(self) -> None:
+        """Passe le statut à PENDING_PURGE.
+
+        Refusé pour PENDING, PENDING_PURGE et PURGED.
+        Autorisé pour UPLOADED, VALIDATED, REJECTED.
+        """
+        if self.status in (
+            DocumentStatus.PENDING,
+            DocumentStatus.PENDING_PURGE,
+            DocumentStatus.PURGED,
+        ):
+            raise DocumentPendingPurgeNotAllowedException(self.status.value)
+
+        self.status = DocumentStatus.PENDING_PURGE
+
+    def mark_as_purged(self) -> None:
+        """Passe le statut à PURGED.
+
+        Uniquement autorisé depuis PENDING_PURGE.
+        """
+        if self.status != DocumentStatus.PENDING_PURGE:
+            raise DocumentPurgeNotAllowedException(self.status.value)
+
+        self.status = DocumentStatus.PURGED

@@ -46,9 +46,7 @@ class FakeUnitOfWork:
 def test_create_builds_draft_dossier() -> None:
     user_id = uuid4()
     vehicle_id = uuid4()
-
     dossier = Dossier.create(user_id=user_id, vehicle_id=vehicle_id)
-
     assert dossier.user_id == user_id
     assert dossier.vehicle_id == vehicle_id
     assert dossier.status == DossierStatus.DRAFT
@@ -74,14 +72,12 @@ def test_create_builds_draft_dossier_with_trade_in_and_financing_plan() -> None:
         duration_months=36,
         monthly_payment=Decimal("250.00"),
     )
-
     dossier = Dossier.create(
         user_id=user_id,
         vehicle_id=vehicle_id,
         trade_in=trade_in,
         financing_plan=financing_plan,
     )
-
     assert dossier.trade_in == trade_in
     assert dossier.financing_plan == financing_plan
 
@@ -89,7 +85,6 @@ def test_create_builds_draft_dossier_with_trade_in_and_financing_plan() -> None:
 def test_is_owned_by_returns_expected_result() -> None:
     owner_id = uuid4()
     dossier = Dossier.create(user_id=owner_id, vehicle_id=uuid4())
-
     assert dossier.is_owned_by(owner_id) is True
     assert dossier.is_owned_by(uuid4()) is False
 
@@ -159,9 +154,7 @@ def test_trade_in_negative_mileage_raises_domain_error() -> None:
 def test_expire_draft_dossier() -> None:
     dossier = Dossier.create(user_id=uuid4(), vehicle_id=uuid4())
     now = datetime.now(timezone.utc)
-
     expired_dossier = dossier.expire(now=now)
-
     assert expired_dossier.status == DossierStatus.EXPIRED
     assert expired_dossier.updated_at == now
 
@@ -169,7 +162,6 @@ def test_expire_draft_dossier() -> None:
 def test_expire_non_draft_dossier_raises_domain_error() -> None:
     dossier = Dossier.create(user_id=uuid4(), vehicle_id=uuid4())
     expired_dossier = dossier.expire()
-
     with pytest.raises(
         DomainError, match="Impossible d'expirer un dossier au statut EXPIRED"
     ):
@@ -185,9 +177,120 @@ async def test_create_handler_saves_draft_and_commits() -> None:
         uow=uow,
     )
     command = CreateDossierCommand(user_id=uuid4(), vehicle_id=uuid4())
-
     dossier = await handler.handle(command)
-
     assert dossier.status == DossierStatus.DRAFT
     assert repository.saved_dossiers == [dossier]
     assert uow.committed is True
+
+
+# === NOUVEAUX TESTS POUR US-502 ===
+
+
+def test_approve_submitted_dossier_transitions_to_validated() -> None:
+    admin_id = uuid4()
+    dossier = Dossier.create(user_id=uuid4(), vehicle_id=uuid4()).submit()
+    now = datetime.now(timezone.utc)
+    approved = dossier.approve(admin_id=admin_id, comment="Dossier complet", now=now)
+    assert approved.status == DossierStatus.VALIDATED
+    assert approved.comment == "Dossier complet"
+    assert approved.validated_by_admin_id == admin_id
+    assert approved.updated_at == now
+
+
+def test_approve_non_submitted_dossier_raises_domain_error() -> None:
+    admin_id = uuid4()
+    dossier = Dossier.create(user_id=uuid4(), vehicle_id=uuid4())
+    with pytest.raises(
+        DomainError, match="Impossible de valider un dossier au statut DRAFT"
+    ):
+        dossier.approve(admin_id=admin_id)
+
+
+def test_reject_submitted_dossier_transitions_to_rejected() -> None:
+    admin_id = uuid4()
+    dossier = Dossier.create(user_id=uuid4(), vehicle_id=uuid4()).submit()
+    now = datetime.now(timezone.utc)
+    rejected = dossier.reject(admin_id=admin_id, reason="Documents illisibles", now=now)
+    assert rejected.status == DossierStatus.REJECTED
+    assert rejected.rejection_reason == "Documents illisibles"
+    assert rejected.rejected_by_admin_id == admin_id
+    assert rejected.rejected_at == now
+    assert rejected.updated_at == now
+
+
+def test_reject_with_empty_reason_raises_domain_error() -> None:
+    admin_id = uuid4()
+    dossier = Dossier.create(user_id=uuid4(), vehicle_id=uuid4()).submit()
+    with pytest.raises(DomainError, match="Le motif de rejet ne peut pas être vide"):
+        dossier.reject(admin_id=admin_id, reason="")
+
+
+def test_reject_with_whitespace_reason_raises_domain_error() -> None:
+    admin_id = uuid4()
+    dossier = Dossier.create(user_id=uuid4(), vehicle_id=uuid4()).submit()
+    with pytest.raises(DomainError, match="Le motif de rejet ne peut pas être vide"):
+        dossier.reject(admin_id=admin_id, reason="   ")
+
+
+def test_reject_non_submitted_dossier_raises_domain_error() -> None:
+    admin_id = uuid4()
+    dossier = Dossier.create(user_id=uuid4(), vehicle_id=uuid4())
+    with pytest.raises(
+        DomainError, match="Impossible de rejeter un dossier au statut DRAFT"
+    ):
+        dossier.reject(admin_id=admin_id, reason="Motif valable")
+
+
+def test_request_documents_from_submitted_transitions_to_documents_pending() -> None:
+    dossier = Dossier.create(user_id=uuid4(), vehicle_id=uuid4()).submit()
+    now = datetime.now(timezone.utc)
+    updated = dossier.request_documents(
+        document_types=["IDENTITY_CARD", "PAYSLIP"], now=now
+    )
+    assert updated.status == DossierStatus.DOCUMENTS_PENDING
+    assert updated.requested_document_types == ["IDENTITY_CARD", "PAYSLIP"]
+    assert updated.updated_at == now
+
+
+def test_request_documents_from_documents_pending_remains_in_documents_pending() -> (
+    None
+):
+    dossier = (
+        Dossier.create(user_id=uuid4(), vehicle_id=uuid4())
+        .submit()
+        .request_documents(document_types=["IDENTITY_CARD"])
+    )
+    now = datetime.now(timezone.utc)
+    updated = dossier.request_documents(
+        document_types=["PROOF_OF_ADDRESS", "PAYSLIP"], now=now
+    )
+    assert updated.status == DossierStatus.DOCUMENTS_PENDING
+    assert updated.requested_document_types == ["PROOF_OF_ADDRESS", "PAYSLIP"]
+
+
+def test_request_documents_with_empty_list_raises_domain_error() -> None:
+    dossier = Dossier.create(user_id=uuid4(), vehicle_id=uuid4()).submit()
+    with pytest.raises(
+        DomainError, match="La liste des documents demandés ne peut pas être vide"
+    ):
+        dossier.request_documents(document_types=[])
+
+
+def test_request_documents_from_validated_raises_domain_error() -> None:
+    admin_id = uuid4()
+    dossier = Dossier.create(user_id=uuid4(), vehicle_id=uuid4()).submit()
+    validated = dossier.approve(admin_id=admin_id)
+    with pytest.raises(
+        DomainError,
+        match="Impossible de demander des documents pour un dossier au statut VALIDATED",
+    ):
+        validated.request_documents(document_types=["IDENTITY_CARD"])
+
+
+def test_transitions_return_new_instance_without_mutating_original() -> None:
+    admin_id = uuid4()
+    original = Dossier.create(user_id=uuid4(), vehicle_id=uuid4()).submit()
+    approved = original.approve(admin_id=admin_id)
+    assert original.status == DossierStatus.SUBMITTED
+    assert approved.status == DossierStatus.VALIDATED
+    assert original is not approved
