@@ -22,7 +22,7 @@ from src.vehicles.domain.value_objects.mileage import Mileage
 from src.vehicles.domain.value_objects.price import Price
 from src.vehicles.domain.value_objects.vehicle_status import VehicleStatus
 
-# Application de test isolee
+# Application de test isolée
 app = FastAPI()
 app.include_router(router)
 
@@ -51,7 +51,7 @@ def client(override_feature_flag, override_admin_auth):
     return TestClient(app)
 
 
-def test_toggle_catalog_type_success_no_active_dossier(client) -> None:
+def test_toggle_catalog_type_success_no_active_dossier(client):
     """Scénario : Bascule réussie sans dossier actif -> 200 OK."""
     vehicle_id = uuid4()
     updated_vehicle = Vehicle(
@@ -86,7 +86,7 @@ def test_toggle_catalog_type_success_no_active_dossier(client) -> None:
     app.dependency_overrides.pop(get_toggle_vehicle_type_handler, None)
 
 
-def test_toggle_catalog_type_conflict_active_dossier_no_confirm(client) -> None:
+def test_toggle_catalog_type_conflict_active_dossier_no_confirm(client):
     """Scénario : Conflit dossier actif sans confirmation -> 409 Conflict."""
     from src.vehicles.application.exceptions import ActiveDossierWarningException
 
@@ -112,7 +112,7 @@ def test_toggle_catalog_type_conflict_active_dossier_no_confirm(client) -> None:
     app.dependency_overrides.pop(get_toggle_vehicle_type_handler, None)
 
 
-def test_toggle_catalog_type_success_active_dossier_with_confirm(client) -> None:
+def test_toggle_catalog_type_success_active_dossier_with_confirm(client):
     """Scénario : Conflit dossier actif avec confirmation -> 200 OK."""
     vehicle_id = uuid4()
     updated_vehicle = Vehicle(
@@ -144,14 +144,14 @@ def test_toggle_catalog_type_success_active_dossier_with_confirm(client) -> None
     app.dependency_overrides.pop(get_toggle_vehicle_type_handler, None)
 
 
-def test_toggle_catalog_type_vehicle_not_found(client) -> None:
+def test_toggle_catalog_type_vehicle_not_found(client):
     """Scénario : Véhicule introuvable -> 404 Not Found."""
-    from src.shared.domain.exceptions import DomainError
+    from src.shared.domain.exceptions import NotFoundError
 
     vehicle_id = uuid4()
 
     mock_handler = AsyncMock(spec=ToggleVehicleTypeCommandHandler)
-    mock_handler.handle.side_effect = DomainError(
+    mock_handler.handle.side_effect = NotFoundError(
         f"Véhicule introuvable : {vehicle_id}"
     )
 
@@ -168,7 +168,7 @@ def test_toggle_catalog_type_vehicle_not_found(client) -> None:
     app.dependency_overrides.pop(get_toggle_vehicle_type_handler, None)
 
 
-def test_toggle_catalog_type_invalid_request_body(client) -> None:
+def test_toggle_catalog_type_invalid_request_body(client):
     """Scénario : Corps de requête invalide (new_price <= 0) -> 422 Unprocessable Entity."""
     vehicle_id = uuid4()
 
@@ -180,7 +180,7 @@ def test_toggle_catalog_type_invalid_request_body(client) -> None:
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
-def test_toggle_catalog_type_unauthorized_non_admin(override_feature_flag) -> None:
+def test_toggle_catalog_type_unauthorized_non_admin(override_feature_flag):
     """Scénario : Accès non admin refusé -> 403 Forbidden."""
 
     # Simuler un utilisateur non-admin

@@ -26,8 +26,6 @@ from src.auth.infrastructure.repositories import SQLAlchemyUserRepository
 from src.auth.infrastructure.security.jwt_service import JWTService
 from src.auth.infrastructure.security.password_service import PasswordService
 from src.shared.domain.exceptions import ConflictError, ValidationError
-
-# Remplacement par la dépendance partagée centralisée
 from src.shared.infrastructure.dependencies import SessionDep
 
 logger = logging.getLogger(__name__)
@@ -35,14 +33,11 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
 
-# Pydantic schemas
 class RegisterRequest(BaseModel):
     """Request schema for user registration."""
 
     email: EmailStr
-    password: str = Field(
-        ..., min_length=8, max_length=128
-    )  # Prevent DoS via huge payloads
+    password: str = Field(..., min_length=8, max_length=128)
     first_name: str = Field(..., min_length=1, max_length=100)
     last_name: str = Field(..., min_length=1, max_length=100)
 
@@ -115,25 +110,17 @@ async def register(
         await session.commit()
     except ConflictError:
         await session.rollback()
-        # Return 409 for duplicate emails (sanitized message)
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Email already registered",
         ) from None
     except ValidationError:
         await session.rollback()
-        # Return 400 for validation errors (sanitized message)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid registration data",
         ) from None
-    except Exception as e:
-        await session.rollback()
-        logger.exception(f"Registration failed for {request.email}: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Registration failed due to a server error",
-        ) from e
+    # 🔴 CORRECTION: Suppression de `except Exception` (Problème 2)
 
     return RegisterResponse(
         id=str(user.id),
@@ -208,7 +195,6 @@ async def login(
     access_token = jwt_service.create_access_token(
         data={"sub": str(user.id), "email": user.email.value}
     )
-
     return LoginResponse(access_token=access_token)
 
 
