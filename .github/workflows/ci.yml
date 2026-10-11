@@ -53,52 +53,69 @@ jobs:
       - name: Black
         run: black --check .
 
+      # ==========================================
+      # ETAPE CRITIQUE : Migration de la base de données de test
+      # ==========================================
+      - name: Run Alembic Migrations
+        env:
+          DATABASE_URL: postgresql+asyncpg://m_motors:m_motors@localhost:5432/test_m_motors
+        run: alembic upgrade head
+
       - name: Pytest
         env:
-          TEST_DATABASE_URL: postgresql+asyncpg://m_motors:m_motors@localhost:5432/test_m_motors
+          # 1. DATABASE_URL doit correspondre exactement au validateur de config.py
+          DATABASE_URL: postgresql+asyncpg://m_motors:m_motors@localhost:5432/test_m_motors
+          # 2. SECRET_KEY est OBLIGATOIRE (>32 chars, hors liste noire) pour éviter ValidationError
+          SECRET_KEY: "ci-github-actions-test-secret-key-must-be-32-chars-min"
+          # 3. Variables S3 pour cohérence avec l'environnement local et les fixtures moto
+          S3_BUCKET_NAME: m-motors-photos-test
+          S3_DOCUMENTS_BUCKET_NAME: m-motors-documents-test
+          AWS_ACCESS_KEY_ID: testing
+          AWS_SECRET_ACCESS_KEY: testing
+          AWS_DEFAULT_REGION: eu-west-3
         run: pytest --cov=src --cov-report=term-missing
 
       # ==========================================
       # ETAPE 2 : GENERATION DU TOKEN DE TEST POUR ZAP
       # ==========================================
       - name: Générer un jeton JWT de test pour ZAP
+        env:
+          SECRET_KEY: "ci-github-actions-test-secret-key-must-be-32-chars-min"
         run: |
           cat << 'EOF' > generate_zap_token.py
           import json
           from src.auth.infrastructure.security.jwt_service import JWTService
           
-          # Crée un token valide simulant l'utilisateur de test 'zap-scanner'
           jwt_service = JWTService()
-          token = jwt_service.create_token(data={"sub": "zap-test-user-id", "role": "admin"})
+          # CORRECTION : create_access_token (et non create_token)
+          token = jwt_service.create_access_token(data={"sub": "zap-test-user-id", "role": "admin"})
           
-          # On écrit la configuration de header au format attendu par OWASP ZAP
           zap_auth_header = [{"header": f"Authorization: Bearer {token}"}]
           with open("zap_headers.json", "w") as f:
               json.dump(zap_auth_header, f)
           print("Jeton ZAP généré avec succès.")
           EOF
           
-          # Exécution du script en utilisant le contexte Python existant
           PYTHONPATH=. python generate_zap_token.py
 
       - name: Lancer FastAPI en arrière-plan pour le scan
         env:
           DATABASE_URL: postgresql+asyncpg://m_motors:m_motors@localhost:5432/test_m_motors
+          SECRET_KEY: "ci-github-actions-test-secret-key-must-be-32-chars-min"
           PYTHONPATH: .
         run: |
           uvicorn src.api.main:app --host 0.0.0.0 --port 8000 &
           echo "Attente du démarrage de FastAPI..."
-          timeout 30s sh -c 'until curl --silent http://127.0.0 > /dev/null; do sleep 1; done'
+          # CORRECTION : URL de healthcheck complète et valide
+          timeout 30s sh -c 'until curl --silent http://127.0.0.1:8000/health > /dev/null; do sleep 1; done'
           echo "FastAPI est prêt !"
 
       - name: Exécuter le Scan d'API OWASP ZAP Authentifié
         run: |
           mkdir -p ${{ github.workspace }}/zap-reports
           
-          # On extrait la chaîne brute du jeton pour la passer à la configuration de remplacement de ZAP
-          TOKEN_RAW=$(cat zap_headers.json | grep -oP 'Bearer \K[^"]+')
+          TOKEN_RAW=$(cat backend/zap_headers.json | grep -oP 'Bearer \K[^"]+')
           
-          # Exécution du conteneur ZAP branché sur le réseau du runner de GitHub avec le fichier de règles
           docker run --rm \
             -v ${{ github.workspace }}:/zap/wrk/:rw \
             --network="host" \
@@ -114,7 +131,6 @@ jobs:
                 -config replacer.full_list\(0\).replacement='Bearer '$TOKEN_RAW" \
             -r rapport_api_zap.html || true
           
-          # On déplace le rapport généré vers le bon dossier pour l'artefact
           mv ${{ github.workspace }}/rapport_api_zap.html ${{ github.workspace }}/zap-reports/rapport_api_zap.html
 
       - name: Sauvegarder le rapport de sécurité ZAP
@@ -122,7 +138,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: rapport-securite-api-owasp
-          path: zap-reports/rapport_api_zap.html
+          path: ${{ github.workspace }}/zap-reports/rapport_api_zap.html
 
   frontend:
     name: Frontend quality gate
