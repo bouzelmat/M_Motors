@@ -35,6 +35,8 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "Content-Security-Policy",
             "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; connect-src 'self' http://localhost:5173 http://127.0.0.1:5173 http://localhost:3000 http://127.0.0.1:3000",
         )
+        # --- NOUVEAU : En-tête Cross-Origin-Resource-Policy (CORP) ---
+        response.headers.setdefault("Cross-Origin-Resource-Policy", "same-origin")
         return response
 
 
