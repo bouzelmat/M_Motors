@@ -69,6 +69,7 @@ class VehicleListItemDTO(BaseModel):
 class VehicleDetailDTO(VehicleListItemDTO):
     """DTO pour les détails complets d'un véhicule."""
 
+    catalog_type: CatalogType
     price: Decimal | None = None
     mileage: int
     energy_type: str
@@ -101,6 +102,13 @@ class VehicleDetailDTO(VehicleListItemDTO):
     model_config = ConfigDict(from_attributes=True)
 
 
+class VehicleServiceSelectionRequest(BaseModel):
+    """Service du catalogue à proposer sur le véhicule et son statut d'inclusion."""
+
+    service_id: UUID
+    included: bool = False
+
+
 class CreateVehicleRequest(BaseModel):
     """DTO pour la création d'un véhicule via POST /vehicles."""
 
@@ -113,6 +121,7 @@ class CreateVehicleRequest(BaseModel):
     price: Decimal | None = Field(default=None, gt=0)
     monthly_rent: Decimal | None = Field(default=None, gt=0)
     description: str | None = None
+    services: list[VehicleServiceSelectionRequest] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def validate_catalog_type_requirements(self) -> "CreateVehicleRequest":
@@ -123,6 +132,13 @@ class CreateVehicleRequest(BaseModel):
             raise ValueError(
                 "Un véhicule en location doit avoir un loyer mensuel (monthly_rent)."
             )
+
+        if self.catalog_type == CatalogType.SALE and self.services:
+            raise ValueError("Les services d'abonnement sont réservés à la location.")
+
+        service_ids = [service.service_id for service in self.services]
+        if len(service_ids) != len(set(service_ids)):
+            raise ValueError("Un service ne peut être sélectionné qu'une seule fois.")
 
         return self
 

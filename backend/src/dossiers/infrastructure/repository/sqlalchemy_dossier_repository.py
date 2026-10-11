@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload  # <-- AJOUT POUR REGLER LE MISSINGGREENLET
 
 from src.auth.infrastructure.orm.user_model import UserModel
-from src.dossiers.application.constants import PENDING_STATUSES
+from src.dossiers.application.constants import HISTORICAL_STATUSES, PENDING_STATUSES
 from src.dossiers.application.queries.read_models import PendingDossierReadModel
 from src.dossiers.domain.entities.dossier import Dossier
 from src.dossiers.domain.ports.dossier_repository import DossierRepository
@@ -43,6 +43,20 @@ class SQLAlchemyDossierRepository(DossierRepository):
         model = result.scalar_one_or_none()
         return DossierMapper.to_domain(model) if model else None
 
+    async def get_by_id_for_update(self, dossier_id: UUID) -> Dossier | None:
+        stmt = (
+            select(DossierModel)
+            .where(DossierModel.id == dossier_id)
+            .options(
+                selectinload(DossierModel.trade_in),
+                selectinload(DossierModel.financing_plan),
+            )
+            .with_for_update()
+        )
+        result = await self._session.execute(stmt)
+        model = result.scalar_one_or_none()
+        return DossierMapper.to_domain(model) if model else None
+
     async def list_by_user(self, user_id: UUID) -> list[Dossier]:
         stmt = (
             select(DossierModel)
@@ -57,7 +71,14 @@ class SQLAlchemyDossierRepository(DossierRepository):
         return [DossierMapper.to_domain(m) for m in models]
 
     async def save(self, dossier: Dossier) -> None:
-        stmt = select(DossierModel).where(DossierModel.id == dossier.id)
+        stmt = (
+            select(DossierModel)
+            .where(DossierModel.id == dossier.id)
+            .options(
+                selectinload(DossierModel.trade_in),
+                selectinload(DossierModel.financing_plan),
+            )
+        )
         result = await self._session.execute(stmt)
         existing_model = result.scalar_one_or_none()
 
@@ -92,6 +113,7 @@ class SQLAlchemyDossierRepository(DossierRepository):
                 [
                     DossierModel.status.type.enum_class.DRAFT,
                     DossierModel.status.type.enum_class.SUBMITTED,
+                    DossierModel.status.type.enum_class.DOCUMENTS_PENDING,
                 ]
             ),
         )
@@ -144,6 +166,45 @@ class SQLAlchemyDossierRepository(DossierRepository):
             .join(VehicleModel, VehicleModel.id == DossierModel.vehicle_id)
             .where(DossierModel.status.in_(PENDING_STATUSES))
             .order_by(sort_column.desc().nulls_last())
+        )
+
+        result = await self._session.execute(stmt)
+        rows = result.mappings().all()
+
+        return [
+            PendingDossierReadModel(
+                id=row["id"],
+                user_id=row["user_id"],
+                client_email=row["client_email"],
+                vehicle_id=row["vehicle_id"],
+                vehicle_brand=row["vehicle_brand"],
+                vehicle_model=row["vehicle_model"],
+                status=row["status"],
+                submitted_at=row["submitted_at"],
+                created_at=row["created_at"],
+                updated_at=row["updated_at"],
+            )
+            for row in rows
+        ]
+
+    async def list_history(self) -> list[PendingDossierReadModel]:
+        stmt = (
+            select(
+                DossierModel.id,
+                DossierModel.user_id,
+                UserModel.email.label("client_email"),
+                DossierModel.vehicle_id,
+                VehicleModel.brand.label("vehicle_brand"),
+                VehicleModel.model.label("vehicle_model"),
+                DossierModel.status,
+                DossierModel.submitted_at,
+                DossierModel.created_at,
+                DossierModel.updated_at,
+            )
+            .join(UserModel, UserModel.id == DossierModel.user_id)
+            .join(VehicleModel, VehicleModel.id == DossierModel.vehicle_id)
+            .where(DossierModel.status.in_(HISTORICAL_STATUSES))
+            .order_by(DossierModel.updated_at.desc())
         )
 
         result = await self._session.execute(stmt)

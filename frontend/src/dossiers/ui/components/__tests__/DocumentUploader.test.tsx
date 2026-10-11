@@ -22,6 +22,7 @@ vi.mock("axios", () => {
         default: {
             create: vi.fn(() => mockAxiosInstance),
             put: vi.fn(),
+            isAxiosError: vi.fn((error: unknown) => Boolean((error as { isAxiosError?: boolean })?.isAxiosError)),
         },
     };
 });
@@ -97,5 +98,58 @@ describe("DocumentUploader", () => {
             expect(DossiersClient.confirmUpload).toHaveBeenCalledWith(dossierId, "doc-999");
             expect(onUploadComplete).toHaveBeenCalled();
         });
+    });
+
+    test("conserve le type de document imposé par une demande complémentaire", async () => {
+        const user = userEvent.setup();
+        vi.mocked(DossiersClient.requestPresignedUrl).mockResolvedValueOnce({
+            document_id: "doc-pay-1",
+            upload_url: "https://s3/presigned-url",
+            s3_key: "keys/doc-pay-1.pdf",
+        });
+        vi.mocked(axios.put).mockResolvedValueOnce({ status: 200 });
+        vi.mocked(DossiersClient.confirmUpload).mockResolvedValueOnce({
+            document_id: "doc-pay-1",
+            status: "UPLOADED",
+            uploaded_at: new Date().toISOString(),
+        });
+
+        render(
+            <DocumentUploader
+                dossierId={dossierId}
+                fixedDocumentType="PAYSLIP"
+                onUploadComplete={onUploadComplete}
+            />
+        );
+
+        expect(screen.getByText("Type demandé : Fiche de paie")).toBeInTheDocument();
+        await user.upload(
+            screen.getByLabelText(/file upload/i, { selector: "input" }),
+            new File(["payslip"], "bulletin.pdf", { type: "application/pdf" }),
+        );
+
+        await waitFor(() => {
+            expect(DossiersClient.requestPresignedUrl).toHaveBeenCalledWith(
+                dossierId,
+                expect.objectContaining({ document_type: "PAYSLIP" }),
+            );
+        });
+    });
+
+    test("affiche un message clair lors d'une panne serveur", async () => {
+        const user = userEvent.setup();
+        vi.mocked(DossiersClient.requestPresignedUrl).mockRejectedValueOnce({
+            isAxiosError: true,
+            response: { status: 503, data: {} },
+        });
+
+        render(
+            <DocumentUploader dossierId={dossierId} onUploadComplete={onUploadComplete} />
+        );
+
+        const input = screen.getByLabelText(/file upload/i, { selector: "input" });
+        await user.upload(input, new File(["content"], "identity.pdf", { type: "application/pdf" }));
+
+        expect(await screen.findByText(/problème technique/)).toBeInTheDocument();
     });
 });

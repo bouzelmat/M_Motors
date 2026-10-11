@@ -80,7 +80,7 @@ class GetAdminDossierDetailUseCase:
             vehicle_id=dossier.vehicle_id,
             vehicle_brand=vehicle.brand,
             vehicle_model=vehicle.model,
-            vehicle_price=vehicle.price if hasattr(vehicle, "price") else None,
+            vehicle_price=(vehicle.price.value if vehicle.price is not None else None),
             status=dossier.status,
             submitted_at=dossier.submitted_at,
             financing_plan=dossier.financing_plan,

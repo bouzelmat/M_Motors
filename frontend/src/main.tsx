@@ -1,39 +1,13 @@
-﻿import React from "react";
+import React from "react";
 import ReactDOM from "react-dom/client";
+import "@fontsource-variable/inter";
 
-import {
-  CssBaseline,
-  ThemeProvider,
-  createTheme,
-} from "@mui/material";
-import {
-  QueryClient,
-  QueryClientProvider,
-} from "@tanstack/react-query";
+import { CssBaseline, ThemeProvider } from "@mui/material";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "react-router-dom";
 
 import { router } from "./app/router";
-
-const theme = createTheme({
-  palette: {
-    mode: "light",
-    primary: {
-      main: "#16324f",
-    },
-    secondary: {
-      main: "#f59e0b",
-    },
-    background: {
-      default: "#f4efe8",
-    },
-  },
-  shape: {
-    borderRadius: 20,
-  },
-  typography: {
-    fontFamily: ["Inter", "Arial", "sans-serif"].join(","),
-  },
-});
+import { theme } from "./shared/ui/theme/theme";
 
 const queryClient = new QueryClient();
 
@@ -52,4 +26,4 @@ ReactDOM.createRoot(rootElement).render(
       </ThemeProvider>
     </QueryClientProvider>
   </React.StrictMode>,
-);
+);

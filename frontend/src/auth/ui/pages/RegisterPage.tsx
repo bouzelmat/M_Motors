@@ -21,9 +21,12 @@ export function RegisterPage() {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
+    passwordConfirmation: '',
     firstName: '',
     lastName: '',
   });
+  const passwordIsStrong = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(formData.password);
+  const passwordsMatch = formData.password === formData.passwordConfirmation;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -33,6 +36,7 @@ export function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!passwordIsStrong || !passwordsMatch) return;
     
     try {
       await register(
@@ -121,7 +125,24 @@ export function RegisterPage() {
               value={formData.password}
               onChange={handleChange}
               disabled={isLoading}
-              helperText="Minimum 8 caractères"
+              error={Boolean(formData.password) && !passwordIsStrong}
+              helperText="8 caractères minimum, avec majuscule, minuscule, chiffre et caractère spécial."
+              slotProps={{ htmlInput: { minLength: 8 } }}
+            />
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              name="passwordConfirmation"
+              label="Confirmer le mot de passe"
+              type="password"
+              id="passwordConfirmation"
+              autoComplete="new-password"
+              value={formData.passwordConfirmation}
+              onChange={handleChange}
+              disabled={isLoading}
+              error={Boolean(formData.passwordConfirmation) && !passwordsMatch}
+              helperText={Boolean(formData.passwordConfirmation) && !passwordsMatch ? 'Les mots de passe ne correspondent pas.' : 'Saisissez à nouveau votre mot de passe.'}
             />
 
             <Button
@@ -129,7 +150,7 @@ export function RegisterPage() {
               fullWidth
               variant="contained"
               sx={{ mt: 3, mb: 2 }}
-              disabled={isLoading}
+              disabled={isLoading || !passwordIsStrong || !passwordsMatch}
             >
               {isLoading ? <CircularProgress size={24} /> : "S'inscrire"}
             </Button>

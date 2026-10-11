@@ -25,7 +25,7 @@ class DossierModel(Base):
     user_id: Mapped[UUID] = mapped_column(index=True, nullable=False)
     vehicle_id: Mapped[UUID] = mapped_column(index=True, nullable=False)
     status: Mapped[DossierStatus] = mapped_column(
-        Enum(DossierStatus, native_enum=False),
+        Enum(DossierStatus, native_enum=False, length=32),
         nullable=False,
         index=True,
     )

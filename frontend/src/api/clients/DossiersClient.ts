@@ -9,7 +9,13 @@ export type DocumentType =
     | "REGISTRATION_CERTIFICATE"
     | "OTHER";
 
-export type DocumentStatus = "PENDING" | "UPLOADED" | "REJECTED" | "VALIDATED";
+export type DocumentStatus =
+    | "PENDING"
+    | "UPLOADED"
+    | "REJECTED"
+    | "VALIDATED"
+    | "PENDING_PURGE"
+    | "PURGED";
 
 export type DossierStatus =
     | "DRAFT"
@@ -17,6 +23,7 @@ export type DossierStatus =
     | "VALIDATED"
     | "REJECTED"
     | "EXPIRED"
+    | "CANCELLED"
     | "DOCUMENTS_PENDING";
 
 export type TradeInRequest = {
@@ -63,6 +70,11 @@ export type DocumentConfirmResponse = {
     readonly uploaded_at: string;
 };
 
+export type DocumentViewUrlResponse = {
+    readonly url: string;
+    readonly expires_in: number;
+};
+
 export type DocumentListItem = {
     readonly id: string;
     readonly type: DocumentType;
@@ -71,13 +83,14 @@ export type DocumentListItem = {
     readonly content_type: string;
     readonly size: number;
     readonly created_at: string;
-    readonly uploaded_at?: string | null;
+    readonly uploaded_at: string | null;
 };
 
 export type DossierListItem = {
     readonly id: string;
     readonly vehicle_id: string;
     readonly status: DossierStatus;
+    readonly requested_document_types: DocumentType[] | null;
     readonly created_at: string;
     readonly updated_at: string;
 };
@@ -85,31 +98,35 @@ export type DossierListItem = {
 export type DossierStatusResponse = {
     readonly status: DossierStatus;
     readonly updated_at: string;
-    readonly decision_comment?: string | null;
+    readonly decision_comment: string | null;
+    readonly requested_document_types: DocumentType[] | null;
 };
 
 export type PendingDossierItem = {
     readonly id: string;
+    readonly user_id: string;
     readonly client_email: string;
+    readonly vehicle_id: string;
     readonly vehicle_brand: string;
     readonly vehicle_model: string;
     readonly status: DossierStatus;
-    readonly submitted_at: string;
+    readonly submitted_at: string | null;
     readonly created_at: string;
+    readonly updated_at: string;
 };
 
 export type FinancingPlan = {
-    readonly down_payment: number;
+    readonly down_payment: string;
     readonly duration_months: number;
-    readonly monthly_payment: number;
+    readonly monthly_payment: string;
 };
 
 export type TradeIn = {
     readonly registration: string;
     readonly mileage: number;
-    readonly brand?: string | null;
-    readonly model?: string | null;
-    readonly estimated_value?: number | null;
+    readonly brand: string | null;
+    readonly model: string | null;
+    readonly estimated_value: string | null;
 };
 
 export type AdminDossierDetailResponse = {
@@ -119,7 +136,7 @@ export type AdminDossierDetailResponse = {
     readonly vehicle_id: string;
     readonly vehicle_brand: string;
     readonly vehicle_model: string;
-    readonly vehicle_price?: number | null;
+    readonly vehicle_price: string | null;
     readonly status: DossierStatus;
     readonly submitted_at: string | null;
     readonly created_at: string;
@@ -127,14 +144,29 @@ export type AdminDossierDetailResponse = {
     readonly financing_plan: FinancingPlan | null;
     readonly trade_in: TradeIn | null;
     readonly documents: DocumentListItem[];
-    readonly comment?: string | null;
-    readonly rejection_reason?: string | null;
-    readonly requested_document_types?: DocumentType[] | null;
+    readonly comment: string | null;
+    readonly rejection_reason: string | null;
+    readonly requested_document_types: DocumentType[] | null;
+    readonly rejected_at: string | null;
 };
 
 export const DossiersClient = {
     async createDossier(data: CreateDossierRequest): Promise<DossierResponse> {
         const response = await apiClient.post<DossierResponse>("/api/v1/dossiers", data);
+        return response.data;
+    },
+
+    async submitDossier(dossierId: string): Promise<DossierResponse> {
+        const response = await apiClient.post<DossierResponse>(
+            `/api/v1/dossiers/${dossierId}/submit`,
+        );
+        return response.data;
+    },
+
+    async cancelDossier(dossierId: string): Promise<DossierResponse> {
+        const response = await apiClient.post<DossierResponse>(
+            `/api/v1/dossiers/${dossierId}/cancel`,
+        );
         return response.data;
     },
 
@@ -158,6 +190,13 @@ export const DossiersClient = {
         return response.data;
     },
 
+    async getDocumentViewUrl(dossierId: string, documentId: string): Promise<DocumentViewUrlResponse> {
+        const response = await apiClient.get<DocumentViewUrlResponse>(
+            `/api/v1/dossiers/${dossierId}/documents/${documentId}/view-url`,
+        );
+        return response.data;
+    },
+
     async getMyDossiers(): Promise<DossierListItem[]> {
         const response = await apiClient.get<DossierListItem[]>("/api/v1/dossiers/me");
         return response.data;
@@ -172,6 +211,11 @@ export const DossiersClient = {
         const response = await apiClient.get<PendingDossierItem[]>("/api/v1/admin/dossiers/pending", {
             params: { sort_by: sortBy },
         });
+        return response.data;
+    },
+
+    async getDossierHistory(): Promise<PendingDossierItem[]> {
+        const response = await apiClient.get<PendingDossierItem[]>("/api/v1/admin/dossiers/history");
         return response.data;
     },
 

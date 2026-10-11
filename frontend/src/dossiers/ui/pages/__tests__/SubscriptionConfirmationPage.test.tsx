@@ -2,6 +2,7 @@ import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { SubscriptionConfirmationPage } from "../SubscriptionConfirmationPage";
 import { useSubscriptionTunnelStore } from "../../../../vehicles/application/stores/useSubscriptionTunnelStore";
@@ -24,6 +25,17 @@ vi.mock("../../../../api/clients/DossiersClient", () => ({
 }));
 
 describe("SubscriptionConfirmationPage", () => {
+  const renderPage = () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+    return render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <SubscriptionConfirmationPage />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
     useSubscriptionTunnelStore.getState().resetTunnel();
@@ -43,11 +55,7 @@ describe("SubscriptionConfirmationPage", () => {
       mileage: 20000,
     });
 
-    render(
-      <MemoryRouter>
-        <SubscriptionConfirmationPage />
-      </MemoryRouter>,
-    );
+    renderPage();
 
     expect(screen.getByText(/ID du véhicule: vehicle-abc/i)).toBeInTheDocument();
     expect(screen.getByText(/XX-999-YY/i)).toBeInTheDocument();
@@ -68,8 +76,10 @@ describe("SubscriptionConfirmationPage", () => {
         },
         financing_plan: null,
       });
-      expect(mockNavigate).toHaveBeenCalledWith("/dashboard");
-      expect(useSubscriptionTunnelStore.getState().vehicleId).toBeNull();
+      expect(mockNavigate).toHaveBeenCalledWith(
+        "/dossiers/new?simulationId=confirmation-dossier-123&dossierId=dossier-123&vehicleId=vehicle-abc&mode=sale",
+      );
+      expect(useSubscriptionTunnelStore.getState().vehicleId).toBe("vehicle-abc");
     });
   });
 
@@ -81,11 +91,7 @@ describe("SubscriptionConfirmationPage", () => {
     const store = useSubscriptionTunnelStore.getState();
     store.setVehicle("vehicle-abc", "sale");
 
-    render(
-      <MemoryRouter>
-        <SubscriptionConfirmationPage />
-      </MemoryRouter>,
-    );
+    renderPage();
 
     const confirmBtn = screen.getByRole("button", {
       name: /Confirmer ma demande/i,
@@ -94,7 +100,7 @@ describe("SubscriptionConfirmationPage", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(/Une erreur est survenue lors de la création/i),
+        screen.getByText(/La création de votre dossier a échoué/i),
       ).toBeInTheDocument();
       expect(useSubscriptionTunnelStore.getState().vehicleId).toBe("vehicle-abc");
     });

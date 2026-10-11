@@ -1,12 +1,26 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { MemoryRouter } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { AddVehiclePage } from "../AddVehiclePage";
 import { vehiclesClient } from "../../../infrastructure/VehiclesClient";
 import { useAuthStore } from "../../../../auth/ui/hooks/useAuth";
 
 const mockedNavigate = vi.fn();
+
+const renderPage = () => {
+    const queryClient = new QueryClient({
+        defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    return render(
+        <QueryClientProvider client={queryClient}>
+            <MemoryRouter>
+                <AddVehiclePage />
+            </MemoryRouter>
+        </QueryClientProvider>,
+    );
+};
 
 vi.mock("react-router-dom", async () => {
     const actual = await vi.importActual("react-router-dom");
@@ -23,6 +37,7 @@ vi.mock("../../../../auth/ui/hooks/useAuth", () => ({
 vi.mock("../../../infrastructure/VehiclesClient", () => ({
     vehiclesClient: {
         createVehicle: vi.fn(),
+        getServiceCatalog: vi.fn().mockResolvedValue([]),
     },
 }));
 
@@ -41,21 +56,13 @@ describe("AddVehiclePage", () => {
             user: { role: "CLIENT" },
         });
 
-        render(
-            <MemoryRouter>
-                <AddVehiclePage />
-            </MemoryRouter>
-        );
+        renderPage();
 
         expect(screen.getByText("Accès réservé aux administrateurs.")).toBeInTheDocument();
     });
 
     it("affiche des erreurs de validation locales en français pour la location sans loyer", async () => {
-        render(
-            <MemoryRouter>
-                <AddVehiclePage />
-            </MemoryRouter>
-        );
+        renderPage();
 
         fireEvent.change(screen.getByLabelText(/Marque/i), { target: { value: "Peugeot" } });
         fireEvent.change(screen.getByLabelText(/Modèle/i), { target: { value: "208" } });
@@ -74,11 +81,7 @@ describe("AddVehiclePage", () => {
             model: "208",
         });
 
-        render(
-            <MemoryRouter>
-                <AddVehiclePage />
-            </MemoryRouter>
-        );
+        renderPage();
 
         fireEvent.change(screen.getByLabelText(/Marque/i), { target: { value: "Peugeot" } });
         fireEvent.change(screen.getByLabelText(/Modèle/i), { target: { value: "208" } });
@@ -95,13 +98,14 @@ describe("AddVehiclePage", () => {
                 model: "208",
                 year: 2024,
                 mileage: 10000,
-                energy_type: "GASOLINE",
+                energy_type: "ESSENCE",
                 catalog_type: "RENTAL",
                 monthly_rent: 350,
                 description: null,
+                services: [],
             });
             expect(callArg).not.toHaveProperty("price");
-            expect(mockedNavigate).toHaveBeenCalledWith("/admin/vehicles/v-rental-123/photos");
+            expect(mockedNavigate).toHaveBeenCalledWith("/admin/vehicles/v-rental-123/edit");
         });
     });
 
@@ -112,11 +116,7 @@ describe("AddVehiclePage", () => {
             model: "Model 3",
         });
 
-        render(
-            <MemoryRouter>
-                <AddVehiclePage />
-            </MemoryRouter>
-        );
+        renderPage();
 
         fireEvent.change(screen.getByLabelText(/Marque/i), { target: { value: "Tesla" } });
         fireEvent.change(screen.getByLabelText(/Modèle/i), { target: { value: "Model 3" } });
@@ -138,13 +138,14 @@ describe("AddVehiclePage", () => {
                 model: "Model 3",
                 year: new Date().getFullYear(),
                 mileage: 0,
-                energy_type: "GASOLINE",
+                energy_type: "ESSENCE",
                 catalog_type: "SALE",
                 price: 42000,
                 description: null,
+                services: [],
             });
             expect(callArg).not.toHaveProperty("monthly_rent");
-            expect(mockedNavigate).toHaveBeenCalledWith("/admin/vehicles/v-sale-456/photos");
+            expect(mockedNavigate).toHaveBeenCalledWith("/admin/vehicles/v-sale-456/edit");
         });
     });
 
@@ -155,11 +156,7 @@ describe("AddVehiclePage", () => {
             model: "i4",
         });
 
-        render(
-            <MemoryRouter>
-                <AddVehiclePage />
-            </MemoryRouter>
-        );
+        renderPage();
 
         fireEvent.change(screen.getByLabelText(/Marque/i), { target: { value: "BMW" } });
         fireEvent.change(screen.getByLabelText(/Modèle/i), { target: { value: "i4" } });
@@ -181,24 +178,21 @@ describe("AddVehiclePage", () => {
                 model: "i4",
                 year: new Date().getFullYear(),
                 mileage: 0,
-                energy_type: "GASOLINE",
+                energy_type: "ESSENCE",
                 catalog_type: "BOTH",
                 price: 55000,
                 monthly_rent: 650,
                 description: null,
+                services: [],
             });
-            expect(mockedNavigate).toHaveBeenCalledWith("/admin/vehicles/v-both-789/photos");
+            expect(mockedNavigate).toHaveBeenCalledWith("/admin/vehicles/v-both-789/edit");
         });
     });
 
     it("affiche une erreur de l'API en cas d'échec de la requête", async () => {
         (vehiclesClient.createVehicle as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("API Error"));
 
-        render(
-            <MemoryRouter>
-                <AddVehiclePage />
-            </MemoryRouter>
-        );
+        renderPage();
 
         fireEvent.change(screen.getByLabelText(/Marque/i), { target: { value: "Renault" } });
         fireEvent.change(screen.getByLabelText(/Modèle/i), { target: { value: "Clio" } });
@@ -207,7 +201,40 @@ describe("AddVehiclePage", () => {
         fireEvent.click(screen.getByRole("button", { name: /Créer le véhicule/i }));
 
         await waitFor(() => {
-            expect(screen.getByText(/Une erreur est survenue lors de la création du véhicule/i)).toBeInTheDocument();
+            expect(screen.getByText(/La création du véhicule a échoué/i)).toBeInTheDocument();
+        });
+    });
+
+    it("transmet un service sélectionné avec son statut inclus", async () => {
+        (vehiclesClient.getServiceCatalog as ReturnType<typeof vi.fn>).mockResolvedValue([
+            {
+                id: "service-insurance-1",
+                name: "Assurance tous risques",
+                monthly_cost: "49.99",
+                category: "INSURANCE",
+                included: false,
+            },
+        ]);
+        (vehiclesClient.createVehicle as ReturnType<typeof vi.fn>).mockResolvedValue({
+            id: "v-rental-services",
+            brand: "Peugeot",
+            model: "208",
+        });
+
+        renderPage();
+        await screen.findByText("Assurance tous risques");
+
+        fireEvent.change(screen.getByLabelText(/Marque/i), { target: { value: "Peugeot" } });
+        fireEvent.change(screen.getByLabelText(/Modèle/i), { target: { value: "208" } });
+        fireEvent.change(screen.getByLabelText(/Loyer mensuel/i), { target: { value: 350 } });
+        fireEvent.click(screen.getByRole("checkbox", { name: "Assurance tous risques" }));
+        fireEvent.click(screen.getByRole("checkbox", { name: "Inclus dans l’abonnement" }));
+        fireEvent.click(screen.getByRole("button", { name: /Créer le véhicule/i }));
+
+        await waitFor(() => {
+            expect(vehiclesClient.createVehicle).toHaveBeenCalledWith(expect.objectContaining({
+                services: [{ service_id: "service-insurance-1", included: true }],
+            }));
         });
     });
 });

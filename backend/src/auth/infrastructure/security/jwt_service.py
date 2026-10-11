@@ -14,11 +14,14 @@ class JWTService:
     def __init__(self) -> None:
         """Initialize JWT service with settings."""
         settings = get_settings()
-        self._secret_key = (
-            settings.secret_key
-            if hasattr(settings, "secret_key")
-            else "default-secret-key-change-in-production"
-        )
+        if not settings.secret_key or settings.secret_key in {
+            "default-secret-key-change-in-production",
+            "change-me-in-production",
+        }:
+            raise RuntimeError(
+                "JWT secret_key is not configured. Set SECRET_KEY or JWT_SECRET_KEY in the environment."
+            )
+        self._secret_key = settings.secret_key
         self._algorithm = "HS256"
         self._access_token_expire_minutes = 30
 

@@ -12,7 +12,7 @@ const createMockDossier = (
 	vehicle_id: "vehicle-id",
 	vehicle_brand: "Peugeot",
 	vehicle_model: "208",
-	vehicle_price: 15000,
+	vehicle_price: "15000",
 	status: "SUBMITTED",
 	submitted_at: "2026-09-18T10:00:00Z",
 	created_at: "2026-09-18T09:00:00Z",
@@ -20,6 +20,10 @@ const createMockDossier = (
 	financing_plan: null,
 	trade_in: null,
 	documents: [],
+	comment: null,
+	rejection_reason: null,
+	requested_document_types: null,
+	rejected_at: null,
 	...overrides,
 });
 
@@ -27,16 +31,16 @@ describe("FinancialSummaryPanel", () => {
 	it("affiche le financement et la reprise lorsqu'ils sont présents", () => {
 		const dossier = createMockDossier({
 			financing_plan: {
-				down_payment: 2000,
+				down_payment: "2000",
 				duration_months: 48,
-				monthly_payment: 395,
+				monthly_payment: "395",
 			},
 			trade_in: {
 				registration: "AB-123-CD",
 				mileage: 50000,
 				brand: "Renault",
 				model: "Clio",
-				estimated_value: 5000,
+				estimated_value: "5000",
 			},
 		});
 
@@ -50,9 +54,9 @@ describe("FinancialSummaryPanel", () => {
 	it("affiche l'apport initial correctement", () => {
 		const dossier = createMockDossier({
 			financing_plan: {
-				down_payment: 2500,
+				down_payment: "2500",
 				duration_months: 60,
-				monthly_payment: 300,
+				monthly_payment: "300",
 			},
 		});
 
@@ -64,11 +68,11 @@ describe("FinancialSummaryPanel", () => {
 
 	it("calcule correctement le capital à financer", () => {
 		const dossier = createMockDossier({
-			vehicle_price: 20000,
+			vehicle_price: "20000",
 			financing_plan: {
-				down_payment: 3000,
+				down_payment: "3000",
 				duration_months: 48,
-				monthly_payment: 400,
+				monthly_payment: "400",
 			},
 		});
 
@@ -81,9 +85,9 @@ describe("FinancialSummaryPanel", () => {
 	it("affiche la durée et la mensualité", () => {
 		const dossier = createMockDossier({
 			financing_plan: {
-				down_payment: 2000,
+				down_payment: "2000",
 				duration_months: 48,
-				monthly_payment: 395,
+				monthly_payment: "395",
 			},
 		});
 
@@ -100,7 +104,7 @@ describe("FinancialSummaryPanel", () => {
 				mileage: 75000,
 				brand: "Citroën",
 				model: "C3",
-				estimated_value: 4500,
+				estimated_value: "4500",
 			},
 		});
 
@@ -152,9 +156,9 @@ describe("FinancialSummaryPanel", () => {
 		const dossier = createMockDossier({
 			vehicle_price: null,
 			financing_plan: {
-				down_payment: 2000,
+				down_payment: "2000",
 				duration_months: 48,
-				monthly_payment: 395,
+				monthly_payment: "395",
 			},
 		});
 

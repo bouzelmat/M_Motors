@@ -16,6 +16,8 @@ import sys
 import uuid
 from pathlib import Path
 
+from sqlalchemy import update
+
 # Ajouter la racine du backend au PYTHONPATH pour autoriser les imports src.*
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 if str(BACKEND_ROOT) not in sys.path:
@@ -27,6 +29,7 @@ from src.auth.domain.value_objects.email import Email
 from src.auth.infrastructure.repositories.sqlalchemy_user_repository import (
     SQLAlchemyUserRepository,
 )
+from src.auth.infrastructure.orm.user_model import UserModel
 from src.auth.infrastructure.security.password_service import PasswordService
 from src.shared.infrastructure.database import get_session_factory
 
@@ -50,6 +53,18 @@ async def seed_admin() -> str:
         existing_user = await repository.find_by_email(email_vo)
 
         if existing_user is not None:
+            if existing_user.role != Role.ADMIN:
+                await session.execute(
+                    update(UserModel)
+                    .where(UserModel.id == str(existing_user.id))
+                    .values(role=Role.ADMIN.value)
+                )
+                await session.commit()
+                print(
+                    f"Administrateur {admin_email} : rôle administrateur attribué au compte existant."
+                )
+                return "promu"
+
             print(f"Administrateur {admin_email} : déjà existant.")
             return "déjà existant"
 

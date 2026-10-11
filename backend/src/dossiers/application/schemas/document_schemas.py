@@ -67,7 +67,7 @@ class PresignedUrlResponse(BaseModel):
 class DocumentConfirmResponse(BaseModel):
     """Réponse lors de la confirmation du téléversement d'un document."""
 
-    document_id: UUID
+    document_id: UUID = Field(validation_alias="id")
     status: DocumentStatus
     uploaded_at: datetime
 

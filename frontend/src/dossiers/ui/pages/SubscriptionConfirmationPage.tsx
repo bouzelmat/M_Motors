@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Box,
@@ -13,7 +13,8 @@ import {
 } from "@mui/material";
 
 import { useSubscriptionTunnelStore } from "../../../vehicles/application/stores/useSubscriptionTunnelStore";
-import { DossiersClient } from "../../../api/clients/DossiersClient";
+import { useCreateDossier } from "../hooks/useDossierMutations";
+import { getApiErrorMessage } from "../../../api/apiErrorMessage";
 
 export const SubscriptionConfirmationPage: React.FC = () => {
   const navigate = useNavigate();
@@ -23,23 +24,25 @@ export const SubscriptionConfirmationPage: React.FC = () => {
     financingPlan,
     tradeIn,
     selectedServices,
-    resetTunnel,
   } = useSubscriptionTunnelStore();
 
-  const [loading, setLoading] = useState<boolean>(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const createDossierMutation = useCreateDossier();
+  const [missingVehicleError, setMissingVehicleError] = React.useState(false);
+  const errorMessage = createDossierMutation.error
+    ? getApiErrorMessage(createDossierMutation.error, "La création de votre dossier a échoué.")
+    : missingVehicleError
+      ? "Aucun véhicule sélectionné dans la demande."
+      : null;
 
   const handleConfirm = async () => {
     if (!vehicleId) {
-      setErrorMessage("Aucun véhicule sélectionné dans la demande.");
+      setMissingVehicleError(true);
       return;
     }
 
-    setLoading(true);
-    setErrorMessage(null);
-
+    setMissingVehicleError(false);
     try {
-      await DossiersClient.createDossier({
+      const dossier = await createDossierMutation.mutateAsync({
         vehicle_id: vehicleId,
         trade_in: tradeIn
           ? {
@@ -58,14 +61,9 @@ export const SubscriptionConfirmationPage: React.FC = () => {
           : null,
       });
 
-      resetTunnel();
-      navigate("/dashboard");
-    } catch (err: unknown) {
-      setErrorMessage(
-        "Une erreur est survenue lors de la création de votre dossier. Veuillez réessayer.",
-      );
-    } finally {
-      setLoading(false);
+      navigate(`/dossiers/new?simulationId=confirmation-${dossier.id}&dossierId=${dossier.id}&vehicleId=${encodeURIComponent(vehicleId)}${vehicleMode ? `&mode=${vehicleMode}` : ""}`);
+    } catch {
+      return;
     }
   };
 
@@ -152,10 +150,10 @@ export const SubscriptionConfirmationPage: React.FC = () => {
           variant="contained"
           color="primary"
           size="large"
-          disabled={loading || !vehicleId}
+          disabled={createDossierMutation.isPending || !vehicleId}
           onClick={handleConfirm}
         >
-          {loading ? (
+          {createDossierMutation.isPending ? (
             <CircularProgress size={24} color="inherit" />
           ) : (
             "Confirmer ma demande"

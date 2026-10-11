@@ -8,6 +8,7 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.auth.domain.entities.user import User
 from src.auth.infrastructure.orm.user_model import UserModel
 from src.dossiers.domain.entities.dossier import Dossier
 from src.dossiers.domain.value_objects.dossier_status import DossierStatus
@@ -60,6 +61,17 @@ async def create_test_vehicle(
     return vehicle
 
 
+async def csrf_headers(
+    client: AsyncClient,
+    token: str | None = None,
+) -> dict[str, str]:
+    response = await client.get("/api/v1/auth/csrf")
+    headers = {"X-CSRF-Token": response.json()["csrf_token"]}
+    if token is not None:
+        headers["Authorization"] = f"Bearer {token}"
+    return headers
+
+
 # === TESTS EXISTANTS (US-502) ===
 
 
@@ -107,6 +119,76 @@ async def test_get_pending_dossiers_success(
 
 
 @pytest.mark.asyncio
+async def test_get_dossier_history_includes_closed_dossiers_only(
+    async_client: AsyncClient,
+    test_admin_token: str,
+    db_session: AsyncSession,
+) -> None:
+    repository = SQLAlchemyDossierRepository(db_session)
+    user = await create_test_user(db_session, email="history@example.com")
+    vehicle = await create_test_vehicle(db_session)
+    validated = (
+        Dossier.create(user_id=user.id, vehicle_id=vehicle.id)
+        .submit()
+        .approve(admin_id=uuid4())
+    )
+    cancelled = Dossier.create(user_id=user.id, vehicle_id=vehicle.id).cancel()
+    pending = Dossier.create(user_id=user.id, vehicle_id=vehicle.id).submit()
+    await repository.save(validated)
+    await repository.save(cancelled)
+    await repository.save(pending)
+    await db_session.commit()
+
+    response = await async_client.get(
+        "/api/v1/admin/dossiers/history",
+        headers={"Authorization": f"Bearer {test_admin_token}"},
+    )
+
+    assert response.status_code == 200, response.text
+    dossiers = response.json()
+    by_id = {dossier["id"]: dossier for dossier in dossiers}
+    assert by_id[str(validated.id)]["status"] == DossierStatus.VALIDATED.value
+    assert by_id[str(cancelled.id)]["status"] == DossierStatus.CANCELLED.value
+    assert str(pending.id) not in by_id
+
+
+@pytest.mark.asyncio
+async def test_get_dossier_history_forbidden_for_non_admin(
+    async_client: AsyncClient,
+    test_user_token: str,
+) -> None:
+    response = await async_client.get(
+        "/api/v1/admin/dossiers/history",
+        headers={"Authorization": f"Bearer {test_user_token}"},
+    )
+
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_get_dossier_detail_serializes_vehicle_price(
+    async_client: AsyncClient,
+    test_admin_token: str,
+    db_session: AsyncSession,
+) -> None:
+    repository = SQLAlchemyDossierRepository(db_session)
+    user = await create_test_user(db_session, email="dossier-detail@example.com")
+    vehicle = await create_test_vehicle(db_session, brand="Peugeot", model="208")
+    vehicle.price = Decimal("19900.00")
+    dossier = Dossier.create(user_id=user.id, vehicle_id=vehicle.id).submit()
+    await repository.save(dossier)
+    await db_session.commit()
+
+    response = await async_client.get(
+        f"/api/v1/admin/dossiers/{dossier.id}",
+        headers={"Authorization": f"Bearer {test_admin_token}"},
+    )
+
+    assert response.status_code == 200, response.text
+    assert Decimal(response.json()["vehicle_price"]) == Decimal("19900.00")
+
+
+@pytest.mark.asyncio
 async def test_validate_dossier_by_admin(
     async_client: AsyncClient,
     test_admin_token: str,
@@ -122,7 +204,7 @@ async def test_validate_dossier_by_admin(
     response = await async_client.post(
         f"/api/v1/admin/dossiers/{dossier.id}/validate",
         json={"comment": "Dossier complet et conforme."},
-        headers={"Authorization": f"Bearer {test_admin_token}"},
+        headers=await csrf_headers(async_client, test_admin_token),
     )
     assert response.status_code == 200
     data = response.json()
@@ -150,7 +232,7 @@ async def test_reject_dossier_by_admin(
     response = await async_client.post(
         f"/api/v1/admin/dossiers/{dossier.id}/reject",
         json={"reason": "Documents illisibles, veuillez renvoyer."},
-        headers={"Authorization": f"Bearer {test_admin_token}"},
+        headers=await csrf_headers(async_client, test_admin_token),
     )
     assert response.status_code == 200
     data = response.json()
@@ -167,19 +249,20 @@ async def test_reject_dossier_by_admin(
 async def test_request_documents_by_admin(
     async_client: AsyncClient,
     test_admin_token: str,
+    test_user: User,
+    test_user_token: str,
     db_session: AsyncSession,
 ) -> None:
     repository = SQLAlchemyDossierRepository(db_session)
-    user = await create_test_user(db_session, email="docs@example.com")
     vehicle = await create_test_vehicle(db_session)
-    dossier = Dossier.create(user_id=user.id, vehicle_id=vehicle.id).submit()
+    dossier = Dossier.create(user_id=test_user.id, vehicle_id=vehicle.id).submit()
     await repository.save(dossier)
     await db_session.commit()
 
     response = await async_client.post(
         f"/api/v1/admin/dossiers/{dossier.id}/request-documents",
         json={"document_types": ["IDENTITY_CARD", "PAYSLIP"]},
-        headers={"Authorization": f"Bearer {test_admin_token}"},
+        headers=await csrf_headers(async_client, test_admin_token),
     )
     assert response.status_code == 200
     data = response.json()
@@ -189,6 +272,15 @@ async def test_request_documents_by_admin(
     assert updated is not None
     assert updated.status == DossierStatus.DOCUMENTS_PENDING
     assert updated.requested_document_types == ["IDENTITY_CARD", "PAYSLIP"]
+
+    client_response = await async_client.get(
+        f"/api/v1/dossiers/{dossier.id}/status",
+        headers={"Authorization": f"Bearer {test_user_token}"},
+    )
+    assert client_response.status_code == 200
+    client_data = client_response.json()
+    assert client_data["status"] == DossierStatus.DOCUMENTS_PENDING.value
+    assert client_data["requested_document_types"] == ["IDENTITY_CARD", "PAYSLIP"]
 
 
 @pytest.mark.asyncio
@@ -207,7 +299,7 @@ async def test_invalid_transition_returns_409(
     response = await async_client.post(
         f"/api/v1/admin/dossiers/{dossier.id}/validate",
         json={},
-        headers={"Authorization": f"Bearer {test_admin_token}"},
+        headers=await csrf_headers(async_client, test_admin_token),
     )
     assert response.status_code == 409
 
@@ -221,7 +313,7 @@ async def test_nonexistent_dossier_returns_404(
     response = await async_client.post(
         f"/api/v1/admin/dossiers/{fake_id}/validate",
         json={},
-        headers={"Authorization": f"Bearer {test_admin_token}"},
+        headers=await csrf_headers(async_client, test_admin_token),
     )
     assert response.status_code == 404
 
@@ -242,7 +334,7 @@ async def test_client_role_forbidden_on_validate(
     response = await async_client.post(
         f"/api/v1/admin/dossiers/{dossier.id}/validate",
         json={},
-        headers={"Authorization": f"Bearer {test_user_token}"},
+        headers=await csrf_headers(async_client, test_user_token),
     )
     assert response.status_code == 403
 
@@ -262,6 +354,7 @@ async def test_no_token_returns_401(
     response = await async_client.post(
         f"/api/v1/admin/dossiers/{dossier.id}/validate",
         json={},
+        headers=await csrf_headers(async_client),
     )
     assert response.status_code == 401
 
@@ -282,7 +375,7 @@ async def test_unknown_document_type_returns_422(
     response = await async_client.post(
         f"/api/v1/admin/dossiers/{dossier.id}/request-documents",
         json={"document_types": ["UNKNOWN_TYPE"]},
-        headers={"Authorization": f"Bearer {test_admin_token}"},
+        headers=await csrf_headers(async_client, test_admin_token),
     )
     assert response.status_code == 422
 
@@ -303,7 +396,7 @@ async def test_reject_with_short_reason_returns_422(
     response = await async_client.post(
         f"/api/v1/admin/dossiers/{dossier.id}/reject",
         json={"reason": "Court"},  # 5 caractères (déclenche le 422)
-        headers={"Authorization": f"Bearer {test_admin_token}"},
+        headers=await csrf_headers(async_client, test_admin_token),
     )
     assert response.status_code == 422
 

@@ -21,7 +21,11 @@ class DossierExistenceAdapter(DossierExistencePort):
         vehicle_id: UUID,
     ) -> bool:
         """Exécute une requête EXISTS filtrée sur les statuts DRAFT et SUBMITTED."""
-        active_statuses = (DossierStatus.DRAFT, DossierStatus.SUBMITTED)
+        active_statuses = (
+            DossierStatus.DRAFT,
+            DossierStatus.SUBMITTED,
+            DossierStatus.DOCUMENTS_PENDING,
+        )
 
         stmt = select(
             select(DossierModel.id)

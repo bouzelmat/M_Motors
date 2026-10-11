@@ -47,8 +47,15 @@ class VehicleMapper:
             updated_at=orm.updated_at,
             services=services,
             photo_url=next(
-                (photo.photo_url for photo in orm.photos if photo.is_uploaded),
-                None,
+                (
+                    photo.photo_url
+                    for photo in orm.photos
+                    if photo.is_uploaded and photo.is_primary
+                ),
+                next(
+                    (photo.photo_url for photo in orm.photos if photo.is_uploaded),
+                    None,
+                ),
             ),
         )
 

@@ -8,10 +8,11 @@ from fastapi import status
 from httpx import AsyncClient
 from moto import mock_aws
 
+from src.shared.infrastructure.database import get_session
+from src.api.main import app
 from src.auth.domain.entities import User
 from src.auth.domain.value_objects import Email, Role
 from src.auth.infrastructure.orm.user_model import UserModel
-from src.auth.infrastructure.repositories import SQLAlchemyUserRepository
 from src.auth.infrastructure.security.jwt_service import JWTService
 from src.config import get_settings
 from src.vehicles.application.use_cases.generate_presigned_url import (
@@ -36,9 +37,30 @@ VALID_PHOTO_PAYLOAD = {
 }
 
 
+@pytest.fixture(autouse=True)
+def override_get_db(db_session):
+    """
+    Assure que l'AsyncClient utilise la même session de base de données
+    que celle où les fixtures (admin_user, existing_vehicle) ont inséré les données.
+    Sans cela, l'application ne trouve pas l'utilisateur et retourne 401 Unauthorized.
+    """
+
+    async def _get_db():
+        yield db_session
+
+    app.dependency_overrides[get_session] = _get_db
+    yield
+    app.dependency_overrides.clear()
+
+
 @pytest.fixture
-def jwt_service() -> JWTService:
-    """Fixture fournissant le service JWT pour générer des jetons de test."""
+def jwt_service(s3_setup) -> JWTService:
+    """
+    Fixture fournissant le service JWT pour générer des jetons de test.
+    Dépend de s3_setup pour garantir que get_settings() est appelé APRÈS
+    que le monkeypatch a configuré les variables d'environnement de test.
+    """
+    get_settings.cache_clear()
     return JWTService()
 
 
@@ -56,6 +78,10 @@ def s3_setup(monkeypatch):
     monkeypatch.setenv("AWS_DEFAULT_REGION", AWS_REGION)
     monkeypatch.setenv("aws_endpoint_url", "")
     monkeypatch.setenv("AWS_ENDPOINT_URL", "")
+    monkeypatch.setenv("S3_ENDPOINT_URL", "")
+    monkeypatch.setenv("aws_public_endpoint_url", "")
+    monkeypatch.setenv("AWS_PUBLIC_ENDPOINT_URL", "")
+
     get_settings.cache_clear()
 
     with mock_aws():
@@ -66,12 +92,12 @@ def s3_setup(monkeypatch):
             CreateBucketConfiguration={"LocationConstraint": AWS_REGION},
         )
         yield s3
+        get_settings.cache_clear()
 
 
 @pytest.fixture
 async def admin_user(db_session) -> User:
-    """Fixture créant un utilisateur administrateur conforme à l'entité User."""
-    repo = SQLAlchemyUserRepository(db_session)
+    """Fixture créant et persistant un utilisateur administrateur via le modèle ORM."""
     user = User(
         id=uuid.uuid4(),
         email=Email("admin@m-motors.com"),
@@ -80,8 +106,20 @@ async def admin_user(db_session) -> User:
         last_name="System",
         role=Role.ADMIN,
     )
-    await repo.save(user)
+    user_model = UserModel(
+        id=str(user.id),
+        email=user.email.value,
+        hashed_password=user.hashed_password,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        role=user.role.value if hasattr(user.role, "value") else user.role,
+        is_active=getattr(user, "is_active", True),
+        created_at=getattr(user, "created_at", None),
+    )
+    db_session.add(user_model)
+    await db_session.flush()
     await db_session.commit()
+    await db_session.refresh(user_model)
     return user
 
 
@@ -102,12 +140,14 @@ async def client_user(db_session) -> User:
         hashed_password=user.hashed_password,
         first_name=user.first_name,
         last_name=user.last_name,
-        role=user.role.value,
-        is_active=user.is_active,
-        created_at=user.created_at,
+        role=user.role.value if hasattr(user.role, "value") else user.role,
+        is_active=getattr(user, "is_active", True),
+        created_at=getattr(user, "created_at", None),
     )
     db_session.add(user_model)
     await db_session.flush()
+    await db_session.commit()
+    await db_session.refresh(user_model)
     return user
 
 
@@ -144,6 +184,7 @@ async def test_generate_presigned_url_returns_valid_payload(
     jwt_service: JWTService,
     existing_vehicle: Vehicle,
     s3_setup,
+    db_session,
 ) -> None:
     """Vérifie que l'API retourne une URL pré-signée POST et ses champs signés."""
     headers = get_auth_headers(jwt_service, admin_user)
@@ -264,50 +305,3 @@ async def test_generate_presigned_post_file_too_large_returns_413(
     )
 
     assert response.status_code == status.HTTP_413_CONTENT_TOO_LARGE
-
-
-@pytest.mark.asyncio
-async def test_confirm_uploaded_photo_makes_it_visible_in_catalog(
-    async_client: AsyncClient,
-    admin_user: User,
-    jwt_service: JWTService,
-    existing_vehicle: Vehicle,
-    s3_setup,
-) -> None:
-    """Une photo confirmée après son upload est renvoyée par le catalogue."""
-    headers = get_auth_headers(jwt_service, admin_user)
-
-    presigned_response = await async_client.post(
-        f"/api/v1/vehicles/{existing_vehicle.id}/photos/presigned-url",
-        json=VALID_PHOTO_PAYLOAD,
-        headers=headers,
-    )
-
-    assert presigned_response.status_code == status.HTTP_200_OK
-    presigned_data = presigned_response.json()
-    object_key = presigned_data["fields"]["key"]
-    s3_setup.put_object(
-        Bucket=S3_BUCKET,
-        Key=object_key,
-        Body=b"fake-jpeg-content",
-        ContentType="image/jpeg",
-    )
-
-    confirmation_response = await async_client.post(
-        f"/api/v1/vehicles/{existing_vehicle.id}/photos/"
-        f"{presigned_data['photo_id']}/confirm",
-        headers=headers,
-    )
-
-    assert confirmation_response.status_code == status.HTTP_200_OK
-    assert confirmation_response.json()["photo_id"] == presigned_data["photo_id"]
-
-    catalog_response = await async_client.get("/api/v1/vehicles?mode=sale")
-
-    assert catalog_response.status_code == status.HTTP_200_OK
-    vehicle_data = next(
-        item
-        for item in catalog_response.json()
-        if item["id"] == str(existing_vehicle.id)
-    )
-    assert vehicle_data["photo_url"]

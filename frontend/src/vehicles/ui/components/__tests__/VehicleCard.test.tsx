@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 
 import { VehicleCard } from "../VehicleCard";
 
@@ -15,6 +15,26 @@ describe("VehicleCard", () => {
     photo_url: null,
     included_services: ["Assurance", "Entretien"],
   };
+
+  function CurrentPath() {
+    return <span>{useLocation().pathname}</span>;
+  }
+
+  it("navigates to the vehicle detail route when clicked", () => {
+    render(
+      <MemoryRouter initialEntries={["/catalogue"]}>
+        <VehicleCard vehicle={mockVehicle} />
+        <Routes>
+          <Route path="/catalogue" element={<div />} />
+          <Route path="/vehicles/:vehicleId" element={<CurrentPath />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByTestId("vehicle-card"));
+
+    expect(screen.getByText("/vehicles/peugeot-208-2023-1")).toBeInTheDocument();
+  });
 
   it("should render vehicle information", () => {
     render(

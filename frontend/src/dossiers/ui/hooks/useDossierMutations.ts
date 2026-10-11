@@ -1,5 +1,36 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { DossiersClient, type DocumentType } from "../../../api/clients/DossiersClient";
+import {
+	DossiersClient,
+	type CreateDossierRequest,
+	type DocumentType,
+} from "../../../api/clients/DossiersClient";
+
+export function useCreateDossier() {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: (data: CreateDossierRequest) => DossiersClient.createDossier(data),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["dossiers", "me"] });
+		},
+	});
+}
+
+export function useSubmitDossier(dossierId: string | undefined) {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: () => {
+			if (!dossierId) throw new Error("Identifiant de dossier manquant.");
+			return DossiersClient.submitDossier(dossierId);
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["dossiers", "me"] });
+			queryClient.invalidateQueries({ queryKey: ["dossiers", dossierId] });
+			queryClient.invalidateQueries({ queryKey: ["dossiers", dossierId, "status"] });
+		},
+	});
+}
 
 export function useValidateDossier(dossierId: string) {
 	const queryClient = useQueryClient();
