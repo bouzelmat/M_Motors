@@ -1,7 +1,7 @@
 """Authentication routes for register and login."""
 
 from typing import Annotated
-import re
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -25,10 +25,12 @@ from src.auth.domain.value_objects import Email
 from src.auth.infrastructure.repositories import SQLAlchemyUserRepository
 from src.auth.infrastructure.security.jwt_service import JWTService
 from src.auth.infrastructure.security.password_service import PasswordService
-from src.shared.domain.exceptions import ValidationError
+from src.shared.domain.exceptions import ConflictError, ValidationError
 
 # Remplacement par la dépendance partagée centralisée
 from src.shared.infrastructure.dependencies import SessionDep
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
@@ -38,25 +40,26 @@ class RegisterRequest(BaseModel):
     """Request schema for user registration."""
 
     email: EmailStr
-    password: str = Field(..., min_length=8)
+    password: str = Field(
+        ..., min_length=8, max_length=128
+    )  # Prevent DoS via huge payloads
     first_name: str = Field(..., min_length=1, max_length=100)
     last_name: str = Field(..., min_length=1, max_length=100)
 
     @field_validator("password")
     @classmethod
     def validate_password_strength(cls, password: str) -> str:
-        """Require mixed case, a number, and a special character."""
-        requirements = (
-            r"[a-z]",
-            r"[A-Z]",
-            r"\d",
-            r"[^A-Za-z0-9]",
-        )
-        if any(re.search(pattern, password) is None for pattern in requirements):
-            raise ValueError(
-                "Le mot de passe doit contenir une majuscule, une minuscule, "
-                "un chiffre et un caractère spécial."
-            )
+        """Validate password without format string risks."""
+        if len(password) < 8:
+            raise ValueError("Password must be at least 8 characters long")
+        if not any(c.islower() for c in password):
+            raise ValueError("Password must contain at least one lowercase letter")
+        if not any(c.isupper() for c in password):
+            raise ValueError("Password must contain at least one uppercase letter")
+        if not any(c.isdigit() for c in password):
+            raise ValueError("Password must contain at least one digit")
+        if not any(not c.isalnum() for c in password):
+            raise ValueError("Password must contain at least one special character")
         return password
 
 
@@ -93,7 +96,7 @@ class UserResponse(BaseModel):
 )
 async def register(
     request: RegisterRequest,
-    session: SessionDep,  # Utilisation directe du SessionDep typé et annoté
+    session: SessionDep,
 ) -> RegisterResponse:
     """Register a new user account."""
     user_repository = SQLAlchemyUserRepository(session)
@@ -110,11 +113,26 @@ async def register(
     try:
         user = await handler.handle(command)
         await session.commit()
-    except ValidationError as e:
+    except ConflictError:
         await session.rollback()
+        # Return 409 for duplicate emails (sanitized message)
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=str(e),
+            detail="Email already registered",
+        ) from None
+    except ValidationError:
+        await session.rollback()
+        # Return 400 for validation errors (sanitized message)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid registration data",
+        ) from None
+    except Exception as e:
+        await session.rollback()
+        logger.exception(f"Registration failed for {request.email}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Registration failed due to a server error",
         ) from e
 
     return RegisterResponse(
@@ -146,7 +164,7 @@ async def get_csrf_token(response: Response) -> dict[str, str]:
 async def login(
     request: Request,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-    session: SessionDep,  # Utilisation directe du SessionDep typé et annoté
+    session: SessionDep,
 ) -> LoginResponse:
     """Authenticate user and return access token."""
     client_ip = get_client_ip(request)
@@ -164,12 +182,12 @@ async def login(
 
     try:
         email = Email(form_data.username)
-    except ValueError as e:
+    except ValueError:
         record_login_failure(client_ip)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials",
-        ) from e
+        ) from None
 
     user = await user_repository.find_by_email(email)
     if user is None:
