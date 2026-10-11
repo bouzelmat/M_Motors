@@ -10,6 +10,7 @@ const FINAL_STATUSES: readonly DossierStatus[] = [
 	"VALIDATED",
 	"REJECTED",
 	"EXPIRED",
+	"CANCELLED",
 ];
 
 /**

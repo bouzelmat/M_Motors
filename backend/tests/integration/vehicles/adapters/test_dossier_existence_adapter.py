@@ -31,6 +31,23 @@ async def test_has_active_dossier_submitted(db_session: AsyncSession) -> None:
 
 
 @pytest.mark.asyncio
+async def test_has_active_dossier_documents_pending(db_session: AsyncSession) -> None:
+    vehicle_id = uuid4()
+    db_session.add(
+        DossierModel(
+            id=uuid4(),
+            user_id=uuid4(),
+            vehicle_id=vehicle_id,
+            status=DossierStatus.DOCUMENTS_PENDING,
+        )
+    )
+    await db_session.flush()
+
+    adapter = DossierExistenceAdapter(session=db_session)
+    assert await adapter.has_active_dossier_for_vehicle(vehicle_id) is True
+
+
+@pytest.mark.asyncio
 async def test_has_active_dossier_draft_unexpired(db_session: AsyncSession) -> None:
     """Scénario : Dossier DRAFT non expiré lié au véhicule -> True."""
     vehicle_id = uuid4()

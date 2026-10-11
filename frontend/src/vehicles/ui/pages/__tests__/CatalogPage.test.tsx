@@ -67,9 +67,12 @@ function createQueryClient(): QueryClient {
   });
 }
 
-function renderWithQueryClient(ui: ReactNode) {
+function renderWithQueryClient(
+  ui: ReactNode,
+  initialEntry = "/",
+) {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[initialEntry]}>
       <QueryClientProvider client={createQueryClient()}>
         {ui}
       </QueryClientProvider>
@@ -142,11 +145,14 @@ describe("CatalogPage with FilterBar", () => {
   });
 
   it("renders error state", () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const refetch = vi.fn();
     mockedUseVehiclesQuery.mockReturnValue(
       createQueryResult({
         error: new Error("Network error"),
         isError: true,
         status: "error",
+        refetch,
       }),
     );
 
@@ -157,6 +163,30 @@ describe("CatalogPage with FilterBar", () => {
         /Une erreur est survenue lors du chargement du catalogue/i,
       ),
     ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /réessayer/i }));
+    expect(refetch).toHaveBeenCalledOnce();
+    expect(consoleError).toHaveBeenCalledWith(
+      "Erreur lors du chargement du catalogue :",
+      expect.any(Error),
+    );
+    consoleError.mockRestore();
+  });
+
+  it("normalizes the purchase URL mode to sale", () => {
+    mockedUseVehiclesQuery.mockReturnValue(
+      createQueryResult({
+        data: [],
+        isSuccess: true,
+        status: "success",
+      }),
+    );
+
+    renderWithQueryClient(<CatalogPage />, "/catalogue?mode=purchase");
+
+    expect(useVehicleFilterStore.getState().mode).toBe("sale");
+    expect(mockedUseVehiclesQuery).toHaveBeenLastCalledWith(
+      expect.objectContaining({ mode: "sale" }),
+    );
   });
 
   it("renders the vehicle list when data is available", () => {
@@ -307,7 +337,7 @@ describe("CatalogPage with FilterBar", () => {
     renderWithQueryClient(<CatalogPage />);
 
     expect(
-      screen.getByText(/aucun véhicule ne correspond à vos critères/i),
+      screen.getByText(/aucun véhicule disponible à la location/i),
     ).toBeInTheDocument();
 
     const modifyButton = screen.getByRole("button", {

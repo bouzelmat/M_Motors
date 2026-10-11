@@ -25,3 +25,8 @@ class StorageService(ABC):
     async def get_object_url(self, object_name: str) -> str:
         """Return a URL that can be used to read an uploaded object."""
         pass
+
+    @abstractmethod
+    async def delete_object(self, object_name: str) -> None:
+        """Delete an object from the configured storage."""
+        pass

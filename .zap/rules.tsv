@@ -1,0 +1,5 @@
+# ID_Règle	Action	Commentaire
+10096	IGNORE	Timestamp Disclosure - Ignore les alertes de format de date fréquentes dans les logs et réponses API
+10021	IGNORE	X-Content-Type-Options Header Missing - Géré par l'infrastructure cloud (CloudFront) et non l'application directement
+10038	IGNORE	Content Security Policy (CSP) Misconfiguration - Les API REST retournent du JSON, le CSP est géré sur le Frontend
+40003	IGNORE	Anti-CSRF Tokens Scanner - Pas nécessaire sur les routes purement API utilisant des jetons JWT Bearer

@@ -11,6 +11,14 @@ from src.auth.domain.entities import User
 from src.auth.domain.value_objects import Email, Role
 from src.auth.infrastructure.orm.user_model import UserModel
 from src.auth.infrastructure.security.jwt_service import JWTService
+from src.vehicles.domain.entities.vehicle import Vehicle
+from src.vehicles.domain.value_objects.catalog_type import CatalogType
+from src.vehicles.domain.value_objects.energy_type import EnergyType
+from src.vehicles.domain.value_objects.mileage import Mileage
+from src.vehicles.domain.value_objects.price import Price
+from src.vehicles.infrastructure.repositories.sqlalchemy_vehicle_repository import (
+    SQLAlchemyVehicleRepository,
+)
 
 
 @pytest_asyncio.fixture
@@ -36,6 +44,7 @@ async def admin_user(db_session: AsyncSession) -> User:
     )
     db_session.add(user_model)
     await db_session.flush()
+    await db_session.commit()
     return user
 
 
@@ -62,6 +71,7 @@ async def client_user(db_session: AsyncSession) -> User:
     )
     db_session.add(user_model)
     await db_session.flush()
+    await db_session.commit()
     return user
 
 
@@ -187,4 +197,54 @@ async def test_add_vehicle_invalid_data_returns_422(
         headers=headers,
     )
 
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code in (
+        status.HTTP_422_UNPROCESSABLE_ENTITY,
+        status.HTTP_422_UNPROCESSABLE_CONTENT,
+    )
+
+
+@pytest.mark.asyncio
+async def test_admin_can_load_and_update_vehicle(
+    async_client: AsyncClient,
+    db_session: AsyncSession,
+    admin_user: User,
+    jwt_service: JWTService,
+) -> None:
+    vehicle = Vehicle.create(
+        brand="Peugeot",
+        model="208",
+        year=2023,
+        mileage=Mileage(12000),
+        energy_type=EnergyType.ESSENCE,
+        catalog_type=CatalogType.SALE,
+        price=Price(18000),
+    )
+    repository = SQLAlchemyVehicleRepository(db_session)
+    await repository.save(vehicle)
+    await db_session.commit()
+
+    headers = get_auth_headers(jwt_service, admin_user)
+    detail_response = await async_client.get(
+        f"/api/v1/vehicles/admin/{vehicle.id}", headers=headers
+    )
+    assert detail_response.status_code == status.HTTP_200_OK, detail_response.text
+
+    csrf_response = await async_client.get("/api/v1/auth/csrf")
+    headers["X-CSRF-Token"] = csrf_response.json()["csrf_token"]
+    update_response = await async_client.put(
+        f"/api/v1/vehicles/admin/{vehicle.id}",
+        headers=headers,
+        json={
+            "brand": "Renault",
+            "model": "Clio",
+            "year": 2024,
+            "mileage": 5000,
+            "energy_type": "HYBRIDE",
+            "catalog_type": "SALE",
+            "price": "16500.00",
+            "services": [],
+        },
+    )
+
+    assert update_response.status_code == status.HTTP_200_OK, update_response.text
+    assert update_response.json()["brand"] == "Renault"

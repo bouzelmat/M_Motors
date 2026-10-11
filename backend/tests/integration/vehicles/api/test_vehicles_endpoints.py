@@ -153,10 +153,12 @@ async def test_list_vehicles_rental_filter_by_max_monthly_rent(
     assert data[0]["monthly_rent"] == "300.00"
 
 
+@pytest.mark.parametrize("mode", ["sale", "purchase"])
 @pytest.mark.asyncio
 async def test_list_vehicles_sale_returns_available_vehicles(
     async_client: AsyncClient,
     db_session: AsyncSession,
+    mode: str,
 ) -> None:
     """Vérifie que le mode achat retourne uniquement les véhicules disponibles."""
     repo = SQLAlchemyVehicleRepository(db_session)
@@ -192,7 +194,7 @@ async def test_list_vehicles_sale_returns_available_vehicles(
     await db_session.commit()
 
     response = await async_client.get(
-        "/api/v1/vehicles?mode=sale",
+        f"/api/v1/vehicles?mode={mode}",
     )
 
     assert response.status_code == 200
@@ -555,6 +557,7 @@ async def test_get_vehicle_detail_returns_200_when_available(
 
     assert data["id"] == str(vehicle.id)
     assert data["brand"] == "Peugeot"
+    assert data["catalog_type"] == "RENTAL"
     assert data["monthly_rent"] == "350.00"
     assert data["price"] == "20000.00"
     assert data["mileage"] == 10000
@@ -686,6 +689,70 @@ async def test_get_vehicle_detail_returns_services_with_inclusion(
     assert optional_service_data["included"] is False
 
     assert data["included_services"] == ["Assistance"]
+
+
+@pytest.mark.asyncio
+async def test_admin_can_create_rental_vehicle_with_included_and_optional_services(
+    async_client: AsyncClient,
+    db_session: AsyncSession,
+    test_admin_token: str,
+) -> None:
+    included_service = ServiceModel(
+        id=uuid4(),
+        name="Assurance tous risques",
+        monthly_cost=Decimal("49.99"),
+        category=ServiceCategory.INSURANCE,
+    )
+    optional_service = ServiceModel(
+        id=uuid4(),
+        name="Contrôle technique annuel",
+        monthly_cost=Decimal("9.99"),
+        category=ServiceCategory.INSPECTION,
+    )
+    db_session.add_all([included_service, optional_service])
+
+    csrf_response = await async_client.get("/api/v1/auth/csrf")
+    headers = {
+        "Authorization": f"Bearer {test_admin_token}",
+        "X-CSRF-Token": csrf_response.json()["csrf_token"],
+    }
+    catalog_response = await async_client.get(
+        "/api/v1/vehicles/services",
+        headers=headers,
+    )
+    assert catalog_response.status_code == 200
+    assert {item["category"] for item in catalog_response.json()} >= {
+        "INSURANCE",
+        "INSPECTION",
+    }
+
+    response = await async_client.post(
+        "/api/v1/vehicles",
+        headers=headers,
+        json={
+            "brand": "Peugeot",
+            "model": "208",
+            "year": 2024,
+            "mileage": 10000,
+            "energy_type": "ESSENCE",
+            "catalog_type": "RENTAL",
+            "monthly_rent": 350,
+            "services": [
+                {"service_id": str(included_service.id), "included": True},
+                {"service_id": str(optional_service.id), "included": False},
+            ],
+        },
+    )
+
+    assert response.status_code == 201, response.text
+    vehicle_id = response.json()["id"]
+    detail_response = await async_client.get(f"/api/v1/vehicles/{vehicle_id}")
+    assert detail_response.status_code == 200, detail_response.text
+    services = {
+        service["id"]: service for service in detail_response.json()["services"]
+    }
+    assert services[str(included_service.id)]["included"] is True
+    assert services[str(optional_service.id)]["included"] is False
 
 
 @pytest.mark.asyncio

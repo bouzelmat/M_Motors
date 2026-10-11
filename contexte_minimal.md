@@ -21,6 +21,8 @@ La LLD inclut des services en option ou inclus dans l'abonnement :
 - Entretien et SAV
 - Contrôle technique
 
+Si un client est intéressé, il doit s’inscrire pour déposer son dossier d’achat ou de location.
+Dans tous les cas, les documents du dossier sont à télécharger depuis l’interface (dossier 100% dématérialisé). Le client peut aussi suivre l’avancement de son dossier depuis son espace client.
 ---
 
 ## 2. Périmètre fonctionnel

@@ -12,6 +12,10 @@ from src.shared.infrastructure.persistence.sqlalchemy_uow import (
 from src.vehicles.application.commands.add_vehicle import (
     AddVehicleCommandHandler,
 )
+from src.vehicles.application.commands.manage_vehicles import (
+    DeleteVehicleCommandHandler,
+    UpdateVehicleCommandHandler,
+)
 from src.vehicles.application.queries.get_rental_catalog_query import (
     GetRentalCatalogQueryHandler,
 )
@@ -76,4 +80,22 @@ async def get_add_vehicle_command_handler(
         repository=repository,
         uow=uow,
         event_bus=event_bus,
+    )
+
+
+async def get_update_vehicle_command_handler(
+    session: SessionDep,
+) -> UpdateVehicleCommandHandler:
+    return UpdateVehicleCommandHandler(
+        repository=SQLAlchemyVehicleRepository(session),
+        uow=SqlAlchemyUnitOfWork(session),
+    )
+
+
+async def get_delete_vehicle_command_handler(
+    session: SessionDep,
+) -> DeleteVehicleCommandHandler:
+    return DeleteVehicleCommandHandler(
+        repository=SQLAlchemyVehicleRepository(session),
+        uow=SqlAlchemyUnitOfWork(session),
     )

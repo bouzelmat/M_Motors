@@ -25,6 +25,9 @@ from src.dossiers.application.queries.get_admin_dossier_detail import (
 from src.dossiers.application.queries.list_pending_dossiers import (
     ListPendingDossiersQuery,
 )
+from src.dossiers.application.queries.list_dossier_history import (
+    ListDossierHistoryQuery,
+)
 from src.dossiers.application.schemas.dossier_response import (
     AdminDossierDetailResponse,
     PendingDossierResponse,
@@ -40,9 +43,13 @@ from src.dossiers.application.use_cases.get_admin_dossier_detail import (
 from src.dossiers.application.use_cases.list_pending_dossiers import (
     ListPendingDossiersUseCase,
 )
+from src.dossiers.application.use_cases.list_dossier_history import (
+    ListDossierHistoryUseCase,
+)
 from src.dossiers.infrastructure.dependencies import (
     get_admin_dossier_detail_use_case,
     get_list_pending_dossiers_use_case,
+    get_list_dossier_history_use_case,
     get_reject_dossier_handler,
     get_request_documents_handler,
     get_validate_dossier_handler,
@@ -69,6 +76,20 @@ async def get_pending_dossiers(
     query = ListPendingDossiersQuery(sort_by=sort_by)
     results = await use_case.execute(query)
     return [PendingDossierResponse.model_validate(r) for r in results]
+
+
+@router.get(
+    "/history",
+    response_model=list[PendingDossierResponse],
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(require_admin)],
+)
+async def get_dossier_history(
+    use_case: ListDossierHistoryUseCase = Depends(get_list_dossier_history_use_case),
+) -> list[PendingDossierResponse]:
+    """Récupère les dossiers clôturés pour consultation par les administrateurs."""
+    results = await use_case.execute(ListDossierHistoryQuery())
+    return [PendingDossierResponse.model_validate(result) for result in results]
 
 
 @router.get(

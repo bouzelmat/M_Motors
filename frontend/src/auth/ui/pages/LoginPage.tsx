@@ -1,7 +1,7 @@
 ﻿// Login page with MUI form
 
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -16,6 +16,8 @@ import { useAuthStore } from '../hooks/useAuth';
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = (location.state as { from?: { pathname: string; search: string; hash: string } } | null)?.from;
   const { login, isLoading, error, clearError } = useAuthStore();
   
   const [formData, setFormData] = useState({
@@ -34,7 +36,12 @@ export function LoginPage() {
     
     try {
       await login(formData.email, formData.password);
-      navigate('/dashboard');
+      const destination = returnTo
+        ? `${returnTo.pathname}${returnTo.search}${returnTo.hash}`
+        : useAuthStore.getState().user?.role === 'ADMIN'
+          ? '/admin/dossiers'
+          : '/dashboard';
+      navigate(destination, { replace: true });
     } catch (err) {
       // Error is handled by the store
     }
@@ -55,7 +62,7 @@ export function LoginPage() {
             Connexion
           </Typography>
           <Typography variant="body2" align="center" color="text.secondary" sx={{ mb: 3 }}>
-            Accédez à votre espace client M-Motors
+            Accédez à votre espace M-Motors
           </Typography>
 
           {error && (

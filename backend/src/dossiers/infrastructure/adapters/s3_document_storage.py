@@ -24,11 +24,29 @@ class S3DocumentStorageAdapter(DocumentStoragePort):
             "endpoint_url": settings.aws_endpoint_url,
             "config": Config(signature_version="s3v4", s3={"addressing_style": "path"}),
         }
+        self._public_endpoint_url = settings.aws_public_endpoint_url
+        self._presigning_client = None
 
     def _get_client(self):
         if self._client is None:
             self._client = boto3.client("s3", **self._client_options)
         return self._client
+
+    def _get_presigning_client(self):
+        if (
+            not self._public_endpoint_url
+            or self._public_endpoint_url == self._client_options["endpoint_url"]
+        ):
+            return self._get_client()
+        if self._presigning_client is None:
+            self._presigning_client = boto3.client(
+                "s3",
+                **{
+                    **self._client_options,
+                    "endpoint_url": self._public_endpoint_url,
+                },
+            )
+        return self._presigning_client
 
     async def upload(
         self,
@@ -54,7 +72,7 @@ class S3DocumentStorageAdapter(DocumentStoragePort):
         loop = asyncio.get_running_loop()
         url = await loop.run_in_executor(
             None,
-            lambda: self._get_client().generate_presigned_url(
+            lambda: self._get_presigning_client().generate_presigned_url(
                 ClientMethod="put_object",
                 Params={
                     "Bucket": self._bucket_name,
@@ -74,7 +92,7 @@ class S3DocumentStorageAdapter(DocumentStoragePort):
         loop = asyncio.get_running_loop()
         url = await loop.run_in_executor(
             None,
-            lambda: self._get_client().generate_presigned_url(
+            lambda: self._get_presigning_client().generate_presigned_url(
                 ClientMethod="get_object",
                 Params={
                     "Bucket": self._bucket_name,

@@ -6,7 +6,31 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr
 
+from src.dossiers.domain.value_objects.document_status import DocumentStatus
+from src.dossiers.domain.value_objects.document_type import DocumentType
 from src.dossiers.domain.value_objects.dossier_status import DossierStatus
+
+
+class DossierListItemResponse(BaseModel):
+    """Représentation minimale d'un dossier dans l'espace client."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    vehicle_id: UUID
+    status: DossierStatus
+    requested_document_types: list[DocumentType] | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class DossierStatusResponse(BaseModel):
+    """Statut et commentaire de décision visibles par le propriétaire."""
+
+    status: DossierStatus
+    updated_at: datetime
+    decision_comment: str | None = None
+    requested_document_types: list[DocumentType] | None = None
 
 
 class DocumentListItemResponse(BaseModel):
@@ -15,8 +39,8 @@ class DocumentListItemResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
-    type: str
-    status: str
+    type: DocumentType
+    status: DocumentStatus
     original_filename: str
     content_type: str
     size: int
@@ -82,7 +106,7 @@ class AdminDossierDetailResponse(BaseModel):
     documents: list[DocumentListItemResponse]
     comment: str | None = None
     rejection_reason: str | None = None
-    requested_document_types: list[str] | None = None
+    requested_document_types: list[DocumentType] | None = None
     rejected_at: datetime | None = None
     created_at: datetime
     updated_at: datetime

@@ -18,6 +18,12 @@ interface AdminDossiersListProps {
 	readonly items: readonly PendingDossierItem[];
 }
 
+const STATUS_LABELS: Record<string, string> = {
+	SUBMITTED: "En cours d’étude",
+	DOCUMENTS_PENDING: "Pièces complémentaires",
+	DRAFT: "Brouillon",
+};
+
 export const AdminDossiersList: React.FC<AdminDossiersListProps> = ({
 	items,
 }) => {
@@ -32,8 +38,15 @@ export const AdminDossiersList: React.FC<AdminDossiersListProps> = ({
 	};
 
 	return (
-		<TableContainer component={Paper} variant="outlined">
-			<Table sx={{ minWidth: 650 }} aria-label="Tableau des dossiers en attente">
+		<TableContainer
+			component={Paper}
+			variant="outlined"
+			sx={{ width: "100%", overflowX: "auto" }}
+		>
+			<Table
+				sx={{ width: "100%", minWidth: 900 }}
+				aria-label="Tableau des dossiers en attente"
+			>
 				<TableHead>
 					<TableRow>
 						<TableCell>Email client</TableCell>
@@ -50,7 +63,7 @@ export const AdminDossiersList: React.FC<AdminDossiersListProps> = ({
 							<TableCell>{item.client_email}</TableCell>
 							<TableCell>{`${item.vehicle_brand} ${item.vehicle_model}`}</TableCell>
 							<TableCell>
-								<Chip label={item.status} color="warning" size="small" />
+								<Chip label={STATUS_LABELS[item.status] ?? item.status} color="warning" size="small" />
 							</TableCell>
 							<TableCell>{formatDate(item.submitted_at)}</TableCell>
 							<TableCell>{formatDate(item.created_at)}</TableCell>

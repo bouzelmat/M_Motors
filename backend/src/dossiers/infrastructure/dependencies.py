@@ -7,8 +7,17 @@ from src.auth.infrastructure.dependencies import get_user_repository
 from src.dossiers.application.commands.reject_dossier import (
     RejectDossierCommandHandler,
 )
+from src.dossiers.application.commands.cancel_dossier import (
+    CancelDossierCommandHandler,
+)
+from src.dossiers.application.commands.create_dossier import (
+    CreateDossierCommandHandler,
+)
 from src.dossiers.application.commands.request_documents import (
     RequestDocumentsCommandHandler,
+)
+from src.dossiers.application.commands.submit_dossier import (
+    SubmitDossierCommandHandler,
 )
 from src.dossiers.application.commands.validate_dossier import (
     ValidateDossierCommandHandler,
@@ -18,6 +27,9 @@ from src.dossiers.application.use_cases.get_admin_dossier_detail import (
 )
 from src.dossiers.application.use_cases.list_pending_dossiers import (
     ListPendingDossiersUseCase,
+)
+from src.dossiers.application.use_cases.list_dossier_history import (
+    ListDossierHistoryUseCase,
 )
 from src.dossiers.domain.ports.document_repository import DocumentRepository
 from src.dossiers.domain.ports.dossier_repository import DossierRepository
@@ -61,11 +73,55 @@ def get_event_bus_dependency() -> AbstractEventBus:
     return get_event_bus()
 
 
+def get_create_dossier_handler(
+    dossier_repository: DossierRepository = Depends(get_dossier_repository),
+    vehicle_repository=Depends(get_vehicle_repository),
+    uow: AbstractUnitOfWork = Depends(get_uow),
+    event_bus: AbstractEventBus = Depends(get_event_bus_dependency),
+) -> CreateDossierCommandHandler:
+    return CreateDossierCommandHandler(
+        dossier_repository=dossier_repository,
+        vehicle_repository=vehicle_repository,
+        uow=uow,
+        event_bus=event_bus,
+    )
+
+
+def get_submit_dossier_handler(
+    dossier_repository: DossierRepository = Depends(get_dossier_repository),
+    document_repository: DocumentRepository = Depends(get_document_repository),
+    uow: AbstractUnitOfWork = Depends(get_uow),
+) -> SubmitDossierCommandHandler:
+    return SubmitDossierCommandHandler(
+        dossier_repository=dossier_repository,
+        document_repository=document_repository,
+        uow=uow,
+    )
+
+
+def get_cancel_dossier_handler(
+    dossier_repository: DossierRepository = Depends(get_dossier_repository),
+    uow: AbstractUnitOfWork = Depends(get_uow),
+) -> CancelDossierCommandHandler:
+    """Fournit le handler d'annulation lié aux dépendances courantes."""
+    return CancelDossierCommandHandler(
+        dossier_repository=dossier_repository,
+        uow=uow,
+    )
+
+
 def get_list_pending_dossiers_use_case(
     repository: DossierRepository = Depends(get_dossier_repository),
 ) -> ListPendingDossiersUseCase:
     """Fournit une instance du cas d'usage de consultation des dossiers en attente."""
     return ListPendingDossiersUseCase(dossier_repository=repository)
+
+
+def get_list_dossier_history_use_case(
+    repository: DossierRepository = Depends(get_dossier_repository),
+) -> ListDossierHistoryUseCase:
+    """Fournit le cas d'usage de consultation des dossiers clôturés."""
+    return ListDossierHistoryUseCase(dossier_repository=repository)
 
 
 def get_validate_dossier_handler(

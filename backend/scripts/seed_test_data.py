@@ -208,7 +208,29 @@ async def _populate_seed_data(session: AsyncSession) -> None:
             catalog_type=CatalogType.RENTAL,
             monthly_rent=Price(650.0),
             description="Berline électrique premium",
-            services=[],
+            services=[
+                ServiceInclusion(
+                    service_id=ASSURANCE_ID,
+                    name="Assurance",
+                    monthly_cost=30,
+                    category=ServiceCategory.INSURANCE,
+                    included=False,
+                ),
+                ServiceInclusion(
+                    service_id=ENTRETIEN_ID,
+                    name="Entretien",
+                    monthly_cost=20,
+                    category=ServiceCategory.MAINTENANCE,
+                    included=False,
+                ),
+                ServiceInclusion(
+                    service_id=ASSISTANCE_ID,
+                    name="Assistance",
+                    monthly_cost=10,
+                    category=ServiceCategory.ASSISTANCE,
+                    included=False,
+                ),
+            ],
         ),
     ]
 

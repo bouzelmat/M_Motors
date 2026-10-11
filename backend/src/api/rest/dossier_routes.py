@@ -1,6 +1,5 @@
 """Routes HTTP FastAPI pour l'API dossiers et gestion des pièces justificatives."""
 
-from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -11,6 +10,18 @@ from src.config import get_settings
 from src.dossiers.application.commands.confirm_document_upload import (
     ConfirmDocumentUploadCommand,
     ConfirmDocumentUploadCommandHandler,
+)
+from src.dossiers.application.commands.cancel_dossier import (
+    CancelDossierCommand,
+    CancelDossierCommandHandler,
+)
+from src.dossiers.application.commands.create_dossier import (
+    CreateDossierCommand,
+    CreateDossierCommandHandler,
+)
+from src.dossiers.application.commands.submit_dossier import (
+    SubmitDossierCommand,
+    SubmitDossierCommandHandler,
 )
 from src.dossiers.application.schemas.dossier_schemas import (
     CreateDossierRequest,
@@ -43,9 +54,16 @@ from src.dossiers.domain.exceptions import (
     DossierAccessDeniedException,
     DossierNotFoundException,
     InvalidDocumentStateException,
+    VehicleNotAvailableException,
+    VehicleNotFoundException,
 )
 from src.dossiers.infrastructure.adapters.document_repository import (
     SqlAlchemyDocumentRepository,
+)
+from src.dossiers.infrastructure.dependencies import (
+    get_cancel_dossier_handler,
+    get_create_dossier_handler,
+    get_submit_dossier_handler,
 )
 
 try:
@@ -58,13 +76,15 @@ except ImportError:
 from src.dossiers.infrastructure.repository.sqlalchemy_dossier_repository import (
     SQLAlchemyDossierRepository,
 )
+from src.shared.domain.exceptions import DomainError, NotFoundError
 from src.shared.infrastructure.dependencies import SessionDep
-from src.vehicles.domain.value_objects.vehicle_status import VehicleStatus
-from src.vehicles.infrastructure.repositories.sqlalchemy_vehicle_repository import (
-    SQLAlchemyVehicleRepository,
-)
 
 from src.dossiers.application.schemas.document_schemas import ViewUrlResponse
+from src.dossiers.application.schemas.dossier_response import (
+    DossierListItemResponse,
+    DossierStatusResponse,
+)
+from src.dossiers.domain.value_objects.dossier_status import DossierStatus
 
 router = APIRouter(prefix="/api/v1/dossiers", tags=["dossiers"])
 
@@ -76,20 +96,10 @@ router = APIRouter(prefix="/api/v1/dossiers", tags=["dossiers"])
 )
 async def create_dossier(
     request: CreateDossierRequest,
-    session: SessionDep,
     current_user: User = Depends(get_current_user),
+    handler: CreateDossierCommandHandler = Depends(get_create_dossier_handler),
 ) -> Dossier:
     """Crée un dossier brouillon pour un véhicule disponible."""
-    vehicle = await SQLAlchemyVehicleRepository(session).find_by_id(request.vehicle_id)
-    if vehicle is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Véhicule introuvable"
-        )
-    if vehicle.status != VehicleStatus.AVAILABLE:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Véhicule indisponible"
-        )
-
     trade_in = (
         TradeIn(
             registration=request.trade_in.registration,
@@ -109,42 +119,52 @@ async def create_dossier(
         if request.financing_plan is not None
         else None
     )
-    dossier = Dossier.create(
-        user_id=current_user.id,
-        vehicle_id=request.vehicle_id,
-        trade_in=trade_in,
-        financing_plan=financing_plan,
-    )
-    await SQLAlchemyDossierRepository(session).save(dossier)
-    await session.commit()
-    return dossier
+    try:
+        return await handler.handle(
+            CreateDossierCommand(
+                user_id=current_user.id,
+                vehicle_id=request.vehicle_id,
+                trade_in=trade_in,
+                financing_plan=financing_plan,
+            )
+        )
+    except VehicleNotFoundException as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
+        ) from exc
+    except VehicleNotAvailableException as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail=str(exc)
+        ) from exc
 
 
 @router.get(
     "/me",
-    response_model=list[Dossier],
+    response_model=list[DossierListItemResponse],
     status_code=status.HTTP_200_OK,
 )
 async def list_user_dossiers(
     session: SessionDep,
     current_user: User = Depends(get_current_user),
-) -> list[Dossier]:
+) -> list[DossierListItemResponse]:
     """Récupère l'ensemble des dossiers appartenant à l'utilisateur connecté."""
     dossier_repo = SQLAlchemyDossierRepository(session)
     handler = ListUserDossiersQueryHandler(dossier_repository=dossier_repo)
     query = ListUserDossiersQuery(user_id=current_user.id)
-    return await handler.handle(query)
+    dossiers = await handler.handle(query)
+    return [DossierListItemResponse.model_validate(dossier) for dossier in dossiers]
 
 
 @router.get(
     "/{dossier_id}/status",
+    response_model=DossierStatusResponse,
     status_code=status.HTTP_200_OK,
 )
 async def get_dossier_status(
     dossier_id: UUID,
     session: SessionDep,
     current_user: User = Depends(get_current_user),
-) -> dict[str, Any]:
+) -> DossierStatusResponse:
     """Récupère le statut d'un dossier avec contrôles d'accès anti-IDOR."""
     dossier_repo = SQLAlchemyDossierRepository(session)
     handler = GetDossierStatusQueryHandler(dossier_repository=dossier_repo)
@@ -163,11 +183,75 @@ async def get_dossier_status(
             detail="Accès refusé : vous n'êtes pas propriétaire de ce dossier.",
         )
 
-    return {
-        "status": dossier.status,
-        "updated_at": dossier.updated_at.isoformat(),
-        "decision_comment": getattr(dossier, "decision_comment", None),
-    }
+    decision_comment = (
+        dossier.rejection_reason
+        if dossier.status == DossierStatus.REJECTED
+        else dossier.comment
+    )
+    return DossierStatusResponse(
+        status=dossier.status,
+        updated_at=dossier.updated_at,
+        decision_comment=decision_comment,
+        requested_document_types=dossier.requested_document_types,
+    )
+
+
+@router.post(
+    "/{dossier_id}/submit",
+    response_model=DossierResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def submit_dossier(
+    dossier_id: UUID,
+    current_user: User = Depends(get_current_user),
+    handler: SubmitDossierCommandHandler = Depends(get_submit_dossier_handler),
+) -> Dossier:
+    """Soumet un dossier brouillon appartenant à l'utilisateur connecté."""
+    try:
+        return await handler.handle(
+            SubmitDossierCommand(dossier_id=dossier_id, user_id=current_user.id)
+        )
+    except NotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
+        ) from exc
+    except DossierAccessDeniedException as exc:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)
+        ) from exc
+    except DomainError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail=str(exc)
+        ) from exc
+
+
+@router.post(
+    "/{dossier_id}/cancel",
+    response_model=DossierResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def cancel_dossier(
+    dossier_id: UUID,
+    current_user: User = Depends(get_current_user),
+    handler: CancelDossierCommandHandler = Depends(get_cancel_dossier_handler),
+) -> Dossier:
+    """Annule un dossier brouillon appartenant à l'utilisateur connecté."""
+    try:
+        return await handler.handle(
+            CancelDossierCommand(dossier_id=dossier_id, user_id=current_user.id)
+        )
+    except NotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
+        ) from exc
+    except DossierAccessDeniedException as exc:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)
+        ) from exc
+    except DomainError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail=str(exc)
+        ) from exc
 
 
 @router.post(

@@ -21,6 +21,7 @@ def mock_settings() -> Settings:
     settings.aws_access_key_id = "test-access-key"
     settings.aws_secret_access_key = "test-secret-key"
     settings.aws_endpoint_url = "http://localhost:4566"
+    settings.aws_public_endpoint_url = "http://localhost:9000"
     return settings
 
 
@@ -120,6 +121,18 @@ class TestGenerateDownloadUrl:
 
         call_args = mock_client.generate_presigned_url.call_args
         assert call_args[1]["ExpiresIn"] == custom_expires_in
+
+    @patch("boto3.client")
+    def test_generate_download_url_uses_browser_reachable_endpoint(
+        self, mock_boto3, s3_adapter: S3DocumentStorageAdapter
+    ) -> None:
+        mock_client = MagicMock()
+        mock_boto3.return_value = mock_client
+        mock_client.generate_presigned_url.return_value = "http://localhost:9000/signed"
+
+        asyncio.run(s3_adapter.generate_download_url("dossiers/test/document.pdf"))
+
+        assert mock_boto3.call_args.kwargs["endpoint_url"] == "http://localhost:9000"
 
 
 class TestDeleteObject:

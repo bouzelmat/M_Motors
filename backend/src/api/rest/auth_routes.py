@@ -1,12 +1,21 @@
 """Authentication routes for register and login."""
 
 from typing import Annotated
+import re
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from src.api.dependencies import get_current_user
+from src.api.middleware import (
+    generate_csrf_token,
+    get_client_ip,
+    get_login_rate_limit_retry_after,
+    record_login_failure,
+    record_login_success,
+    sign_csrf_token,
+)
 from src.auth.application.commands import (
     RegisterUserCommand,
     RegisterUserCommandHandler,
@@ -32,6 +41,23 @@ class RegisterRequest(BaseModel):
     password: str = Field(..., min_length=8)
     first_name: str = Field(..., min_length=1, max_length=100)
     last_name: str = Field(..., min_length=1, max_length=100)
+
+    @field_validator("password")
+    @classmethod
+    def validate_password_strength(cls, password: str) -> str:
+        """Require mixed case, a number, and a special character."""
+        requirements = (
+            r"[a-z]",
+            r"[A-Z]",
+            r"\d",
+            r"[^A-Za-z0-9]",
+        )
+        if any(re.search(pattern, password) is None for pattern in requirements):
+            raise ValueError(
+                "Le mot de passe doit contenir une majuscule, une minuscule, "
+                "un chiffre et un caractère spécial."
+            )
+        return password
 
 
 class RegisterResponse(BaseModel):
@@ -100,20 +126,46 @@ async def register(
     )
 
 
+@router.get("/csrf")
+async def get_csrf_token(response: Response) -> dict[str, str]:
+    """Issue a CSRF token bound to a cookie for browser-based mutation requests."""
+    raw_token = generate_csrf_token()
+    signed_token = sign_csrf_token(raw_token)
+    response.set_cookie(
+        key="csrf_token",
+        value=signed_token,
+        httponly=True,
+        samesite="lax",
+        secure=False,
+        max_age=3600,
+    )
+    return {"csrf_token": raw_token}
+
+
 @router.post("/login", response_model=LoginResponse)
 async def login(
+    request: Request,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     session: SessionDep,  # Utilisation directe du SessionDep typé et annoté
 ) -> LoginResponse:
     """Authenticate user and return access token."""
+    client_ip = get_client_ip(request)
+    retry_after = get_login_rate_limit_retry_after(client_ip)
+    if retry_after > 0:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many login attempts",
+            headers={"Retry-After": str(retry_after)},
+        )
+
     user_repository = SQLAlchemyUserRepository(session)
     password_service = PasswordService()
     jwt_service = JWTService()
 
-    # Find user by email
     try:
         email = Email(form_data.username)
     except ValueError as e:
+        record_login_failure(client_ip)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials",
@@ -121,19 +173,20 @@ async def login(
 
     user = await user_repository.find_by_email(email)
     if user is None:
+        record_login_failure(client_ip)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials",
         )
 
-    # Verify password
     if not password_service.verify_password(form_data.password, user.hashed_password):
+        record_login_failure(client_ip)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials",
         )
 
-    # Generate JWT token
+    record_login_success(client_ip)
     access_token = jwt_service.create_access_token(
         data={"sub": str(user.id), "email": user.email.value}
     )

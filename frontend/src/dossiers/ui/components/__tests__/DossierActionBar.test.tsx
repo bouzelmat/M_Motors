@@ -119,6 +119,20 @@ describe("US-502 — DossierActionBar", () => {
 		});
 	});
 
+	it("garde la modale ouverte et affiche l'erreur si la demande de documents échoue", async () => {
+		vi.mocked(DossiersClient.requestDocuments).mockRejectedValue(new Error("Request failed"));
+		renderWithClient(<DossierActionBar dossierId="test-id" status="SUBMITTED" />);
+
+		fireEvent.click(screen.getByRole("button", { name: "Demander des documents" }));
+		fireEvent.click(screen.getByRole("checkbox", { name: /Pièce d'identité/i }));
+		fireEvent.click(screen.getByRole("button", { name: "Envoyer la demande" }));
+
+		expect(await screen.findByText("Une erreur est survenue lors de l’action.")).toBeInTheDocument();
+		expect(screen.getByRole("heading", {
+			name: "Demander des documents complémentaires",
+		})).toBeInTheDocument();
+	});
+
 	it("désactive les boutons pendant l'appel réseau", async () => {
 		// CORRECTION 4 : Utilisation d'une promesse contrôlée pour éviter les fuites asynchrones 
 		// et l'erreur "window is not defined" en fin de test.

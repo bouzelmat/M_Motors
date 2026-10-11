@@ -79,10 +79,6 @@ export const DossierActionDialog: React.FC<DossierActionDialogProps> = ({
 			reason: actionType === "reject" ? reason : undefined,
 			documentTypes: actionType === "request" ? selectedDocs : undefined,
 		});
-
-		if (!formError && !error) {
-			onClose();
-		}
 	};
 
 	const getTitle = () => {

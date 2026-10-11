@@ -1,17 +1,34 @@
 ﻿import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Alert, Container, Paper, Typography } from "@mui/material";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useAuthStore } from "../../../auth/ui/hooks/useAuth";
 import { vehiclesClient } from "../../infrastructure/VehiclesClient";
 import { CreateVehicleRequestDTO } from "../../infrastructure/vehicle.types";
 import { VehicleAddForm } from "../components/VehicleAddForm";
+import { getApiErrorMessage } from "../../../api/apiErrorMessage";
+import type { ServiceDTO } from "../../infrastructure/vehicle.types";
 
 export const AddVehiclePage: React.FC = () => {
     const navigate = useNavigate();
     const { user, isAuthenticated } = useAuthStore();
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [apiError, setApiError] = useState<string | null>(null);
+    const queryClient = useQueryClient();
+    const serviceCatalogQuery = useQuery({
+        queryKey: ["vehicle-service-catalog"],
+        queryFn: () => vehiclesClient.getServiceCatalog(),
+        enabled: isAuthenticated && user?.role === "ADMIN",
+        retry: false,
+    });
+    const createVehicleMutation = useMutation({
+        mutationFn: (payload: CreateVehicleRequestDTO) => vehiclesClient.createVehicle(payload),
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({ queryKey: ["vehicles"] });
+        },
+    });
+    const apiError = createVehicleMutation.error
+        ? getApiErrorMessage(createVehicleMutation.error, "La création du véhicule a échoué.")
+        : null;
 
     if (!isAuthenticated || user?.role !== "ADMIN") {
         return (
@@ -22,17 +39,8 @@ export const AddVehiclePage: React.FC = () => {
     }
 
     const handleSubmit = async (payload: CreateVehicleRequestDTO) => {
-        setIsSubmitting(true);
-        setApiError(null);
-
-        try {
-            const createdVehicle = await vehiclesClient.createVehicle(payload);
-            navigate(`/admin/vehicles/${createdVehicle.id}/photos`);
-        } catch {
-            setApiError("Une erreur est survenue lors de la création du véhicule. Vérifiez vos informations.");
-        } finally {
-            setIsSubmitting(false);
-        }
+        const createdVehicle = await createVehicleMutation.mutateAsync(payload);
+        navigate(`/admin/vehicles/${createdVehicle.id}/edit`);
     };
 
     return (
@@ -47,8 +55,13 @@ export const AddVehiclePage: React.FC = () => {
 
                 <VehicleAddForm
                     onSubmit={handleSubmit}
-                    isSubmitting={isSubmitting}
+                    isSubmitting={createVehicleMutation.isPending}
                     apiError={apiError}
+                    services={serviceCatalogQuery.data ?? []}
+                    isLoadingServices={serviceCatalogQuery.isLoading}
+                    servicesError={serviceCatalogQuery.isError
+                        ? getApiErrorMessage(serviceCatalogQuery.error, "Le catalogue de services n’a pas pu être chargé.")
+                        : null}
                 />
             </Paper>
         </Container>

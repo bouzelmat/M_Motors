@@ -16,10 +16,8 @@ export const FinancialSummaryPanel: React.FC<FinancialSummaryPanelProps> = ({
 	dossier,
 }) => {
 	const capitalToFinance =
-		dossier.vehicle_price !== null &&
-		dossier.vehicle_price !== undefined &&
-		dossier.financing_plan
-			? dossier.vehicle_price - dossier.financing_plan.down_payment
+		dossier.vehicle_price !== null && dossier.financing_plan
+			? Number(dossier.vehicle_price) - Number(dossier.financing_plan.down_payment)
 			: null;
 
 	return (
@@ -42,7 +40,7 @@ export const FinancialSummaryPanel: React.FC<FinancialSummaryPanelProps> = ({
 										Apport initial
 									</Typography>
 									<Typography variant="body1">
-										{dossier.financing_plan.down_payment.toLocaleString("fr-FR", {
+										{Number(dossier.financing_plan.down_payment).toLocaleString("fr-FR", {
 											style: "currency",
 											currency: "EUR",
 										})}
@@ -74,7 +72,7 @@ export const FinancialSummaryPanel: React.FC<FinancialSummaryPanelProps> = ({
 										Mensualité
 									</Typography>
 									<Typography variant="body1">
-										{dossier.financing_plan.monthly_payment.toLocaleString("fr-FR", {
+										{Number(dossier.financing_plan.monthly_payment).toLocaleString("fr-FR", {
 											style: "currency",
 											currency: "EUR",
 										})}
@@ -134,7 +132,7 @@ export const FinancialSummaryPanel: React.FC<FinancialSummaryPanelProps> = ({
 									<Typography variant="body1">
 										{dossier.trade_in.estimated_value !== null &&
 										dossier.trade_in.estimated_value !== undefined
-											? dossier.trade_in.estimated_value.toLocaleString("fr-FR", {
+											? Number(dossier.trade_in.estimated_value).toLocaleString("fr-FR", {
 													style: "currency",
 													currency: "EUR",
 											  })

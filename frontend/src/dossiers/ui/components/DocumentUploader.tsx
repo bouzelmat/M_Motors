@@ -13,11 +13,13 @@ import {
 	InputLabel,
 } from "@mui/material";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
-import { DossiersClient, DocumentType } from "../../../api/clients/DossiersClient";
+import { getApiErrorMessage } from "../../../api/apiErrorMessage";
+import { DossiersClient, type DocumentType } from "../../../api/clients/DossiersClient";
 
 interface DocumentUploaderProps {
 	dossierId: string;
 	onUploadComplete: () => void;
+	fixedDocumentType?: DocumentType;
 }
 
 const MAX_SIZE = 10 * 1024 * 1024; // 10 Mo
@@ -27,11 +29,22 @@ const ALLOWED_TYPES = {
 	"image/png": [".png"],
 };
 
+export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
+	IDENTITY_CARD: "Pièce d'identité",
+	PROOF_OF_ADDRESS: "Justificatif de domicile",
+	PAYSLIP: "Fiche de paie",
+	BANK_DETAILS: "Relevé d'identité bancaire",
+	DRIVERS_LICENSE: "Permis de conduire",
+	REGISTRATION_CERTIFICATE: "Certificat d'immatriculation",
+	OTHER: "Autre document",
+};
+
 export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
 	dossierId,
 	onUploadComplete,
+	fixedDocumentType,
 }) => {
-	const [documentType, setDocumentType] = useState<DocumentType>("IDENTITY_CARD");
+	const [documentType, setDocumentType] = useState<DocumentType>(fixedDocumentType ?? "IDENTITY_CARD");
 	const [uploading, setUploading] = useState(false);
 	const [progress, setProgress] = useState(0);
 	const [error, setError] = useState<string | null>(null);
@@ -81,12 +94,9 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
 
 			setUploading(false);
 			onUploadComplete();
-		} catch (err: any) {
+		} catch (err: unknown) {
 			setUploading(false);
-			setError(
-				err.response?.data?.detail ||
-					"Une erreur est survenue lors du téléversement sur S3.",
-			);
+			setError(getApiErrorMessage(err, "Une erreur est survenue lors du téléversement sur S3."));
 		}
 	};
 
@@ -99,7 +109,11 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
 
 	return (
 		<Box sx={{ p: 2, border: "1px dashed #ccc", borderRadius: 2 }}>
-			<FormControl fullWidth sx={{ mb: 2 }}>
+			{fixedDocumentType ? (
+				<Typography variant="subtitle2" sx={{ mb: 2 }}>
+					Type demandé : {DOCUMENT_TYPE_LABELS[fixedDocumentType]}
+				</Typography>
+			) : <FormControl fullWidth sx={{ mb: 2 }}>
 				<InputLabel id="doc-type-label">Type de document</InputLabel>
 				<Select
 					labelId="doc-type-label"
@@ -111,9 +125,12 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
 					<MenuItem value="IDENTITY_CARD">Pièce d'identité</MenuItem>
 					<MenuItem value="PAYSLIP">Fiche de paie</MenuItem>
 					<MenuItem value="PROOF_OF_ADDRESS">Justificatif de domicile</MenuItem>
-					<MenuItem value="TAX_NOTICE">Avis d'imposition</MenuItem>
+					<MenuItem value="BANK_DETAILS">Relevé d'identité bancaire</MenuItem>
+					<MenuItem value="DRIVERS_LICENSE">Permis de conduire</MenuItem>
+					<MenuItem value="REGISTRATION_CERTIFICATE">Certificat d'immatriculation</MenuItem>
+					<MenuItem value="OTHER">Autre document</MenuItem>
 				</Select>
-			</FormControl>
+			</FormControl>}
 
 			<Box
 				{...getRootProps()}
@@ -127,7 +144,7 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
 				<input {...getInputProps()} />
 				<CloudUploadIcon sx={{ fontSize: 40, color: "primary.main", mb: 1 }} />
 				<Typography variant="body1">
-					Glissez-déposez votre pièce justificative ici, ou cliquez pour sélectionner
+						Glissez-déposez votre pièce justificative ici, ou cliquez pour sélectionner
 				</Typography>
 				<Typography variant="caption" color="text.secondary">
 					PDF, JPEG ou PNG (Max. 10 Mo)

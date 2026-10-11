@@ -5,10 +5,12 @@ import {
     CreateVehicleRequestDTO,
     GetCatalogParams,
     PresignedPhotoUploadDTO,
+    ServiceDTO,
     VehicleCreatedDTO,
     VehicleDetailDTO,
     VehicleListItemDTO,
     VehicleResponseDTO,
+    VehiclePhotoDTO,
 } from "./vehicle.types";
 
 /** Client HTTP du contexte Vehicles. */
@@ -54,6 +56,47 @@ export class VehiclesClient {
             `${VehiclesClient.BASE_URL}/${id}`,
         );
 
+        return response.data;
+    }
+
+    /** Liste tous les véhicules, quel que soit leur statut (administration). */
+    async getAdminVehicles(): Promise<VehicleResponseDTO[]> {
+        const response = await apiClient.get<VehicleResponseDTO[]>(
+            `${VehiclesClient.BASE_URL}/admin`,
+        );
+        return response.data;
+    }
+
+    /** Récupère les détails d'un véhicule sans filtre de disponibilité (administration). */
+    async getAdminVehicle(vehicleId: string): Promise<VehicleDetailDTO> {
+        const response = await apiClient.get<VehicleDetailDTO>(
+            `${VehiclesClient.BASE_URL}/admin/${vehicleId}`,
+        );
+        return response.data;
+    }
+
+    /** Remplace les informations modifiables d'un véhicule existant. */
+    async updateVehicle(
+        vehicleId: string,
+        payload: CreateVehicleRequestDTO,
+    ): Promise<VehicleResponseDTO> {
+        const response = await apiClient.put<VehicleResponseDTO>(
+            `${VehiclesClient.BASE_URL}/admin/${vehicleId}`,
+            payload,
+        );
+        return response.data;
+    }
+
+    /** Supprime définitivement un véhicule (administration). */
+    async deleteVehicle(vehicleId: string): Promise<void> {
+        await apiClient.delete(`${VehiclesClient.BASE_URL}/admin/${vehicleId}`);
+    }
+
+    /** Récupère les services configurés pour les offres de location. */
+    async getServiceCatalog(): Promise<ServiceDTO[]> {
+        const response = await apiClient.get<ServiceDTO[]>(
+            `${VehiclesClient.BASE_URL}/services`,
+        );
         return response.data;
     }
 
@@ -126,6 +169,28 @@ export class VehiclesClient {
         const upload = await this.requestPhotoUpload(vehicleId, file);
         await this.uploadPhoto(upload, file);
         return this.confirmPhotoUpload(vehicleId, upload.photo_id);
+    }
+
+    /** Liste toutes les photos confirmées d'un véhicule pour l'administration. */
+    async getVehiclePhotos(vehicleId: string): Promise<VehiclePhotoDTO[]> {
+        const response = await apiClient.get<VehiclePhotoDTO[]>(
+            `${VehiclesClient.BASE_URL}/${vehicleId}/photos`,
+        );
+        return response.data;
+    }
+
+    /** Définit une photo existante comme image principale du véhicule. */
+    async setPrimaryVehiclePhoto(vehicleId: string, photoId: string): Promise<void> {
+        await apiClient.patch(
+            `${VehiclesClient.BASE_URL}/${vehicleId}/photos/${photoId}/primary`,
+        );
+    }
+
+    /** Supprime une photo du stockage et de la galerie du véhicule. */
+    async deleteVehiclePhoto(vehicleId: string, photoId: string): Promise<void> {
+        await apiClient.delete(
+            `${VehiclesClient.BASE_URL}/${vehicleId}/photos/${photoId}`,
+        );
     }
 }
 

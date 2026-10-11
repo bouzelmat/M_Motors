@@ -4,21 +4,31 @@ import {
     Box,
     Button,
     CircularProgress,
+    Checkbox,
+    FormControlLabel,
     FormControl,
     FormHelperText,
     InputLabel,
     MenuItem,
+    Paper,
     Select,
     Stack,
+    Switch,
     TextField,
+    Typography,
 } from "@mui/material";
 
-import { CreateVehicleRequestDTO } from "../../infrastructure/vehicle.types";
+import type { CatalogType, CreateVehicleRequestDTO, EnergyType, ServiceDTO } from "../../infrastructure/vehicle.types";
 
 interface VehicleAddFormProps {
     onSubmit: (data: CreateVehicleRequestDTO) => Promise<void>;
     isSubmitting: boolean;
     apiError: string | null;
+    services: readonly ServiceDTO[];
+    isLoadingServices: boolean;
+    servicesError: string | null;
+    initialValues?: CreateVehicleRequestDTO;
+    submitLabel?: string;
 }
 
 type FormErrors = {
@@ -36,16 +46,25 @@ export const VehicleAddForm: React.FC<VehicleAddFormProps> = ({
     onSubmit,
     isSubmitting,
     apiError,
+    services,
+    isLoadingServices,
+    servicesError,
+    initialValues,
+    submitLabel = "Créer le véhicule",
 }) => {
-    const [brand, setBrand] = useState("");
-    const [model, setModel] = useState("");
-    const [year, setYear] = useState<number | "">(new Date().getFullYear());
-    const [mileage, setMileage] = useState<number | "">(0);
-    const [energyType, setEnergyType] = useState("GASOLINE");
-    const [catalogType, setCatalogType] = useState<"SALE" | "RENTAL" | "BOTH">("RENTAL");
-    const [price, setPrice] = useState<number | "">("");
-    const [monthlyRent, setMonthlyRent] = useState<number | "">("");
-    const [description, setDescription] = useState("");
+    const [brand, setBrand] = useState(initialValues?.brand ?? "");
+    const [model, setModel] = useState(initialValues?.model ?? "");
+    const [year, setYear] = useState<number | "">(initialValues?.year ?? new Date().getFullYear());
+    const [mileage, setMileage] = useState<number | "">(initialValues?.mileage ?? 0);
+    const [energyType, setEnergyType] = useState<EnergyType>(initialValues?.energy_type ?? "ESSENCE");
+    const [catalogType, setCatalogType] = useState<CatalogType>(initialValues?.catalog_type ?? "RENTAL");
+    const [price, setPrice] = useState<number | "">(initialValues?.price ?? "");
+    const [monthlyRent, setMonthlyRent] = useState<number | "">(initialValues?.monthly_rent ?? "");
+    const [description, setDescription] = useState(initialValues?.description ?? "");
+    const [selectedServices, setSelectedServices] = useState<{
+        service_id: string;
+        included: boolean;
+    }[]>(initialValues?.services.map((service) => ({ ...service })) ?? []);
 
     const [errors, setErrors] = useState<FormErrors>({});
 
@@ -54,11 +73,12 @@ export const VehicleAddForm: React.FC<VehicleAddFormProps> = ({
         setModel("");
         setYear(new Date().getFullYear());
         setMileage(0);
-        setEnergyType("GASOLINE");
+        setEnergyType("ESSENCE");
         setCatalogType("RENTAL");
         setPrice("");
         setMonthlyRent("");
         setDescription("");
+        setSelectedServices([]);
         setErrors({});
     };
 
@@ -103,14 +123,10 @@ export const VehicleAddForm: React.FC<VehicleAddFormProps> = ({
             energy_type: energyType,
             catalog_type: catalogType,
             description: description.trim() || null,
+            services: catalogType === "SALE" ? [] : selectedServices,
+            ...((catalogType === "SALE" || catalogType === "BOTH") ? { price: Number(price) } : {}),
+            ...((catalogType === "RENTAL" || catalogType === "BOTH") ? { monthly_rent: Number(monthlyRent) } : {}),
         };
-
-        if (catalogType === "SALE" || catalogType === "BOTH") {
-            payload.price = Number(price);
-        }
-        if (catalogType === "RENTAL" || catalogType === "BOTH") {
-            payload.monthly_rent = Number(monthlyRent);
-        }
 
         try {
             await onSubmit(payload);
@@ -176,12 +192,12 @@ export const VehicleAddForm: React.FC<VehicleAddFormProps> = ({
                             labelId="energy-type-label"
                             value={energyType}
                             label="Énergie"
-                            onChange={(e) => setEnergyType(e.target.value)}
+                            onChange={(e) => setEnergyType(e.target.value as EnergyType)}
                         >
-                            <MenuItem value="GASOLINE">Essence</MenuItem>
+                            <MenuItem value="ESSENCE">Essence</MenuItem>
                             <MenuItem value="DIESEL">Diesel</MenuItem>
-                            <MenuItem value="ELECTRIC">Électrique</MenuItem>
-                            <MenuItem value="HYBRID">Hybride</MenuItem>
+                            <MenuItem value="ELECTRIQUE">Électrique</MenuItem>
+                            <MenuItem value="HYBRIDE">Hybride</MenuItem>
                         </Select>
                         {errors.energy_type && <FormHelperText>{errors.energy_type}</FormHelperText>}
                     </FormControl>
@@ -193,7 +209,7 @@ export const VehicleAddForm: React.FC<VehicleAddFormProps> = ({
                             value={catalogType}
                             label="Type de catalogue"
                             onChange={(e) => {
-                                setCatalogType(e.target.value as "SALE" | "RENTAL" | "BOTH");
+                                setCatalogType(e.target.value as CatalogType);
                             }}
                         >
                             <MenuItem value="RENTAL">Location (LLD)</MenuItem>
@@ -230,6 +246,70 @@ export const VehicleAddForm: React.FC<VehicleAddFormProps> = ({
                     />
                 )}
 
+                {(catalogType === "RENTAL" || catalogType === "BOTH") && (
+                    <Stack spacing={1.5}>
+                        <Box>
+                            <Typography variant="h6" fontWeight={700}>Services de location</Typography>
+                        </Box>
+                        {servicesError && <Alert severity="warning">{servicesError}</Alert>}
+                        {isLoadingServices ? (
+                            <CircularProgress size={24} aria-label="Chargement des services" />
+                        ) : services.length === 0 ? (
+                            <Alert severity="info">Aucun service n’est configuré dans le catalogue.</Alert>
+                        ) : services.map((service) => {
+                            const selection = selectedServices.find(
+                                (selected) => selected.service_id === service.id,
+                            );
+                            const categoryLabels: Record<string, string> = {
+                                INSURANCE: "Assurance",
+                                ASSISTANCE: "Assistance dépannage",
+                                MAINTENANCE: "Entretien et SAV",
+                                INSPECTION: "Contrôle technique",
+                            };
+                            return (
+                                <Paper key={service.id} variant="outlined" sx={{ p: 2, borderRadius: 1 }}>
+                                    <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" spacing={1}>
+                                        <FormControlLabel
+                                            control={
+                                                <Checkbox
+                                                    checked={Boolean(selection)}
+                                                    onChange={(event) => {
+                                                        setSelectedServices((current) => event.target.checked
+                                                            ? [...current, { service_id: service.id, included: false }]
+                                                            : current.filter((item) => item.service_id !== service.id));
+                                                    }}
+                                                />
+                                            }
+                                            label={service.name}
+                                        />
+                                        <Typography variant="body2" color="text.secondary" sx={{ alignSelf: "center" }}>
+                                            {categoryLabels[service.category] ?? service.category} · {service.monthly_cost} €/mois
+                                        </Typography>
+                                    </Stack>
+                                    {selection && (
+                                        <FormControlLabel
+                                            sx={{ ml: 4 }}
+                                            control={
+                                                <Switch
+                                                    checked={selection.included}
+                                                    onChange={(event) => {
+                                                        setSelectedServices((current) => current.map((item) =>
+                                                            item.service_id === service.id
+                                                                ? { ...item, included: event.target.checked }
+                                                                : item,
+                                                        ));
+                                                    }}
+                                                />
+                                            }
+                                            label="Inclus dans l’abonnement"
+                                        />
+                                    )}
+                                </Paper>
+                            );
+                        })}
+                    </Stack>
+                )}
+
                 <TextField
                     label="Description"
                     value={description}
@@ -246,7 +326,7 @@ export const VehicleAddForm: React.FC<VehicleAddFormProps> = ({
                     disabled={isSubmitting}
                     startIcon={isSubmitting ? <CircularProgress size={20} color="inherit" /> : null}
                 >
-                    {isSubmitting ? "Création en cours..." : "Créer le véhicule"}
+                    {isSubmitting ? "Enregistrement en cours..." : submitLabel}
                 </Button>
             </Stack>
         </Box>
