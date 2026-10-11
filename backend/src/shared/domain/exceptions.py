@@ -15,3 +15,7 @@ class ForbiddenError(DomainError):
 
 class ValidationError(DomainError):
     """Exception raised when validation fails."""
+
+
+class ConflictError(DomainError):
+    """Exception raised when a resource already exists (e.g., duplicate email)."""

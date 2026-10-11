@@ -8,7 +8,7 @@ from src.auth.domain.events import UserRegistered
 from src.auth.domain.ports import UserRepository
 from src.auth.domain.value_objects import Email, Role
 from src.auth.infrastructure.security.password_service import PasswordService
-from src.shared.domain.exceptions import ValidationError
+from src.shared.domain.exceptions import ConflictError, ValidationError
 from src.shared.infrastructure.event_bus import get_event_bus
 
 
@@ -40,12 +40,14 @@ class RegisterUserCommandHandler:
         # Validate email format
         try:
             email = Email(command.email)
-        except ValueError as e:
-            raise ValidationError(f"Invalid email format: {command.email}") from e
+        except ValueError:
+            # NEVER expose the email in the error message
+            raise ValidationError("Invalid email format") from None
 
         # Check if email already exists
         if await self._user_repository.email_exists(email):
-            raise ValidationError(f"Email already registered: {command.email}")
+            # Use ConflictError for duplicate emails (returns 409)
+            raise ConflictError("Email already registered") from None
 
         # Hash password
         hashed_password = self._password_service.hash_password(command.password)
