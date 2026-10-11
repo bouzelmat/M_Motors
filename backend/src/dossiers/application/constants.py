@@ -8,3 +8,12 @@ PENDING_STATUSES = frozenset(
         DossierStatus.DOCUMENTS_PENDING,
     }
 )
+
+HISTORICAL_STATUSES = frozenset(
+    {
+        DossierStatus.VALIDATED,
+        DossierStatus.REJECTED,
+        DossierStatus.EXPIRED,
+        DossierStatus.CANCELLED,
+    }
+)

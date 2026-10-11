@@ -13,6 +13,7 @@ import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 
 import { useAuthStore } from "../../../auth/ui/hooks/useAuth";
+import { getApiErrorMessage } from "../../../api/apiErrorMessage";
 import { vehiclesClient } from "../../infrastructure/VehiclesClient";
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
@@ -60,8 +61,8 @@ export function VehiclePhotoUploadPage() {
       const result = await vehiclesClient.uploadVehiclePhoto(vehicleId, file);
       setPhotoUrl(result.photo_url);
       setFile(null);
-    } catch {
-      setError("La photo n'a pas pu être téléversée. Réessayez.");
+    } catch (uploadError: unknown) {
+      setError(getApiErrorMessage(uploadError, "La photo n'a pas pu être téléversée. Réessayez."));
     } finally {
       setIsUploading(false);
     }

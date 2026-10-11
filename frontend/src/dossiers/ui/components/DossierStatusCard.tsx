@@ -39,6 +39,16 @@ const STATUS_VISUALS: Record<DossierStatus, StatusVisualConfig> = {
 		description: "Le délai imparti pour finaliser ou traiter ce dossier est dépassé.",
 		badgeClasses: "bg-amber-100 text-amber-800 border-amber-300",
 	},
+	CANCELLED: {
+		label: "Demande annulée",
+		description: "Cette demande a été annulée par le client.",
+		badgeClasses: "bg-gray-100 text-gray-600 border-gray-200",
+	},
+	DOCUMENTS_PENDING: {
+		label: "Pièces complémentaires demandées",
+		description: "Des documents complémentaires sont nécessaires pour poursuivre l’instruction.",
+		badgeClasses: "bg-amber-100 text-amber-800 border-amber-300",
+	},
 };
 
 export const DossierStatusCard: React.FC<DossierStatusCardProps> = ({

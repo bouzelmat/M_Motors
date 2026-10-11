@@ -1,7 +1,8 @@
+from datetime import datetime
 from typing import Any, Dict
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel, Field
 
 # Imports de sécurité globaux corrigés
@@ -18,6 +19,7 @@ from src.vehicles.domain.exceptions import (
     InvalidImageFormatError,
     VehicleNotFoundError,
 )
+from src.vehicles.domain.entities.vehicle_photo import VehiclePhoto
 
 # CORRECTION DE L'IMPORT : On cible le fichier dependencies du module vehicles
 from src.vehicles.infrastructure.dependencies import (
@@ -44,6 +46,88 @@ class PresignedUrlResponse(BaseModel):
 class ConfirmPhotoResponse(BaseModel):
     photo_id: UUID
     photo_url: str
+
+
+class VehiclePhotoResponse(BaseModel):
+    id: UUID
+    photo_url: str
+    is_primary: bool
+    created_at: datetime
+    uploaded_at: datetime | None
+
+
+@router.get(
+    "/{vehicle_id}/photos",
+    response_model=list[VehiclePhotoResponse],
+    dependencies=[Depends(require_role(Role.ADMIN))],
+)
+async def list_vehicle_photos(
+    vehicle_id: UUID,
+    storage_service: S3StorageService = Depends(get_storage_service),
+    vehicle_repository=Depends(get_vehicle_repository),
+) -> list[VehiclePhotoResponse]:
+    """Retourne les photos confirmées d'un véhicule avec des URL de lecture fraîches."""
+    if await vehicle_repository.find_by_id(vehicle_id) is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Véhicule non trouvé"
+        )
+
+    photos: list[VehiclePhoto] = await vehicle_repository.list_uploaded_photos(
+        vehicle_id
+    )
+    return [
+        VehiclePhotoResponse(
+            id=photo.id,
+            photo_url=await storage_service.get_object_url(photo.object_key),
+            is_primary=photo.is_primary,
+            created_at=photo.created_at,
+            uploaded_at=photo.uploaded_at,
+        )
+        for photo in photos
+    ]
+
+
+@router.patch(
+    "/{vehicle_id}/photos/{photo_id}/primary",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_role(Role.ADMIN))],
+)
+async def set_primary_vehicle_photo(
+    vehicle_id: UUID,
+    photo_id: UUID,
+    session: SessionDep,
+    vehicle_repository=Depends(get_vehicle_repository),
+) -> Response:
+    """Définit une photo confirmée comme couverture du véhicule."""
+    if not await vehicle_repository.set_primary_photo(vehicle_id, photo_id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Photo non trouvée"
+        )
+    await session.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.delete(
+    "/{vehicle_id}/photos/{photo_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_role(Role.ADMIN))],
+)
+async def delete_vehicle_photo(
+    vehicle_id: UUID,
+    photo_id: UUID,
+    session: SessionDep,
+    storage_service: S3StorageService = Depends(get_storage_service),
+    vehicle_repository=Depends(get_vehicle_repository),
+) -> Response:
+    """Supprime le fichier S3 et les métadonnées d'une photo du véhicule."""
+    object_key = await vehicle_repository.delete_photo(vehicle_id, photo_id)
+    if object_key is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Photo non trouvée"
+        )
+    await storage_service.delete_object(object_key)
+    await session.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post(

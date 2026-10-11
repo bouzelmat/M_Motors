@@ -8,6 +8,7 @@ from pydantic import ValidationError
 
 from src.vehicles.api.schemas.vehicle_schemas import (
     CreateVehicleRequest,
+    VehicleDetailDTO,
     VehicleResponse,
 )
 from src.vehicles.domain.entities.vehicle import Vehicle
@@ -124,3 +125,21 @@ def test_vehicle_response_from_domain_entity_with_value_objects() -> None:
     assert response.id == vehicle.id
     assert response.price == Decimal("120000.00")
     assert response.mileage == 1200
+
+
+def test_vehicle_detail_response_includes_catalog_type() -> None:
+    response = VehicleDetailDTO(
+        id=uuid4(),
+        brand="Peugeot",
+        model="208",
+        year=2024,
+        catalog_type=CatalogType.RENTAL,
+        monthly_rent=Decimal("350.00"),
+        price=None,
+        mileage=10000,
+        energy_type=EnergyType.ESSENCE,
+        description=None,
+        services=[],
+    )
+
+    assert response.model_dump(mode="json")["catalog_type"] == "RENTAL"

@@ -9,6 +9,7 @@
 import { useNavigate } from "react-router-dom";
 
 import type { VehicleListItemDTO } from "../../infrastructure/vehicle.types";
+import { createVehicleSlug } from "../vehicleSlug";
 
 interface VehicleCardProps {
   vehicle: VehicleListItemDTO;
@@ -31,7 +32,7 @@ export function VehicleCard({
   const imageUrl = photo_url ?? "/placeholder-car.png";
 
   const handleClick = () => {
-    navigate(`/catalogue/${vehicle.id}`);
+    navigate(`/vehicles/${createVehicleSlug(vehicle)}`);
   };
 
   return (

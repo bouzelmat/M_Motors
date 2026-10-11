@@ -3,7 +3,8 @@ import { Box, Button, Stack, Alert } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
 import AttachFileIcon from "@mui/icons-material/AttachFile";
-import { DossierStatus } from "../../../api/clients/DossiersClient";
+import { getApiErrorMessage } from "../../../api/apiErrorMessage";
+import type { DocumentType, DossierStatus } from "../../../api/clients/DossiersClient";
 import {
 	useValidateDossier,
 	useRejectDossier,
@@ -24,9 +25,10 @@ export const DossierActionBar: React.FC<DossierActionBarProps> = ({ dossierId, s
 	const rejectMutation = useRejectDossier(dossierId);
 	const requestMutation = useRequestDocuments(dossierId);
 
-	const isActionable = status === "SUBMITTED" || status === "DOCUMENTS_PENDING";
+	const canDecide = status === "SUBMITTED";
+	const canRequestDocuments = canDecide || status === "DOCUMENTS_PENDING";
 
-	if (!isActionable) {
+	if (!canRequestDocuments) {
 		return null; // Aucune action possible pour VALIDATED, REJECTED, EXPIRED, DRAFT
 	}
 
@@ -35,20 +37,19 @@ export const DossierActionBar: React.FC<DossierActionBarProps> = ({ dossierId, s
 		setActionError(null);
 	};
 
-	const handleSubmit = async (data: { comment?: string; reason?: string; documentTypes?: string[] }) => {
+	const handleSubmit = async (data: { comment?: string; reason?: string; documentTypes?: DocumentType[] }) => {
 		setActionError(null);
 		try {
 			if (activeAction === "validate") {
 				await validateMutation.mutateAsync(data.comment);
 			} else if (activeAction === "reject") {
 				await rejectMutation.mutateAsync(data.reason!);
-			} else if (activeAction === "request") {
-				await requestMutation.mutateAsync(data.documentTypes as any);
+			} else if (activeAction === "request" && data.documentTypes) {
+				await requestMutation.mutateAsync(data.documentTypes);
 			}
 			handleClose(); // Ferme la modale en cas de succès (la mutation a déjà invalidé les queries)
-		} catch (err: any) {
-			const errorMsg = err.response?.data?.detail || "Une erreur est survenue lors de l'action.";
-			setActionError(errorMsg);
+		} catch (err: unknown) {
+			setActionError(getApiErrorMessage(err, "Une erreur est survenue lors de l’action."));
 		}
 	};
 
@@ -58,7 +59,7 @@ export const DossierActionBar: React.FC<DossierActionBarProps> = ({ dossierId, s
 		<>
 			<Box sx={{ mt: 4, mb: 2 }}>
 				<Stack direction="row" spacing={2}>
-					<Button
+					{canDecide && <Button
 						variant="contained"
 						color="success"
 						startIcon={<CheckCircleIcon />}
@@ -66,8 +67,8 @@ export const DossierActionBar: React.FC<DossierActionBarProps> = ({ dossierId, s
 						disabled={isSubmitting}
 					>
 						Valider le dossier
-					</Button>
-					<Button
+					</Button>}
+					{canDecide && <Button
 						variant="contained"
 						color="error"
 						startIcon={<CancelIcon />}
@@ -76,7 +77,7 @@ export const DossierActionBar: React.FC<DossierActionBarProps> = ({ dossierId, s
 					
 					>
 						Rejeter le dossier
-					</Button>
+					</Button>}
 					<Button
 						variant="outlined"
 						color="primary"

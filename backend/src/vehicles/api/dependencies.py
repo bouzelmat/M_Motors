@@ -1,11 +1,13 @@
 """Dépendances FastAPI et câblage de l'injection pour le contexte vehicles."""
 
 from fastapi import Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.shared.infrastructure.database import get_session
+from src.shared.infrastructure.dependencies import SessionDep
 from src.vehicles.application.commands.toggle_vehicle_type import (
     ToggleVehicleTypeCommandHandler,
+)
+from src.dossiers.infrastructure.adapters.dossier_existence_adapter import (
+    DossierExistenceAdapter,
 )
 from src.vehicles.domain.ports.dossier_existence_port import DossierExistencePort
 
@@ -35,25 +37,18 @@ async def get_current_admin_user() -> dict:
 
 
 # --- PROVIDERS D'INJECTEUR ---
-async def get_dossier_existence_port_stub() -> DossierExistencePort:
-    """Port temporaire / Fake tant que la Tâche 3 n'est pas terminée.
-
-    ATTENTION : Ne pas déployer en production avec cette implémentation stub !
-    """
-
-    class TemporaryDossierExistenceAdapter(DossierExistencePort):
-        async def has_active_dossier_for_vehicle(self, vehicle_id) -> bool:
-            return False
-
-    return TemporaryDossierExistenceAdapter()
+async def get_dossier_existence_port(
+    session: SessionDep,
+) -> DossierExistencePort:
+    """Fournit l'adaptateur SQLAlchemy réel de détection des dossiers actifs."""
+    return DossierExistenceAdapter(session)
 
 
 async def get_toggle_vehicle_type_handler(
-    session: AsyncSession = Depends(get_session),
-    dossier_port: DossierExistencePort = Depends(get_dossier_existence_port_stub),
+    session: SessionDep,
+    dossier_port: DossierExistencePort = Depends(get_dossier_existence_port),
 ) -> ToggleVehicleTypeCommandHandler:
     """Fabrique du command handler injectant les repositories, UoW, EventBus et le Port."""
-    # Remarque : Remplacer les fakes/stubs par les vraies instances déclarées dans l'App
     from src.shared.infrastructure.messaging.in_memory_event_bus import InMemoryEventBus
     from src.shared.infrastructure.persistence.sqlalchemy_uow import (
         SqlAlchemyUnitOfWork,

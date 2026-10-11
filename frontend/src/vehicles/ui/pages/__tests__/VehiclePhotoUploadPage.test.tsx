@@ -66,6 +66,10 @@ describe("VehiclePhotoUploadPage", () => {
     await waitFor(() => {
       expect(mockedUploadVehiclePhoto).toHaveBeenCalledWith("vehicle-1", file);
     });
-    expect(screen.getByText("La photo est maintenant visible dans le catalogue.")).toBeInTheDocument();
+
+    // Attente asynchrone du re-rendu DOM suite à la résolution de l'API
+    expect(
+      await screen.findByText("La photo est maintenant visible dans le catalogue.")
+    ).toBeInTheDocument();
   });
 });

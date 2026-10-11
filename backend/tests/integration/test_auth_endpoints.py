@@ -41,7 +41,7 @@ async def test_register_user_success(
         "/api/v1/auth/register",
         json={
             "email": "test@example.com",
-            "password": "SecurePass123",
+            "password": "SecurePass123!",
             "first_name": "John",
             "last_name": "Doe",
         },
@@ -65,7 +65,7 @@ async def test_register_user_duplicate_email(
         "/api/v1/auth/register",
         json={
             "email": "test@example.com",
-            "password": "SecurePass123",
+            "password": "SecurePass123!",
             "first_name": "John",
             "last_name": "Doe",
         },
@@ -76,7 +76,7 @@ async def test_register_user_duplicate_email(
         "/api/v1/auth/register",
         json={
             "email": "test@example.com",
-            "password": "DifferentPass123",
+            "password": "DifferentPass123!",
             "first_name": "Jane",
             "last_name": "Smith",
         },
@@ -92,7 +92,7 @@ async def test_register_user_invalid_email(async_client: AsyncClient) -> None:
         "/api/v1/auth/register",
         json={
             "email": "invalid-email",
-            "password": "SecurePass123",
+            "password": "SecurePass123!",
             "first_name": "John",
             "last_name": "Doe",
         },
@@ -125,7 +125,7 @@ async def test_login_success(
         "/api/v1/auth/register",
         json={
             "email": "test@example.com",
-            "password": "SecurePass123",
+            "password": "SecurePass123!",
             "first_name": "John",
             "last_name": "Doe",
         },
@@ -136,7 +136,7 @@ async def test_login_success(
         "/api/v1/auth/login",
         data={
             "username": "test@example.com",
-            "password": "SecurePass123",
+            "password": "SecurePass123!",
         },
     )
     assert response.status_code == 200
@@ -155,7 +155,7 @@ async def test_login_wrong_password(
         "/api/v1/auth/register",
         json={
             "email": "test@example.com",
-            "password": "SecurePass123",
+            "password": "SecurePass123!",
             "first_name": "John",
             "last_name": "Doe",
         },
@@ -180,7 +180,7 @@ async def test_login_nonexistent_user(async_client: AsyncClient) -> None:
         "/api/v1/auth/login",
         data={
             "username": "nonexistent@example.com",
-            "password": "SecurePass123",
+            "password": "SecurePass123!",
         },
     )
     assert response.status_code == 401
@@ -204,7 +204,7 @@ async def test_get_me_with_valid_token(
         "/api/v1/auth/register",
         json={
             "email": "test@example.com",
-            "password": "SecurePass123",
+            "password": "SecurePass123!",
             "first_name": "John",
             "last_name": "Doe",
         },
@@ -214,7 +214,7 @@ async def test_get_me_with_valid_token(
         "/api/v1/auth/login",
         data={
             "username": "test@example.com",
-            "password": "SecurePass123",
+            "password": "SecurePass123!",
         },
     )
     token = login_response.json()["access_token"]

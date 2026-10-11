@@ -100,6 +100,38 @@ async def test_update_existing_dossier_in_repository(db_session: AsyncSession) -
 
 
 @pytest.mark.asyncio
+async def test_save_updates_dossier_when_relationships_are_expired(
+    db_session: AsyncSession,
+) -> None:
+    repository = SQLAlchemyDossierRepository(db_session)
+    dossier = Dossier.create(
+        user_id=uuid4(),
+        vehicle_id=uuid4(),
+        financing_plan=FinancingPlan(
+            down_payment=Decimal("1000.00"),
+            duration_months=24,
+            monthly_payment=Decimal("200.00"),
+        ),
+    )
+
+    await repository.save(dossier)
+    await db_session.commit()
+
+    model = await db_session.get(DossierModel, dossier.id)
+    assert model is not None
+    db_session.expire(model, ["trade_in", "financing_plan"])
+
+    submitted_dossier = dossier.submit()
+    await repository.save(submitted_dossier)
+    await db_session.commit()
+
+    retrieved = await repository.get_by_id(dossier.id)
+    assert retrieved is not None
+    assert retrieved.status == DossierStatus.SUBMITTED
+    assert retrieved.financing_plan == dossier.financing_plan
+
+
+@pytest.mark.asyncio
 async def test_save_idempotency_does_not_duplicate_records(
     db_session: AsyncSession,
 ) -> None:

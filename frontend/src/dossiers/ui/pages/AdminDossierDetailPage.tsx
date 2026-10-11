@@ -18,33 +18,30 @@ import {
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import { useDossierDetail } from "../hooks/useDossierDetail"; // Assure-toi que ce hook existe ou utilise DossiersClient directement
-import { apiClient } from "../../../api/apiClient";
+import { getApiErrorMessage } from "../../../api/apiErrorMessage";
+import { DossiersClient } from "../../../api/clients/DossiersClient";
 import { DossierActionBar } from "../components/DossierActionBar";
 import { FinancialSummaryPanel } from "../components/FinancialSummaryPanel";
 
 // Hook placeholder si tu ne l'as pas encore, adapte-le à DossiersClient.getDossierDetail
-import { DossiersClient } from "../../../api/clients/DossiersClient";
-import { useQuery } from "@tanstack/react-query";
 
 export const AdminDossierDetailPage: React.FC = () => {
     const { dossierId } = useParams<{ dossierId: string }>();
     const navigate = useNavigate();
 
-    const { data: dossier, isLoading, isError, error } = useQuery({
-        queryKey: ["admin", "dossiers", dossierId],
-        queryFn: () => {
-            if (!dossierId) throw new Error("dossierId manquant");
-            return DossiersClient.getDossierDetail(dossierId);
-        },
-        enabled: !!dossierId,
-    });
+    const { data: dossier, isLoading, isError, error } = useDossierDetail(dossierId);
 
     const handleViewDocument = async (documentId: string) => {
+        if (!dossierId) {
+            alert("Impossible d'identifier le dossier associé à ce document.");
+            return;
+        }
+
         try {
-            const res = await apiClient.get<{ url: string }>(`/api/v1/documents/${documentId}/view-url`);
-            window.open(res.data.url, "_blank");
-        } catch (err) {
-            alert("Impossible d'obtenir l'URL d'accès au document.");
+            const response = await DossiersClient.getDocumentViewUrl(dossierId, documentId);
+            window.open(response.url, "_blank", "noopener,noreferrer");
+        } catch (error: unknown) {
+            alert(getApiErrorMessage(error, "Impossible d'obtenir l'URL d'accès au document."));
         }
     };
 
@@ -60,7 +57,7 @@ export const AdminDossierDetailPage: React.FC = () => {
         return (
             <Container maxWidth="md" sx={{ mt: 4 }}>
                 <Alert severity="error">
-                    {error instanceof Error ? error.message : "Le dossier demandé est introuvable."}
+                    {getApiErrorMessage(error, "Le dossier demandé est introuvable.")}
                 </Alert>
                 <Button startIcon={<ArrowBackIcon />} onClick={() => navigate("/admin/dossiers")} sx={{ mt: 2 }}>
                     Retour à la liste

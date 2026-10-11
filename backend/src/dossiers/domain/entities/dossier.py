@@ -90,8 +90,8 @@ class Dossier(Entity):
         )
 
     def submit(self, now: datetime | None = None) -> "Dossier":
-        """Fait transiter le dossier du statut DRAFT vers SUBMITTED."""
-        if self.status != DossierStatus.DRAFT:
+        """Soumet un brouillon ou un dossier complété après demande de pièces."""
+        if self.status not in (DossierStatus.DRAFT, DossierStatus.DOCUMENTS_PENDING):
             raise DomainError(
                 f"Impossible de soumettre un dossier au statut {self.status.value}."
             )
@@ -100,6 +100,7 @@ class Dossier(Entity):
             self,
             status=DossierStatus.SUBMITTED,
             submitted_at=current_time,
+            requested_document_types=None,
             updated_at=current_time,
         )
 
@@ -113,6 +114,19 @@ class Dossier(Entity):
         return replace(
             self,
             status=DossierStatus.EXPIRED,
+            updated_at=current_time,
+        )
+
+    def cancel(self, now: datetime | None = None) -> "Dossier":
+        """Annule un dossier encore en préparation."""
+        if self.status != DossierStatus.DRAFT:
+            raise DomainError(
+                f"Impossible d'annuler un dossier au statut {self.status.value}."
+            )
+        current_time = now or datetime.now(timezone.utc)
+        return replace(
+            self,
+            status=DossierStatus.CANCELLED,
             updated_at=current_time,
         )
 

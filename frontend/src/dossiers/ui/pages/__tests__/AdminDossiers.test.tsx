@@ -94,14 +94,18 @@ describe("US-501 — Interface administrateur des dossiers", () => {
 		vi.spyOn(DossiersClient, "getPendingDossiers").mockResolvedValue([
 			{
 				id: "dos-123",
+				user_id: "user-123",
 				client_email: "client@test.fr",
+				vehicle_id: "vehicle-123",
 				vehicle_brand: "Peugeot",
 				vehicle_model: "208",
 				status: "SUBMITTED",
 				submitted_at: "2026-09-20T10:00:00Z",
 				created_at: "2026-09-20T09:00:00Z",
+				updated_at: "2026-09-20T10:00:00Z",
 			},
 		]);
+		vi.spyOn(DossiersClient, "getDossierHistory").mockResolvedValue([]);
 
 		renderPage();
 
@@ -110,17 +114,24 @@ describe("US-501 — Interface administrateur des dossiers", () => {
 		await waitFor(() => {
 			expect(screen.getByText("client@test.fr")).toBeInTheDocument();
 			expect(screen.getByText("Peugeot 208")).toBeInTheDocument();
-			expect(screen.getByText("SUBMITTED")).toBeInTheDocument();
+			expect(screen.getByText("En cours d’étude")).toBeInTheDocument();
 		});
+		expect(
+			screen.getByRole("region", {
+				name: "Tableau des dossiers défilant horizontalement",
+			}),
+		).toBeInTheDocument();
+		expect(screen.getByRole("table", { name: "Tableau des dossiers en attente" })).toBeInTheDocument();
 	});
 
-	it("affiche un état vide lorsqu'aucun dossier n'est en attente", async () => {
+	it("affiche un état vide enrichi lorsqu'aucun dossier n'est en attente", async () => {
 		setupAuthState({
 			isAuthenticated: true,
 			user: { role: "ADMIN", email: "admin@test.fr" },
 		});
 
 		vi.spyOn(DossiersClient, "getPendingDossiers").mockResolvedValue([]);
+		vi.spyOn(DossiersClient, "getDossierHistory").mockResolvedValue([]);
 
 		renderPage();
 
@@ -128,6 +139,35 @@ describe("US-501 — Interface administrateur des dossiers", () => {
 			expect(
 				screen.getByText("Aucun dossier en attente pour le moment.")
 			).toBeInTheDocument();
+			expect(screen.getByText("Le bureau est serein pour le moment.")).toBeInTheDocument();
 		});
+	});
+
+	it("permet de consulter un dossier validé depuis l'historique", async () => {
+		setupAuthState({
+			isAuthenticated: true,
+			user: { role: "ADMIN", email: "admin@test.fr" },
+		});
+		vi.spyOn(DossiersClient, "getPendingDossiers").mockResolvedValue([]);
+		vi.spyOn(DossiersClient, "getDossierHistory").mockResolvedValue([
+			{
+				id: "validated-123",
+				user_id: "user-123",
+				client_email: "client@test.fr",
+				vehicle_id: "vehicle-123",
+				vehicle_brand: "Peugeot",
+				vehicle_model: "208",
+				status: "VALIDATED",
+				submitted_at: "2026-09-20T10:00:00Z",
+				created_at: "2026-09-20T09:00:00Z",
+				updated_at: "2026-09-20T10:00:00Z",
+			},
+		]);
+
+		renderPage();
+
+		expect(await screen.findByText("Historique des dossiers")).toBeInTheDocument();
+		expect(await screen.findByText("client@test.fr — Peugeot 208")).toBeInTheDocument();
+		expect(screen.getByText(/Validé/)).toBeInTheDocument();
 	});
 });

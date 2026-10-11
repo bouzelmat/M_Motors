@@ -2,11 +2,12 @@ import logging
 from datetime import datetime, timezone
 from uuid import UUID
 
-from sqlalchemy import and_, select
+from sqlalchemy import and_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from src.vehicles.domain.entities.vehicle import Vehicle
+from src.vehicles.domain.entities.vehicle_photo import VehiclePhoto
 from src.vehicles.domain.ports.vehicle_repository import VehicleRepository
 from src.vehicles.domain.value_objects.catalog_type import CatalogType
 from src.vehicles.domain.value_objects.service_inclusion import ServiceInclusion
@@ -17,6 +18,7 @@ from src.vehicles.domain.value_objects.vehicle_status import VehicleStatus
 from src.vehicles.infrastructure.mappers.service_mapper import ServiceMapper
 from src.vehicles.infrastructure.mappers.vehicle_mapper import VehicleMapper
 from src.vehicles.infrastructure.orm.service_model import (
+    ServiceModel,
     VehicleServiceAssociation,
 )
 from src.vehicles.infrastructure.orm.vehicle_model import VehicleModel
@@ -34,15 +36,22 @@ class SQLAlchemyVehicleRepository(VehicleRepository):
         self._service_mapper = ServiceMapper()
 
     async def save(self, vehicle: Vehicle) -> None:
-        orm = self._mapper.to_orm(vehicle)
-
-        # Si l'ID existe déjà, on récupère l'existant.
-        existing = await self._session.get(VehicleModel, vehicle.id)
+        statement = (
+            select(VehicleModel)
+            .where(VehicleModel.id == vehicle.id)
+            .options(
+                selectinload(VehicleModel.service_associations).selectinload(
+                    VehicleServiceAssociation.service
+                )
+            )
+        )
+        result = await self._session.execute(statement)
+        existing = result.scalar_one_or_none()
 
         if existing:
             self._mapper.to_orm(vehicle, existing_orm=existing)
         else:
-            self._session.add(orm)
+            self._session.add(self._mapper.to_orm(vehicle))
 
         await self._session.flush()
 
@@ -64,6 +73,42 @@ class SQLAlchemyVehicleRepository(VehicleRepository):
             return None
 
         return self._mapper.to_domain(orm)
+
+    async def list_all(self) -> list[Vehicle]:
+        statement = (
+            select(VehicleModel)
+            .options(
+                selectinload(VehicleModel.service_associations).selectinload(
+                    VehicleServiceAssociation.service
+                )
+            )
+            .order_by(VehicleModel.brand, VehicleModel.model)
+        )
+        result = await self._session.execute(statement)
+        return [self._mapper.to_domain(orm) for orm in result.scalars().all()]
+
+    async def delete_by_id(self, vehicle_id: UUID) -> bool:
+        orm = await self._session.get(VehicleModel, vehicle_id)
+        if orm is None:
+            return False
+        await self._session.delete(orm)
+        await self._session.flush()
+        return True
+
+    async def find_by_id_for_update(self, vehicle_id: UUID) -> Vehicle | None:
+        stmt = (
+            select(VehicleModel)
+            .where(VehicleModel.id == vehicle_id)
+            .options(
+                selectinload(VehicleModel.service_associations).selectinload(
+                    VehicleServiceAssociation.service
+                )
+            )
+            .with_for_update()
+        )
+        result = await self._session.execute(stmt)
+        orm = result.scalar_one_or_none()
+        return self._mapper.to_domain(orm) if orm is not None else None
 
     async def find_by_criteria(
         self,
@@ -130,6 +175,22 @@ class SQLAlchemyVehicleRepository(VehicleRepository):
         orms = result.scalars().all()
 
         return [self._mapper.to_domain(orm) for orm in orms]
+
+    async def list_service_catalog(self) -> list[ServiceInclusion]:
+        """Retourne les services du catalogue dans un ordre stable."""
+        result = await self._session.execute(
+            select(ServiceModel).order_by(ServiceModel.category, ServiceModel.name)
+        )
+        return [
+            ServiceInclusion(
+                service_id=service.id,
+                name=service.name,
+                monthly_cost=service.monthly_cost,
+                category=service.category,
+                included=False,
+            )
+            for service in result.scalars().all()
+        ]
 
     async def find_by_id_with_services(
         self,
@@ -205,3 +266,78 @@ class SQLAlchemyVehicleRepository(VehicleRepository):
             photo.is_primary = True
 
         await self._session.flush()
+
+    async def list_uploaded_photos(self, vehicle_id: UUID) -> list[VehiclePhoto]:
+        statement = (
+            select(VehiclePhotoModel)
+            .where(
+                VehiclePhotoModel.vehicle_id == vehicle_id,
+                VehiclePhotoModel.is_uploaded.is_(True),
+            )
+            .order_by(VehiclePhotoModel.created_at, VehiclePhotoModel.id)
+        )
+        result = await self._session.execute(statement)
+        return [
+            VehiclePhoto(
+                id=photo.id,
+                vehicle_id=photo.vehicle_id,
+                object_key=photo.object_key,
+                is_primary=photo.is_primary,
+                created_at=photo.created_at,
+                uploaded_at=photo.uploaded_at,
+            )
+            for photo in result.scalars().all()
+        ]
+
+    async def set_primary_photo(self, vehicle_id: UUID, photo_id: UUID) -> bool:
+        statement = select(VehiclePhotoModel).where(
+            VehiclePhotoModel.vehicle_id == vehicle_id,
+            VehiclePhotoModel.id == photo_id,
+            VehiclePhotoModel.is_uploaded.is_(True),
+        )
+        result = await self._session.execute(statement)
+        photo = result.scalar_one_or_none()
+        if photo is None:
+            return False
+
+        await self._session.execute(
+            update(VehiclePhotoModel)
+            .where(VehiclePhotoModel.vehicle_id == vehicle_id)
+            .values(is_primary=False)
+        )
+        photo.is_primary = True
+        await self._session.flush()
+        return True
+
+    async def delete_photo(self, vehicle_id: UUID, photo_id: UUID) -> str | None:
+        statement = select(VehiclePhotoModel).where(
+            VehiclePhotoModel.vehicle_id == vehicle_id,
+            VehiclePhotoModel.id == photo_id,
+        )
+        result = await self._session.execute(statement)
+        photo = result.scalar_one_or_none()
+        if photo is None:
+            return None
+
+        object_key = photo.object_key
+        was_primary = photo.is_primary
+        await self._session.delete(photo)
+        await self._session.flush()
+
+        if was_primary:
+            next_photo_statement = (
+                select(VehiclePhotoModel)
+                .where(
+                    VehiclePhotoModel.vehicle_id == vehicle_id,
+                    VehiclePhotoModel.is_uploaded.is_(True),
+                )
+                .order_by(VehiclePhotoModel.created_at, VehiclePhotoModel.id)
+                .limit(1)
+            )
+            next_photo_result = await self._session.execute(next_photo_statement)
+            next_photo = next_photo_result.scalar_one_or_none()
+            if next_photo is not None:
+                next_photo.is_primary = True
+                await self._session.flush()
+
+        return object_key

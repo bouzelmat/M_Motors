@@ -1,10 +1,12 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { MemoryRouter, Routes, Route, useLocation } from "react-router-dom";
+import { matchRoutes, MemoryRouter, Routes, Route, useLocation } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { useAuthStore } from "../../auth/ui/hooks/useAuth";
 import { ProtectedRoute } from "../../auth/ui/components/ProtectedRoute";
 import { DossiersPage } from "../../dossiers/ui/pages/DossiersPage";
+import { router } from "../router";
 
 vi.mock("../../auth/ui/hooks/useAuth", () => ({
   useAuthStore: vi.fn(),
@@ -26,29 +28,35 @@ describe("Tâche 8 — Sécurité des routes et navigation Back-Office", () => {
   });
 
   const renderWithRouter = (initialEntries: string[]) => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
     return render(
-      <MemoryRouter initialEntries={initialEntries}>
-        <LocationDisplay />
-        <Routes>
-          <Route path="/login" element={<div>Page de Connexion</div>} />
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <DossiersPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/vehicles/new"
-            element={
-              <ProtectedRoute requiredRole="ADMIN">
-                <div>Formulaire Création Véhicule Page</div>
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-      </MemoryRouter>
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={initialEntries}>
+          <LocationDisplay />
+          <Routes>
+            <Route path="/login" element={<div>Page de Connexion</div>} />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute requiredRole="CLIENT">
+                  <DossiersPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/admin/dossiers" element={<div>File de traitement admin</div>} />
+            <Route
+              path="/admin/vehicles/new"
+              element={
+                <ProtectedRoute requiredRole="ADMIN">
+                  <div>Formulaire Création Véhicule Page</div>
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
     );
   };
 
@@ -73,7 +81,7 @@ describe("Tâche 8 — Sécurité des routes et navigation Back-Office", () => {
     renderWithRouter(["/admin/vehicles/new"]);
 
     expect(screen.getByTestId("location-display")).toHaveTextContent("/dashboard");
-    expect(screen.getByText("Tableau de bord")).toBeInTheDocument();
+    expect(screen.getByText("ESPACE CLIENT")).toBeInTheDocument();
     expect(screen.queryByText("Formulaire Création Véhicule Page")).not.toBeInTheDocument();
   });
 
@@ -100,7 +108,7 @@ describe("Tâche 8 — Sécurité des routes et navigation Back-Office", () => {
     expect(screen.queryByRole("button", { name: /Ajouter un véhicule/i })).not.toBeInTheDocument();
   });
 
-  it("affiche le bouton 'Ajouter un véhicule' dans le tableau de bord pour un ADMIN et permet la navigation", () => {
+  it("redirige un ADMIN du tableau de bord client vers sa file de traitement", () => {
     (useAuthStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
       isAuthenticated: true,
       user: { role: "ADMIN", first_name: "Admin", last_name: "User", email: "admin@test.com" },
@@ -108,12 +116,16 @@ describe("Tâche 8 — Sécurité des routes et navigation Back-Office", () => {
 
     renderWithRouter(["/dashboard"]);
 
-    const addButton = screen.getByRole("button", { name: /Ajouter un véhicule/i });
-    expect(addButton).toBeInTheDocument();
+    expect(screen.getByTestId("location-display")).toHaveTextContent("/admin/dossiers");
+    expect(screen.getByText("File de traitement admin")).toBeInTheDocument();
+    expect(screen.queryByText("ESPACE CLIENT")).not.toBeInTheDocument();
+  });
 
-    fireEvent.click(addButton);
+  it("déclare le raccourci profil et redirige les routes inconnues vers l’accueil", () => {
+    const profileMatches = matchRoutes(router.routes, "/profil");
+    const unknownMatches = matchRoutes(router.routes, "/route-inconnue");
 
-    expect(screen.getByTestId("location-display")).toHaveTextContent("/admin/vehicles/new");
-    expect(screen.getByText("Formulaire Création Véhicule Page")).toBeInTheDocument();
+    expect(profileMatches?.[profileMatches.length - 1]?.route.path).toBe("profil");
+    expect(unknownMatches?.[unknownMatches.length - 1]?.route.path).toBe("*");
   });
 });

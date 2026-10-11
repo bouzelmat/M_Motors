@@ -1,9 +1,9 @@
 import {
-  Badge,
   Chip,
   Checkbox,
   List,
   ListItem,
+  ListItemButton,
   ListItemIcon,
   ListItemText,
   Paper,
@@ -21,8 +21,8 @@ export function ServiceSelector({
   services,
   selectedServices,
   onToggle,
-}: ServiceSelectorProps): JSX.Element {
-  if (!services || services.length === 0) {
+}: ServiceSelectorProps) {
+  if (services.length === 0) {
     return (
       <Paper elevation={0} sx={{ p: 2, textAlign: "center" }}>
         <Typography color="text.secondary" variant="body2">
@@ -41,7 +41,6 @@ export function ServiceSelector({
           selectedServices.some(
             (selectedService) => selectedService.id === service.id,
           );
-
         const handleToggle = () => {
           if (!isIncluded) {
             onToggle(service);
@@ -51,9 +50,8 @@ export function ServiceSelector({
         return (
           <ListItem
             key={service.id}
-            button={!isIncluded}
-            onClick={handleToggle}
             divider
+            disablePadding
             secondaryAction={
               isIncluded ? (
                 <Chip label="Inclus" color="success" size="small" />
@@ -64,22 +62,27 @@ export function ServiceSelector({
               )
             }
           >
-            <ListItemIcon>
-              <Checkbox
-                edge="start"
-                checked={isSelected}
-                disabled={isIncluded}
-                tabIndex={-1}
-                disableRipple
-                inputProps={{
-                  "aria-label": `Sélectionner ${service.name}`,
-                }}
+            <ListItemButton
+              onClick={handleToggle}
+              disabled={isIncluded}
+            >
+              <ListItemIcon>
+                <Checkbox
+                  edge="start"
+                  checked={isSelected}
+                  disabled={isIncluded}
+                  tabIndex={-1}
+                  disableRipple
+                  inputProps={{
+                    "aria-label": `Sélectionner ${service.name}`,
+                  }}
+                />
+              </ListItemIcon>
+              <ListItemText
+                primary={service.name}
+                secondary={isIncluded ? "Service inclus dans l'abonnement" : undefined}
               />
-            </ListItemIcon>
-            <ListItemText
-              primary={service.name}
-              secondary={isIncluded ? `${service.monthly_cost} €/mois` : null}
-            />
+            </ListItemButton>
           </ListItem>
         );
       })}

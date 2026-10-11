@@ -9,20 +9,36 @@ from src.dossiers.application.commands.create_dossier import (
     CreateDossierCommandHandler,
 )
 from src.dossiers.domain.entities.dossier import Dossier
+from src.dossiers.domain.exceptions import VehicleNotAvailableException
 from src.dossiers.domain.value_objects.dossier_status import DossierStatus
 from src.dossiers.domain.value_objects.financing_plan import FinancingPlan
 from src.dossiers.domain.value_objects.trade_in import TradeIn
 from src.shared.domain.exceptions import DomainError
+from src.vehicles.domain.value_objects.vehicle_status import VehicleStatus
 
 
 class FakeDossierRepository:
     """Repository mémoire utilisé pour tester sans base de données."""
 
-    def __init__(self) -> None:
+    def __init__(self, active: bool = False) -> None:
+        self.active = active
         self.saved_dossiers: list[Dossier] = []
 
     async def save(self, dossier: Dossier) -> None:
         self.saved_dossiers.append(dossier)
+
+    async def has_active_for_vehicle(self, vehicle_id) -> bool:
+        return self.active
+
+
+class FakeVehicleRepository:
+    async def find_by_id_for_update(self, vehicle_id):
+        return type("VehicleStub", (), {"status": VehicleStatus.AVAILABLE})()
+
+
+class FakeEventBus:
+    async def publish(self, event) -> None:
+        return None
 
 
 class FakeUnitOfWork:
@@ -174,13 +190,33 @@ async def test_create_handler_saves_draft_and_commits() -> None:
     uow = FakeUnitOfWork()
     handler = CreateDossierCommandHandler(
         dossier_repository=repository,
+        vehicle_repository=FakeVehicleRepository(),
         uow=uow,
+        event_bus=FakeEventBus(),
     )
     command = CreateDossierCommand(user_id=uuid4(), vehicle_id=uuid4())
     dossier = await handler.handle(command)
     assert dossier.status == DossierStatus.DRAFT
     assert repository.saved_dossiers == [dossier]
     assert uow.committed is True
+
+
+@pytest.mark.asyncio
+async def test_create_handler_rejects_second_active_dossier() -> None:
+    repository = FakeDossierRepository(active=True)
+    uow = FakeUnitOfWork()
+    handler = CreateDossierCommandHandler(
+        dossier_repository=repository,
+        vehicle_repository=FakeVehicleRepository(),
+        uow=uow,
+        event_bus=FakeEventBus(),
+    )
+
+    with pytest.raises(VehicleNotAvailableException):
+        await handler.handle(CreateDossierCommand(user_id=uuid4(), vehicle_id=uuid4()))
+
+    assert repository.saved_dossiers == []
+    assert uow.committed is False
 
 
 # === NOUVEAUX TESTS POUR US-502 ===
@@ -204,6 +240,16 @@ def test_approve_non_submitted_dossier_raises_domain_error() -> None:
         DomainError, match="Impossible de valider un dossier au statut DRAFT"
     ):
         dossier.approve(admin_id=admin_id)
+
+
+def test_submit_documents_pending_dossier_after_request_is_allowed() -> None:
+    dossier = Dossier.create(user_id=uuid4(), vehicle_id=uuid4()).submit()
+    dossier = dossier.request_documents(["IDENTITY_CARD"])
+
+    resubmitted = dossier.submit()
+
+    assert resubmitted.status == DossierStatus.SUBMITTED
+    assert resubmitted.requested_document_types is None
 
 
 def test_reject_submitted_dossier_transitions_to_rejected() -> None:

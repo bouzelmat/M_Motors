@@ -2,6 +2,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import axios from 'axios';
 import { authService } from '../../application/AuthService';
 import { UserResponse } from '../../application/dtos';
 
@@ -47,7 +48,9 @@ export const useAuthStore = create<AuthState>()(
           set({ user, isLoading: false });
         } catch (error) {
           set({
-            error: error instanceof Error ? error.message : 'Login failed',
+            error: axios.isAxiosError(error) && error.response?.status === 401
+              ? 'Adresse e-mail ou mot de passe incorrect.'
+              : 'La connexion a échoué. Réessayez dans un instant.',
             isLoading: false,
             isAuthenticated: false,
             token: null,

@@ -1,5 +1,7 @@
 /** Modes de consultation du catalogue. */
 export type CatalogMode = "rental" | "sale";
+export type CatalogType = "SALE" | "RENTAL" | "BOTH";
+export type EnergyType = "ESSENCE" | "DIESEL" | "ELECTRIQUE" | "HYBRIDE";
 
 /** DTO représentant un véhicule dans le catalogue. */
 export type VehicleListItemDTO = {
@@ -7,7 +9,7 @@ export type VehicleListItemDTO = {
     readonly brand: string;
     readonly model: string;
     readonly year: number;
-    readonly monthly_rent: string; // Decimal sérialisé en chaîne
+    readonly monthly_rent: string | null; // Decimal sérialisé en chaîne
     readonly photo_url: string | null;
     readonly included_services: readonly string[];
 };
@@ -23,10 +25,10 @@ export type ServiceDTO = {
 
 /** DTO représentant le détail complet d'un véhicule. */
 export type VehicleDetailDTO = VehicleListItemDTO & {
-    readonly price: string; // Decimal sérialisé en chaîne
+    readonly price: string | null; // Decimal sérialisé en chaîne
     readonly mileage: number;
-    readonly energy_type: string;
-    readonly catalog_type: "SALE" | "RENTAL" | "BOTH";
+    readonly energy_type: EnergyType;
+    readonly catalog_type: CatalogType;
     readonly description: string | null;
     readonly services: readonly ServiceDTO[];
 };
@@ -37,28 +39,20 @@ export type CreateVehicleRequestDTO = {
     readonly model: string;
     readonly year: number;
     readonly mileage: number;
-    readonly energy_type: string;
-    readonly catalog_type: "SALE" | "RENTAL" | "BOTH";
+    readonly energy_type: EnergyType;
+    readonly catalog_type: CatalogType;
     readonly price?: number | null;
     readonly monthly_rent?: number | null;
     readonly description?: string | null;
+    readonly services: readonly {
+        readonly service_id: string;
+        readonly included: boolean;
+    }[];
 };
 
-/** DTO de réponse après création d'un véhicule. */
-export type VehicleCreatedDTO = {
-    readonly id: string;
-    readonly brand: string;
-    readonly model: string;
-    readonly year: number;
-    readonly mileage: number;
-    readonly energy_type: string;
-    readonly catalog_type: "SALE" | "RENTAL" | "BOTH";
-    readonly price: string | null;
-    readonly monthly_rent: string | null;
-    readonly description: string | null;
-};
+export type VehicleStatus = "AVAILABLE" | "RENTED" | "SOLD" | "MAINTENANCE";
 
-/** DTO de réponse après modification du type de catalogue. */
+/** DTO partagé par les réponses de création et de modification d'un véhicule. */
 export type VehicleResponseDTO = {
     readonly id: string;
     readonly brand: string;
@@ -67,11 +61,15 @@ export type VehicleResponseDTO = {
     readonly price: string | null;
     readonly monthly_rent: string | null;
     readonly mileage: number;
-    readonly energy_type: string;
-    readonly status: string;
-    readonly catalog_type: "SALE" | "RENTAL" | "BOTH";
+    readonly energy_type: EnergyType;
+    readonly status: VehicleStatus;
+    readonly catalog_type: CatalogType;
     readonly description: string | null;
+    readonly created_at: string;
+    readonly updated_at: string;
 };
+
+export type VehicleCreatedDTO = VehicleResponseDTO;
 
 /** Paramètres de recherche du catalogue. */
 export type GetCatalogParams = {
@@ -94,4 +92,12 @@ export type PresignedPhotoUploadDTO = {
 export type ConfirmPhotoUploadDTO = {
     readonly photo_id: string;
     readonly photo_url: string;
+};
+
+export type VehiclePhotoDTO = {
+    readonly id: string;
+    readonly photo_url: string;
+    readonly is_primary: boolean;
+    readonly created_at: string;
+    readonly uploaded_at: string | null;
 };

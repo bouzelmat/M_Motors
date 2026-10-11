@@ -1,0 +1,97 @@
+import { TypographyOptions } from "@mui/material/styles/createTypography";
+
+export const typography: TypographyOptions = {
+  fontFamily: [
+    "'Inter Variable'",
+    "'Inter'",
+    "-apple-system",
+    "BlinkMacSystemFont",
+    '"Segoe UI"',
+    "Roboto",
+    '"Helvetica Neue"',
+    "Arial",
+    "sans-serif",
+  ].join(","),
+  h1: {
+    fontFamily: "'Inter Variable', 'Inter', sans-serif",
+    fontSize: "3.25rem",
+    fontWeight: 800,
+    lineHeight: 1.1,
+    letterSpacing: "-0.03em",
+  },
+  h2: {
+    fontFamily: "'Inter Variable', 'Inter', sans-serif",
+    fontSize: "2.25rem",
+    fontWeight: 700,
+    lineHeight: 1.2,
+    letterSpacing: "-0.02em",
+  },
+  h3: {
+    fontFamily: "'Inter Variable', 'Inter', sans-serif",
+    fontSize: "1.75rem",
+    fontWeight: 700,
+    lineHeight: 1.25,
+    letterSpacing: "-0.015em",
+  },
+  h4: {
+    fontFamily: "'Inter Variable', 'Inter', sans-serif",
+    fontSize: "1.375rem",
+    fontWeight: 600,
+    lineHeight: 1.3,
+    letterSpacing: "-0.01em",
+  },
+  h5: {
+    fontFamily: "'Inter Variable', 'Inter', sans-serif",
+    fontSize: "1.125rem",
+    fontWeight: 600,
+    lineHeight: 1.4,
+  },
+  h6: {
+    fontFamily: "'Inter Variable', 'Inter', sans-serif",
+    fontSize: "1rem",
+    fontWeight: 600,
+    lineHeight: 1.4,
+  },
+  subtitle1: {
+    fontSize: "1.125rem",
+    fontWeight: 400,
+    lineHeight: 1.5,
+    color: "rgba(17, 17, 19, 0.60)",
+  },
+  subtitle2: {
+    fontSize: "0.875rem",
+    fontWeight: 500,
+    lineHeight: 1.43,
+  },
+  body1: {
+    fontSize: "1rem",
+    fontWeight: 400,
+    lineHeight: 1.5,
+  },
+  body2: {
+    fontSize: "0.875rem",
+    fontWeight: 400,
+    lineHeight: 1.43,
+  },
+  button: {
+    fontFamily: "'Inter Variable', 'Inter', sans-serif",
+    fontSize: "0.9375rem",
+    fontWeight: 600,
+    lineHeight: 1.75,
+    textTransform: "none",
+  },
+  caption: {
+    fontSize: "0.75rem",
+    fontWeight: 400,
+    lineHeight: 1.4,
+    color: "rgba(17, 17, 19, 0.60)",
+  },
+  overline: {
+    fontSize: "0.75rem",
+    fontWeight: 700,
+    letterSpacing: "0.1em",
+    lineHeight: 1.5,
+    textTransform: "uppercase",
+    color: "#E82127",
+  },
+};
