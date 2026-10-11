@@ -1,27 +1,26 @@
+"""Endpoints pour la gestion des photos de véhicules."""
+
 from datetime import datetime
 from typing import Any, Dict
 from uuid import UUID
 
+from botocore.exceptions import ClientError
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel, Field
 
-# Imports de sécurité globaux corrigés
 from src.api.dependencies import require_role
-from src.auth.domain.value_objects import Role
 from src.auth.domain.entities.user import User
+from src.auth.domain.value_objects import Role
 from src.shared.infrastructure.dependencies import SessionDep
-
 from src.vehicles.application.use_cases.generate_presigned_url import (
     GeneratePresignedUploadUrlUseCase,
 )
+from src.vehicles.domain.entities.vehicle_photo import VehiclePhoto
 from src.vehicles.domain.exceptions import (
     FileSizeExceededError,
     InvalidImageFormatError,
     VehicleNotFoundError,
 )
-from src.vehicles.domain.entities.vehicle_photo import VehiclePhoto
-
-# CORRECTION DE L'IMPORT : On cible le fichier dependencies du module vehicles
 from src.vehicles.infrastructure.dependencies import (
     get_storage_service,
     get_vehicle_repository,
@@ -71,7 +70,6 @@ async def list_vehicle_photos(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Véhicule non trouvé"
         )
-
     photos: list[VehiclePhoto] = await vehicle_repository.list_uploaded_photos(
         vehicle_id
     )
@@ -98,7 +96,7 @@ async def set_primary_vehicle_photo(
     session: SessionDep,
     vehicle_repository=Depends(get_vehicle_repository),
 ) -> Response:
-    """Définit une photo confirmée comme couverture du véhicule."""
+    """Déinit une photo confirmée comme couverture du véhicule."""
     if not await vehicle_repository.set_primary_photo(vehicle_id, photo_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Photo non trouvée"
@@ -125,7 +123,13 @@ async def delete_vehicle_photo(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Photo non trouvée"
         )
-    await storage_service.delete_object(object_key)
+    try:
+        await storage_service.delete_object(object_key)
+    except ClientError as err:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Impossible de supprimer la photo",
+        ) from err
     await session.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -141,16 +145,13 @@ async def generate_photo_upload_url(
     session: SessionDep,
     current_user: User = Depends(require_role(Role.ADMIN)),
     storage_service: S3StorageService = Depends(get_storage_service),
-    # FastAPI injectera automatiquement la SessionDep requise par get_vehicle_repository
     vehicle_repository=Depends(get_vehicle_repository),
 ) -> PresignedUrlResponse:
     """Génère une URL pré-signée POST et ses signatures pour l'upload S3 (ADMIN uniquement)."""
-
     use_case = GeneratePresignedUploadUrlUseCase(
         storage_service=storage_service,
         vehicle_repository=vehicle_repository,
     )
-
     try:
         presigned_data = await use_case.execute(
             vehicle_id=vehicle_id,
@@ -186,6 +187,11 @@ async def generate_photo_upload_url(
             status_code=status.HTTP_413_CONTENT_TOO_LARGE,
             detail=str(exc),
         ) from exc
+    except ClientError as err:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Impossible de générer l'URL de téléversement",
+        ) from err
 
 
 @router.post(
@@ -207,13 +213,17 @@ async def confirm_photo_upload(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Photo non trouvée"
         )
-
-    if not await storage_service.object_exists(photo.object_key):
+    try:
+        if not await storage_service.object_exists(photo.object_key):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="La photo n'est pas encore disponible dans le stockage.",
+            )
+    except ClientError as err:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="La photo n'est pas encore disponible dans le stockage.",
-        )
-
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Impossible de vérifier l'existence de la photo",
+        ) from err
     photo.photo_url = await storage_service.get_object_url(photo.object_key)
     await vehicle_repository.confirm_photo(photo)
     await session.commit()

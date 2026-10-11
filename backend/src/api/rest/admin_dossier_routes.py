@@ -72,9 +72,15 @@ async def get_pending_dossiers(
     ] = "submitted_at",
     use_case: ListPendingDossiersUseCase = Depends(get_list_pending_dossiers_use_case),
 ) -> list[PendingDossierResponse]:
-    """Récupère la liste de tous les dossiers en attente de traitement par les gestionnaires."""
+    """Récupère la liste de tous les dossiers en attente de traitement."""
     query = ListPendingDossiersQuery(sort_by=sort_by)
-    results = await use_case.execute(query)
+    try:
+        results = await use_case.execute(query)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e),
+        ) from e
     return [PendingDossierResponse.model_validate(r) for r in results]
 
 

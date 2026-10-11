@@ -5,7 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
 
-from src.shared.domain.exceptions import DomainError
+from src.shared.domain.exceptions import DomainError, NotFoundError
 from src.vehicles.api.dependencies import (
     check_toggle_feature_enabled,
     get_current_admin_user,
@@ -39,22 +39,15 @@ async def toggle_catalog_type(
     request: ToggleCatalogTypeRequest,
     handler: ToggleVehicleTypeCommandHandler = Depends(get_toggle_vehicle_type_handler),
 ) -> VehicleResponse:
-    """Bascule automatiquement le mode commercial d'un véhicule.
-
-    - Exige un compte administrateur.
-    - Désactivé en production tant que le Feature Flag n'est pas activé.
-    - Retourne un statut HTTP 409 si un dossier actif bloque la bascule sans confirmation.
-    """
+    """Bascule automatiquement le mode commercial d'un véhicule."""
     command = ToggleVehicleTypeCommand(
         vehicle_id=vehicle_id,
         new_price=request.new_price,
         bypass_warning=request.confirm,
     )
-
     try:
         updated_vehicle = await handler.handle(command)
         return VehicleResponse.model_validate(updated_vehicle)
-
     except ActiveDossierWarningException as exc:
         return JSONResponse(
             status_code=status.HTTP_409_CONFLICT,
@@ -64,12 +57,12 @@ async def toggle_catalog_type(
                 "requires_confirmation": True,
             },
         )
+    except NotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,  # 🔴 CORRECTION: 404 au lieu de 400
+            detail=str(exc),
+        ) from exc
     except DomainError as exc:
-        if "introuvable" in str(exc).lower():
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=str(exc),
-            ) from exc
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(exc),
