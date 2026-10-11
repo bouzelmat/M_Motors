@@ -132,26 +132,28 @@ jobs:
 
       - name: Exécuter le Scan d'API OWASP ZAP Authentifié
         run: |
+          # 1. Création propre du dossier d'artefact à la racine globale
           mkdir -p ${{ github.workspace }}/zap-reports
           
+          # 2. Extraction du token depuis le fichier situé dans backend/
           TOKEN_RAW=$(cat zap_headers.json | grep -oP 'Bearer \K[^"]+')
           
+          # 3. Exécution avec les corrections de chemins et de droits root
           docker run --rm \
+            --user root \
             -v ${{ github.workspace }}:/zap/wrk/:rw \
             --network="host" \
             zaproxy/zap-stable zap-api-scan.py \
             -t http://localhost:8000/openapi.json \
             -f openapi \
-            -c /zap/wrk/backend/.zap/rules.tsv \
+            -c /zap/wrk/.zap/rules.tsv \
             -z "-config replacer.full_list\(0\).description=Auth \
                 -config replacer.full_list\(0\).enabled=true \
                 -config replacer.full_list\(0\).matchtype=REQ_HEADER \
                 -config replacer.full_list\(0\).matchstr=Authorization \
                 -config replacer.full_list\(0\).regex=false \
                 -config replacer.full_list\(0\).replacement='Bearer '$TOKEN_RAW" \
-            -r rapport_api_zap.html || true
-          
-          mv ${{ github.workspace }}/rapport_api_zap.html ${{ github.workspace }}/zap-reports/rapport_api_zap.html
+            -r zap-reports/rapport_api_zap.html || true
 
       - name: Sauvegarder le rapport de sécurité ZAP
         if: always()
