@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { getApiErrorMessage } from "./apiErrorMessage";
+import { getApiErrorMessage } from "../apiErrorMessage";
 
 const axiosError = (status?: number, detail?: unknown) => ({
 	isAxiosError: true,
