@@ -58,7 +58,8 @@ jobs:
       # ==========================================
       - name: Run Alembic Migrations
         env:
-          ENVIRONMENT: test
+          # CORRECTION : "development" au lieu de "test" pour satisfaire le Literal Pydantic
+          ENVIRONMENT: development
           DATABASE_URL: postgresql+asyncpg://m_motors:m_motors@localhost:5432/test_m_motors
           SECRET_KEY: "ci-github-actions-test-secret-key-must-be-at-least-32-chars"
           S3_BUCKET_NAME: m-motors-photos-test
@@ -71,7 +72,8 @@ jobs:
 
       - name: Pytest
         env:
-          ENVIRONMENT: test
+          # CORRECTION : "development" au lieu de "test"
+          ENVIRONMENT: development
           DATABASE_URL: postgresql+asyncpg://m_motors:m_motors@localhost:5432/test_m_motors
           SECRET_KEY: "ci-github-actions-test-secret-key-must-be-at-least-32-chars"
           S3_BUCKET_NAME: m-motors-photos-test
@@ -87,6 +89,7 @@ jobs:
       # ==========================================
       - name: Générer un jeton JWT de test pour ZAP
         env:
+          ENVIRONMENT: development
           SECRET_KEY: "ci-github-actions-test-secret-key-must-be-at-least-32-chars"
         run: |
           cat << 'EOF' > generate_zap_token.py
@@ -107,7 +110,8 @@ jobs:
 
       - name: Lancer FastAPI en arrière-plan pour le scan
         env:
-          ENVIRONMENT: test
+          # CORRECTION : "development" au lieu de "test"
+          ENVIRONMENT: development
           DATABASE_URL: postgresql+asyncpg://m_motors:m_motors@localhost:5432/test_m_motors
           SECRET_KEY: "ci-github-actions-test-secret-key-must-be-at-least-32-chars"
           S3_BUCKET_NAME: m-motors-photos-test
