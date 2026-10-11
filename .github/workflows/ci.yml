@@ -58,29 +58,32 @@ jobs:
       # ==========================================
       - name: Run Alembic Migrations
         env:
-          # CORRECTION : "development" au lieu de "test" pour satisfaire le Literal Pydantic
+          # Variable non sensible : safe en dur
           ENVIRONMENT: development
+          # URL de test CI locale : safe en dur (base éphémère)
           DATABASE_URL: postgresql+asyncpg://m_motors:m_motors@localhost:5432/test_m_motors
-          SECRET_KEY: "ci-github-actions-test-secret-key-must-be-at-least-32-chars"
+          # SECRET : Injecté via GitHub Secrets
+          SECRET_KEY: ${{ secrets.CI_SECRET_KEY }}
+          # Variables S3 non sensibles
           S3_BUCKET_NAME: m-motors-photos-test
           S3_DOCUMENTS_BUCKET_NAME: m-motors-documents-test
           AWS_REGION: eu-west-3
-          AWS_ACCESS_KEY_ID: testing
-          AWS_SECRET_ACCESS_KEY: testing
+          # Credentials S3 : Injectés via GitHub Secrets (même si c'est "testing" pour Moto)
+          AWS_ACCESS_KEY_ID: ${{ secrets.CI_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.CI_AWS_SECRET_ACCESS_KEY }}
           AWS_ENDPOINT_URL: http://localhost:9090
         run: alembic upgrade head
 
       - name: Pytest
         env:
-          # CORRECTION : "development" au lieu de "test"
           ENVIRONMENT: development
           DATABASE_URL: postgresql+asyncpg://m_motors:m_motors@localhost:5432/test_m_motors
-          SECRET_KEY: "ci-github-actions-test-secret-key-must-be-at-least-32-chars"
+          SECRET_KEY: ${{ secrets.CI_SECRET_KEY }}
           S3_BUCKET_NAME: m-motors-photos-test
           S3_DOCUMENTS_BUCKET_NAME: m-motors-documents-test
           AWS_REGION: eu-west-3
-          AWS_ACCESS_KEY_ID: testing
-          AWS_SECRET_ACCESS_KEY: testing
+          AWS_ACCESS_KEY_ID: ${{ secrets.CI_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.CI_AWS_SECRET_ACCESS_KEY }}
           AWS_ENDPOINT_URL: http://localhost:9090
         run: pytest --cov=src --cov-report=term-missing
 
@@ -90,14 +93,15 @@ jobs:
       - name: Générer un jeton JWT de test pour ZAP
         env:
           ENVIRONMENT: development
-          SECRET_KEY: "ci-github-actions-test-secret-key-must-be-at-least-32-chars"
+          # Seul le SECRET_KEY est nécessaire ici, mais on le passe proprement
+          SECRET_KEY: ${{ secrets.CI_SECRET_KEY }}
         run: |
           cat << 'EOF' > generate_zap_token.py
           import json
           from src.auth.infrastructure.security.jwt_service import JWTService
           
           jwt_service = JWTService()
-          # CORRECTION : create_access_token (et non create_token)
+          # CORRECTION CONFIRMÉE : create_access_token
           token = jwt_service.create_access_token(data={"sub": "zap-test-user-id", "role": "admin"})
           
           zap_auth_header = [{"header": f"Authorization: Bearer {token}"}]
@@ -110,21 +114,20 @@ jobs:
 
       - name: Lancer FastAPI en arrière-plan pour le scan
         env:
-          # CORRECTION : "development" au lieu de "test"
           ENVIRONMENT: development
           DATABASE_URL: postgresql+asyncpg://m_motors:m_motors@localhost:5432/test_m_motors
-          SECRET_KEY: "ci-github-actions-test-secret-key-must-be-at-least-32-chars"
+          SECRET_KEY: ${{ secrets.CI_SECRET_KEY }}
           S3_BUCKET_NAME: m-motors-photos-test
           S3_DOCUMENTS_BUCKET_NAME: m-motors-documents-test
           AWS_REGION: eu-west-3
-          AWS_ACCESS_KEY_ID: testing
-          AWS_SECRET_ACCESS_KEY: testing
+          AWS_ACCESS_KEY_ID: ${{ secrets.CI_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.CI_AWS_SECRET_ACCESS_KEY }}
           AWS_ENDPOINT_URL: http://localhost:9090
           PYTHONPATH: .
         run: |
           uvicorn src.api.main:app --host 0.0.0.0 --port 8000 &
           echo "Attente du démarrage de FastAPI..."
-          # CORRECTION : URL de healthcheck complète et valide
+          # CORRECTION CONFIRMÉE : URL de healthcheck complète et valide
           timeout 30s sh -c 'until curl --silent http://127.0.0.1:8000/health > /dev/null; do sleep 1; done'
           echo "FastAPI est prêt !"
 
@@ -132,7 +135,7 @@ jobs:
         run: |
           mkdir -p ${{ github.workspace }}/zap-reports
           
-          # Le working-directory étant 'backend', le fichier est bien à la racine de ce dossier
+          # Le working-directory est 'backend', donc le fichier est à backend/zap_headers.json
           TOKEN_RAW=$(cat zap_headers.json | grep -oP 'Bearer \K[^"]+')
           
           docker run --rm \
