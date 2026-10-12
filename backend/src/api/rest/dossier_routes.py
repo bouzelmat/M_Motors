@@ -117,11 +117,11 @@ async def create_dossier(
         )
     except VehicleNotFoundException as exc:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
+            status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found"
         ) from exc
     except VehicleNotAvailableException as exc:
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail=str(exc)
+            status_code=status.HTTP_409_CONFLICT, detail="Conflict"
         ) from exc
 
 
@@ -159,12 +159,12 @@ async def get_dossier_status(
     if dossier is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Dossier {dossier_id} introuvable.",
+            detail="Resource not found",
         )
     if dossier.user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Accès refusé : vous n'êtes pas propriétaire de ce dossier.",
+            detail="Access denied",
         )
     decision_comment = (
         dossier.rejection_reason
@@ -196,15 +196,15 @@ async def submit_dossier(
         )
     except NotFoundError as exc:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
+            status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found"
         ) from exc
     except DossierAccessDeniedException as exc:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)
+            status_code=status.HTTP_403_FORBIDDEN, detail="Access denied"
         ) from exc
     except DomainError as exc:
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail=str(exc)
+            status_code=status.HTTP_409_CONFLICT, detail="Conflict"
         ) from exc
 
 
@@ -225,15 +225,15 @@ async def cancel_dossier(
         )
     except NotFoundError as exc:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
+            status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found"
         ) from exc
     except DossierAccessDeniedException as exc:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)
+            status_code=status.HTTP_403_FORBIDDEN, detail="Access denied"
         ) from exc
     except DomainError as exc:
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail=str(exc)
+            status_code=status.HTTP_409_CONFLICT, detail="Conflict"
         ) from exc
 
 
@@ -287,9 +287,13 @@ async def request_presigned_url(
             s3_key=result.document.s3_key,
         )
     except DossierNotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found"
+        ) from e
     except DossierAccessDeniedException as e:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e)) from e
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Access denied"
+        ) from e
 
 
 @router.post(
@@ -320,11 +324,17 @@ async def confirm_document_upload(
         await session.commit()
         return DocumentConfirmResponse.model_validate(document)
     except (DossierNotFoundException, DocumentNotFoundException) as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found"
+        ) from e
     except DossierAccessDeniedException as e:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e)) from e
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Access denied"
+        ) from e
     except InvalidDocumentStateException as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e)) from e
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Conflict"
+        ) from e
 
 
 @router.get(
@@ -344,12 +354,12 @@ async def list_documents(
     if dossier is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Dossier {dossier_id} introuvable.",
+            detail="Resource not found",
         )
     if dossier.user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Accès refusé : vous n'êtes pas propriétaire de ce dossier.",
+            detail="Access denied",
         )
     documents = await document_repo.find_by_dossier(dossier_id)
     return [DocumentListItemResponse.model_validate(doc) for doc in documents]
@@ -396,26 +406,26 @@ async def get_document_view_url(
     if dossier is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Dossier {dossier_id} introuvable.",
+            detail="Resource not found",
         )
 
     document = await document_repo.find_by_id(document_id)
     if document is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Document {document_id} introuvable.",
+            detail="Resource not found",
         )
 
     if document.dossier_id != dossier_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Document non rattaché à ce dossier.",
+            detail="Resource not found",
         )
 
     if not can_access_document(current_user, document, dossier):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Accès refusé : vous n'avez pas le droit de consulter ce document.",
+            detail="Access denied",
         )
 
     try:

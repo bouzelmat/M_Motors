@@ -2,6 +2,7 @@
 
 from contextlib import asynccontextmanager
 import logging
+import uuid
 
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
@@ -131,12 +132,16 @@ def create_app() -> FastAPI:
         request: Request, exc: Exception
     ) -> JSONResponse:
         """Intercept ALL unhandled exceptions and return sanitized 500."""
+        error_id = str(uuid.uuid4())
         logger.exception(
-            f"Unhandled exception on {request.method} {request.url}: {exc}"
+            "Unhandled exception [%s] on %s %s",
+            error_id,
+            request.method,
+            request.url,
         )
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={"detail": "Internal server error"},
+            content={"detail": "Internal server error", "error_id": error_id},
         )
 
     # Include routers
