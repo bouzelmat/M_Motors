@@ -2,19 +2,17 @@
 
 from contextlib import asynccontextmanager
 import logging
+import uuid
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from src.api.middleware import get_middleware
-from src.api.rest.admin_dossier_routes import (
-    router as admin_dossier_router,
-)
+from src.api.rest.admin_dossier_routes import router as admin_dossier_router
 from src.api.rest.auth_routes import router as auth_router
 from src.api.rest.dossier_routes import router as dossier_router
 from src.api.rest.health_routes import router as health_router
-from src.config import get_settings
 from src.dossiers.application.consumers.send_dossier_email import (
     SendDocumentsRequestedEmailConsumer,
     SendDossierRejectedEmailConsumer,
@@ -23,6 +21,12 @@ from src.dossiers.application.consumers.send_dossier_email import (
 from src.dossiers.domain.events.documents_requested import DocumentsRequested
 from src.dossiers.domain.events.dossier_rejected import DossierRejected
 from src.dossiers.domain.events.dossier_validated import DossierValidated
+from src.shared.domain.exceptions import (
+    ConflictError,
+    DomainError,
+    ForbiddenError,
+    NotFoundError,
+)
 from src.shared.infrastructure.messaging.in_memory_event_bus import get_event_bus
 from src.vehicles.api.endpoints.catalog import router as vehicles_router
 from src.vehicles.api.endpoints.photos import router as photos_router
@@ -33,13 +37,10 @@ logger = logging.getLogger(__name__)
 def _register_event_consumers() -> None:
     """Enregistre les consommateurs d'événements sur le bus singleton."""
     bus = get_event_bus()
-
     validated_consumer = SendDossierValidatedEmailConsumer()
     bus.subscribe(DossierValidated, validated_consumer.handle)
-
     rejected_consumer = SendDossierRejectedEmailConsumer()
     bus.subscribe(DossierRejected, rejected_consumer.handle)
-
     documents_consumer = SendDocumentsRequestedEmailConsumer()
     bus.subscribe(DocumentsRequested, documents_consumer.handle)
 
@@ -57,6 +58,7 @@ def create_app() -> FastAPI:
         title="M-Motors API",
         version="0.1.0",
         lifespan=lifespan,
+        debug=False,  # 🔴 CORRECTION: Désactive le mode debug (Problème 6)
     )
 
     # --- GLOBAL EXCEPTION HANDLERS ---
@@ -67,7 +69,7 @@ def create_app() -> FastAPI:
         """Intercept Pydantic validation errors and return sanitized 422."""
         logger.warning(f"Validation error on {request.url}: {exc.errors()}")
         return JSONResponse(
-            status_code=422,
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             content={
                 "detail": "Validation failed",
                 "errors": [
@@ -81,28 +83,65 @@ def create_app() -> FastAPI:
             },
         )
 
+    @app.exception_handler(DomainError)
+    async def domain_exception_handler(
+        request: Request, exc: DomainError
+    ) -> JSONResponse:
+        """Intercept domain errors and return 422."""
+        logger.warning(f"Domain error on {request.method} {request.url}: {exc}")
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            content={"detail": "Domain validation failed"},
+        )
+
+    @app.exception_handler(NotFoundError)
+    async def not_found_exception_handler(
+        request: Request, exc: NotFoundError
+    ) -> JSONResponse:
+        """Intercept NotFoundError and return 404."""
+        logger.warning(f"Not found on {request.method} {request.url}: {exc}")
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={"detail": "Resource not found"},
+        )
+
+    @app.exception_handler(ForbiddenError)
+    async def forbidden_exception_handler(
+        request: Request, exc: ForbiddenError
+    ) -> JSONResponse:
+        """Intercept ForbiddenError and return 403."""
+        logger.warning(f"Forbidden on {request.method} {request.url}: {exc}")
+        return JSONResponse(
+            status_code=status.HTTP_403_FORBIDDEN,
+            content={"detail": "Access denied"},
+        )
+
+    @app.exception_handler(ConflictError)
+    async def conflict_exception_handler(
+        request: Request, exc: ConflictError
+    ) -> JSONResponse:
+        """Intercept ConflictError and return 409."""
+        logger.warning(f"Conflict on {request.method} {request.url}: {exc}")
+        return JSONResponse(
+            status_code=status.HTTP_409_CONFLICT,
+            content={"detail": "Conflict"},
+        )
+
     @app.exception_handler(Exception)
     async def generic_exception_handler(
         request: Request, exc: Exception
     ) -> JSONResponse:
-        """Intercept ALL unhandled exceptions, log them, and return sanitized 500."""
+        """Intercept ALL unhandled exceptions and return sanitized 500."""
+        error_id = str(uuid.uuid4())
         logger.exception(
-            f"Unhandled exception on {request.method} {request.url}: {exc}"
+            "Unhandled exception [%s] on %s %s",
+            error_id,
+            request.method,
+            request.url,
         )
-        settings = get_settings()
-        if settings.environment == "development":
-            # In dev, you might want more details (but NEVER in production)
-            return JSONResponse(
-                status_code=500,
-                content={
-                    "detail": "Internal server error",
-                    "type": type(exc).__name__,
-                },
-            )
-        # In production: NEVER expose stack traces or internal details
         return JSONResponse(
-            status_code=500,
-            content={"detail": "Internal server error"},
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"detail": "Internal server error", "error_id": error_id},
         )
 
     # Include routers

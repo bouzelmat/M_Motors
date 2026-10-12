@@ -15,7 +15,6 @@ from src.dossiers.infrastructure.models.dossier_model import DossierModel
 from src.dossiers.infrastructure.repository.sqlalchemy_dossier_repository import (
     SQLAlchemyDossierRepository,
 )
-from src.shared.domain.exceptions import DomainError
 from src.vehicles.infrastructure.orm.vehicle_model import VehicleModel
 from src.vehicles.domain.value_objects.catalog_type import CatalogType
 from src.vehicles.domain.value_objects.energy_type import EnergyType
@@ -214,7 +213,7 @@ async def _create_test_user_and_vehicle(
         year=2024,
         price=Decimal("25000.00"),
         mileage=15000,
-        energy_type=EnergyType.ELECTRIQUE,  # <-- CORRECTION ICI
+        energy_type=EnergyType.ELECTRIQUE,
         status=VehicleStatus.AVAILABLE,
         catalog_type=CatalogType.RENTAL,
         monthly_rent=Decimal("350.00"),
@@ -255,8 +254,8 @@ async def test_list_pending_returns_only_submitted_dossiers_sorted(
     pending_list = await repository.list_pending(sort_by="submitted_at")
 
     assert len(pending_list) == 2
-    assert pending_list[0].id == dossier_submitted_2.id  # <-- CORRECTION INDEXATION
-    assert pending_list[1].id == dossier_submitted_1.id  # <-- CORRECTION INDEXATION
+    assert pending_list[0].id == dossier_submitted_2.id
+    assert pending_list[1].id == dossier_submitted_1.id
     assert pending_list[0].client_email == "client1@example.com"
     assert pending_list[0].vehicle_brand == "Peugeot"
     assert pending_list[0].vehicle_model == "208"
@@ -264,10 +263,11 @@ async def test_list_pending_returns_only_submitted_dossiers_sorted(
 
 
 @pytest.mark.asyncio
-async def test_list_pending_raises_domain_error_on_invalid_sort(
+async def test_list_pending_raises_value_error_on_invalid_sort(
     db_session: AsyncSession,
 ) -> None:
+    """Test que list_pending lève ValueError pour un champ de tri invalide."""
     repository = SQLAlchemyDossierRepository(db_session)
-
-    with pytest.raises(DomainError, match="Champ de tri invalide"):
+    # 🔴 CORRECTION: Attendre ValueError au lieu de DomainError (car on a changé dans sqlalchemy_dossier_repository.py)
+    with pytest.raises(ValueError, match="Invalid sort field"):
         await repository.list_pending(sort_by="invalid_field")

@@ -23,13 +23,13 @@ from src.dossiers.application.commands.submit_dossier import (
     SubmitDossierCommand,
     SubmitDossierCommandHandler,
 )
-from src.dossiers.application.schemas.dossier_schemas import (
-    CreateDossierRequest,
-    DossierResponse,
-)
 from src.dossiers.application.commands.request_document_upload import (
     RequestDocumentUploadCommand,
     RequestDocumentUploadCommandHandler,
+)
+from src.dossiers.application.schemas.dossier_schemas import (
+    CreateDossierRequest,
+    DossierResponse,
 )
 from src.dossiers.application.services.authorization import can_access_document
 from src.dossiers.application.queries.get_dossier_status import (
@@ -45,6 +45,7 @@ from src.dossiers.application.schemas.document_schemas import (
     DocumentListItemResponse,
     PresignedUrlRequest,
     PresignedUrlResponse,
+    ViewUrlResponse,
 )
 from src.dossiers.domain.entities.dossier import Dossier
 from src.dossiers.domain.value_objects.financing_plan import FinancingPlan
@@ -65,21 +66,11 @@ from src.dossiers.infrastructure.dependencies import (
     get_create_dossier_handler,
     get_submit_dossier_handler,
 )
-
-try:
-    from src.dossiers.infrastructure.adapters.s3_document_storage import (
-        S3DocumentStorageAdapter,
-    )
-except ImportError:
-    # Fallback for environments without boto3
-    S3DocumentStorageAdapter = None
 from src.dossiers.infrastructure.repository.sqlalchemy_dossier_repository import (
     SQLAlchemyDossierRepository,
 )
 from src.shared.domain.exceptions import DomainError, NotFoundError
 from src.shared.infrastructure.dependencies import SessionDep
-
-from src.dossiers.application.schemas.document_schemas import ViewUrlResponse
 from src.dossiers.application.schemas.dossier_response import (
     DossierListItemResponse,
     DossierStatusResponse,
@@ -89,11 +80,7 @@ from src.dossiers.domain.value_objects.dossier_status import DossierStatus
 router = APIRouter(prefix="/api/v1/dossiers", tags=["dossiers"])
 
 
-@router.post(
-    "",
-    response_model=DossierResponse,
-    status_code=status.HTTP_201_CREATED,
-)
+@router.post("", response_model=DossierResponse, status_code=status.HTTP_201_CREATED)
 async def create_dossier(
     request: CreateDossierRequest,
     current_user: User = Depends(get_current_user),
@@ -130,11 +117,11 @@ async def create_dossier(
         )
     except VehicleNotFoundException as exc:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
+            status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found"
         ) from exc
     except VehicleNotAvailableException as exc:
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail=str(exc)
+            status_code=status.HTTP_409_CONFLICT, detail="Conflict"
         ) from exc
 
 
@@ -168,21 +155,17 @@ async def get_dossier_status(
     """Récupère le statut d'un dossier avec contrôles d'accès anti-IDOR."""
     dossier_repo = SQLAlchemyDossierRepository(session)
     handler = GetDossierStatusQueryHandler(dossier_repository=dossier_repo)
-
     dossier = await handler.handle(GetDossierStatusQuery(dossier_id=dossier_id))
-
     if dossier is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Dossier {dossier_id} introuvable.",
+            detail="Resource not found",
         )
-
     if dossier.user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Accès refusé : vous n'êtes pas propriétaire de ce dossier.",
+            detail="Access denied",
         )
-
     decision_comment = (
         dossier.rejection_reason
         if dossier.status == DossierStatus.REJECTED
@@ -213,15 +196,15 @@ async def submit_dossier(
         )
     except NotFoundError as exc:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
+            status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found"
         ) from exc
     except DossierAccessDeniedException as exc:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)
+            status_code=status.HTTP_403_FORBIDDEN, detail="Access denied"
         ) from exc
     except DomainError as exc:
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail=str(exc)
+            status_code=status.HTTP_409_CONFLICT, detail="Conflict"
         ) from exc
 
 
@@ -242,15 +225,15 @@ async def cancel_dossier(
         )
     except NotFoundError as exc:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
+            status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found"
         ) from exc
     except DossierAccessDeniedException as exc:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)
+            status_code=status.HTTP_403_FORBIDDEN, detail="Access denied"
         ) from exc
     except DomainError as exc:
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail=str(exc)
+            status_code=status.HTTP_409_CONFLICT, detail="Conflict"
         ) from exc
 
 
@@ -266,6 +249,13 @@ async def request_presigned_url(
     current_user: User = Depends(get_current_user),
 ) -> PresignedUrlResponse:
     """Génère une URL pré-signée S3 pour le téléversement d'un document."""
+    try:
+        from src.dossiers.infrastructure.adapters.s3_document_storage import (
+            S3DocumentStorageAdapter,
+        )
+    except ImportError:
+        S3DocumentStorageAdapter = None
+
     if S3DocumentStorageAdapter is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -280,7 +270,6 @@ async def request_presigned_url(
         document_repository=document_repo,
         storage_port=storage_adapter,
     )
-
     command = RequestDocumentUploadCommand(
         dossier_id=dossier_id,
         user_id=current_user.id,
@@ -289,7 +278,6 @@ async def request_presigned_url(
         content_type=request.content_type,
         size=request.size,
     )
-
     try:
         result = await handler.handle(command)
         await session.commit()
@@ -299,9 +287,13 @@ async def request_presigned_url(
             s3_key=result.document.s3_key,
         )
     except DossierNotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found"
+        ) from e
     except DossierAccessDeniedException as e:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e)) from e
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Access denied"
+        ) from e
 
 
 @router.post(
@@ -318,30 +310,31 @@ async def confirm_document_upload(
     """Confirms le téléversement effectif d'un document sur S3."""
     dossier_repo = SQLAlchemyDossierRepository(session)
     document_repo = SqlAlchemyDocumentRepository(session)
-
     handler = ConfirmDocumentUploadCommandHandler(
         dossier_repository=dossier_repo,
         document_repository=document_repo,
     )
-
     command = ConfirmDocumentUploadCommand(
         dossier_id=dossier_id,
         document_id=document_id,
         user_id=current_user.id,
     )
-
     try:
         document = await handler.handle(command)
         await session.commit()
         return DocumentConfirmResponse.model_validate(document)
-    except (
-        DossierNotFoundException,
-        DocumentNotFoundException,
-        InvalidDocumentStateException,
-    ) as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
+    except (DossierNotFoundException, DocumentNotFoundException) as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found"
+        ) from e
     except DossierAccessDeniedException as e:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e)) from e
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Access denied"
+        ) from e
+    except InvalidDocumentStateException as e:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Conflict"
+        ) from e
 
 
 @router.get(
@@ -357,20 +350,17 @@ async def list_documents(
     """Récupère l'ensemble des documents associés à un dossier."""
     dossier_repo = SQLAlchemyDossierRepository(session)
     document_repo = SqlAlchemyDocumentRepository(session)
-
     dossier = await dossier_repo.get_by_id(dossier_id)
     if dossier is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Dossier {dossier_id} introuvable.",
+            detail="Resource not found",
         )
-
     if dossier.user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Accès refusé : vous n'êtes pas propriétaire de ce dossier.",
+            detail="Access denied",
         )
-
     documents = await document_repo.find_by_dossier(dossier_id)
     return [DocumentListItemResponse.model_validate(doc) for doc in documents]
 
@@ -396,59 +386,57 @@ async def get_document_view_url(
     session: SessionDep,
     current_user: User = Depends(get_current_user),
 ) -> ViewUrlResponse:
-    """Génère une URL pré-signée pour consulter un document (US-304).
+    """Génère une URL pré-signée pour consulter un document (US-304)."""
+    try:
+        from src.dossiers.infrastructure.adapters.s3_document_storage import (
+            S3DocumentStorageAdapter,
+        )
+    except ImportError:
+        S3DocumentStorageAdapter = None
 
-    Contrôles:
-    - 401 : Token absent/invalide (géré par get_current_user).
-    - 404 : Dossier ou document introuvable (Critères 8,9).
-    - 404 : Document non rattaché au dossier (Critère 9).
-    - 403 : Utilisateur non autorisé (Critères 5,6).
-    - 200 : URL pré-signée valide 60s (Critère 7).
-    """
     if S3DocumentStorageAdapter is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Service de stockage S3 non disponible (boto3 non installé)",
         )
-    # Initialisation des dépendances
-    dossier_repo = SQLAlchemyDossierRepository(session)
     document_repo = SqlAlchemyDocumentRepository(session)
     storage_adapter = S3DocumentStorageAdapter(get_settings())
 
-    # 1. Récupération du dossier (Critère 8)
-    dossier = await dossier_repo.get_by_id(dossier_id)
+    dossier = await SQLAlchemyDossierRepository(session).get_by_id(dossier_id)
     if dossier is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Dossier {dossier_id} introuvable.",
+            detail="Resource not found",
         )
 
-    # 2. Récupération du document (Critère 8)
     document = await document_repo.find_by_id(document_id)
     if document is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Document {document_id} introuvable.",
+            detail="Resource not found",
         )
 
-    # 3. Vérification que le document est rattaché au dossier (Critère 9)
     if document.dossier_id != dossier_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Document non rattaché à ce dossier.",
+            detail="Resource not found",
         )
 
-    # 4. Vérification des droits d'accès (Critères 3,4,5)
     if not can_access_document(current_user, document, dossier):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Accès refusé : vous n'avez pas le droit de consulter ce document.",
+            detail="Access denied",
         )
 
-    # 5. Génération de l'URL pré-signée (Critère 7)
-    url = await storage_adapter.generate_download_url(
-        s3_key=document.s3_key,
-        expires_in=60,
-    )
+    try:
+        url = await storage_adapter.generate_download_url(
+            s3_key=document.s3_key,
+            expires_in=60,
+        )
+    except Exception as err:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Impossible de générer l'URL de téléchargement",
+        ) from err
 
     return ViewUrlResponse(url=url, expires_in=60)

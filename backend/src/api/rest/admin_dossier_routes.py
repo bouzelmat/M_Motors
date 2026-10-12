@@ -72,9 +72,15 @@ async def get_pending_dossiers(
     ] = "submitted_at",
     use_case: ListPendingDossiersUseCase = Depends(get_list_pending_dossiers_use_case),
 ) -> list[PendingDossierResponse]:
-    """Récupère la liste de tous les dossiers en attente de traitement par les gestionnaires."""
+    """Récupère la liste de tous les dossiers en attente de traitement."""
     query = ListPendingDossiersQuery(sort_by=sort_by)
-    results = await use_case.execute(query)
+    try:
+        results = await use_case.execute(query)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Invalid request",
+        ) from e
     return [PendingDossierResponse.model_validate(r) for r in results]
 
 
@@ -110,7 +116,7 @@ async def get_dossier_detail(
     except NotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(exc),
+            detail="Resource not found",
         ) from exc
 
 
@@ -141,12 +147,12 @@ async def validate_dossier(
     except NotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(exc),
+            detail="Resource not found",
         ) from exc
     except DomainError as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=str(exc),
+            detail="Conflict",
         ) from exc
 
 
@@ -177,12 +183,12 @@ async def reject_dossier(
     except NotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(exc),
+            detail="Resource not found",
         ) from exc
     except DomainError as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=str(exc),
+            detail="Conflict",
         ) from exc
 
 
@@ -213,10 +219,10 @@ async def request_documents(
     except NotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(exc),
+            detail="Resource not found",
         ) from exc
     except DomainError as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=str(exc),
+            detail="Conflict",
         ) from exc

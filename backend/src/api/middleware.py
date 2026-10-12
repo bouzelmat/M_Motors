@@ -35,24 +35,48 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "Content-Security-Policy",
             "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; connect-src 'self' http://localhost:5173 http://127.0.0.1:5173 http://localhost:3000 http://127.0.0.1:3000",
         )
-        # --- NOUVEAU : En-tête Cross-Origin-Resource-Policy (CORP) ---
         response.headers.setdefault("Cross-Origin-Resource-Policy", "same-origin")
+
+        settings = get_settings()
+        if settings.environment != "development":
+            response.headers.setdefault(
+                "Strict-Transport-Security",
+                "max-age=63072000; includeSubDomains; preload",
+            )
         return response
+
+
+class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
+    """Redirige HTTP vers HTTPS en production (toléré en dev/local).
+    🔴 CORRECTION: Lit X-Forwarded-Proto pour les reverse proxies (Problème 5).
+    """
+
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        settings = get_settings()
+        scheme = (
+            request.headers.get("X-Forwarded-Proto", request.url.scheme)
+            if settings.environment != "development"
+            else request.url.scheme
+        )
+        if scheme == "http" and settings.environment != "development":
+            https_url = request.url.replace(scheme="https")
+            return Response(
+                status_code=301,
+                headers={"Location": str(https_url)},
+            )
+        return await call_next(request)
 
 
 class SanitizationMiddleware(BaseHTTPMiddleware):
     """Middleware to sanitize sensitive data in logs."""
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        """Process request and sanitize sensitive data in logs."""
         path = request.url.path
         method = request.method
-
         if path in ["/api/v1/auth/login", "/api/v1/auth/register"]:
             logger.info(f"{method} {path} [REDACTED]")
         else:
             logger.info(f"{method} {path}")
-
         response = await call_next(request)
         return response
 
@@ -99,7 +123,6 @@ def get_client_ip(request: Request) -> str:
     settings = get_settings()
     peer_ip = request.client.host if request.client else "unknown"
     forwarded = request.headers.get("x-forwarded-for")
-
     if forwarded and peer_ip in set(settings.trusted_proxy_ips):
         candidate_ips = [item.strip() for item in forwarded.split(",") if item.strip()]
         if candidate_ips:
@@ -153,12 +176,8 @@ class CSRFMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         if request.method in {"GET", "HEAD", "OPTIONS"}:
             return await call_next(request)
-
-        # Les endpoints de l'API REST utilisent une authentification par token (Bearer)
-        # et n'utilisent pas de cookies de session vulnérables au CSRF.
         if request.url.path.startswith("/api/"):
             return await call_next(request)
-
         cookie_value = request.cookies.get(get_settings().csrf_cookie_name)
         header_value = request.headers.get(get_settings().csrf_header_name)
         if not verify_csrf_token(cookie_value, header_value):
@@ -177,10 +196,18 @@ class SecurityAuditMiddleware(BaseHTTPMiddleware):
 
 
 def get_middleware() -> list[tuple[type, dict]]:
-    """Get list of middleware for the application."""
+    """Get list of middleware for the application.
+    🔴 CORRECTION: Réordonné (Problème 4).
+    """
     settings = get_settings()
-    allowed_origins = settings.allowed_cors_origins or ["http://localhost:5173"]
+    allowed_origins = settings.allowed_cors_origins or [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ]
     return [
+        (HTTPSRedirectMiddleware, {}),  # Premier (exécuté en dernier par Starlette)
         (
             CORSMiddleware,
             {

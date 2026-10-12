@@ -5,11 +5,10 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 
-# Remplacement de l'import erroné par le système générique de rôles
 from src.api.dependencies import require_role
 from src.auth.domain.value_objects import Role
 from src.auth.domain.entities.user import User
-from src.shared.domain.exceptions import DomainError
+from src.shared.domain.exceptions import DomainError, NotFoundError
 from src.vehicles.api.schemas.vehicle_schemas import (
     CreateVehicleRequest,
     ServiceDTO,
@@ -49,10 +48,7 @@ from src.vehicles.infrastructure.dependencies import (
 )
 from src.vehicles.domain.ports.vehicle_repository import VehicleRepository
 
-router = APIRouter(
-    prefix="/api/v1/vehicles",
-    tags=["vehicles"],
-)
+router = APIRouter(prefix="/api/v1/vehicles", tags=["vehicles"])
 
 
 @router.get(
@@ -145,13 +141,16 @@ async def update_vehicle(
     try:
         vehicle = await handler.handle(command)
         return VehicleResponse.model_validate(vehicle)
+    except NotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Resource not found",
+        ) from exc
     except DomainError as exc:
-        error_status = (
-            status.HTTP_404_NOT_FOUND
-            if "introuvable" in str(exc).lower()
-            else status.HTTP_422_UNPROCESSABLE_ENTITY
-        )
-        raise HTTPException(status_code=error_status, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Invalid vehicle data",
+        ) from exc
 
 
 @router.delete(
@@ -167,9 +166,9 @@ async def delete_vehicle(
     """Supprime un véhicule existant et ses photos/services associés."""
     try:
         await handler.handle(DeleteVehicleCommand(vehicle_id=vehicle_id))
-    except DomainError as exc:
+    except NotFoundError as exc:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
+            status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found"
         ) from exc
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -190,29 +189,16 @@ async def list_vehicles(
         pattern="^(rental|sale|purchase)$",
         description="Mode de catalogue : rental ou sale (purchase est accepté comme alias)",
     ),
-    brand: str | None = Query(
-        default=None,
-        description="Marque du véhicule",
-    ),
+    brand: str | None = Query(default=None, description="Marque du véhicule"),
     max_price: Decimal | None = Query(
-        default=None,
-        description="Prix de vente maximum",
+        default=None, description="Prix de vente maximum"
     ),
-    max_mileage: int | None = Query(
-        default=None,
-        description="Kilométrage maximum",
-    ),
-    fuel_type: str | None = Query(
-        default=None,
-        description="Type d'énergie",
-    ),
+    max_mileage: int | None = Query(default=None, description="Kilométrage maximum"),
+    fuel_type: str | None = Query(default=None, description="Type d'énergie"),
     max_monthly_rent: Decimal | None = Query(
-        default=None,
-        description="Loyer mensuel maximum",
+        default=None, description="Loyer mensuel maximum"
     ),
-    handler: SearchVehiclesQueryHandler = Depends(
-        get_search_vehicles_query_handler,
-    ),
+    handler: SearchVehiclesQueryHandler = Depends(get_search_vehicles_query_handler),
 ) -> list[VehicleListItemDTO]:
     """Retourne les véhicules disponibles selon les critères."""
     search_mode = "sale" if mode == "purchase" else mode
@@ -224,11 +210,7 @@ async def list_vehicles(
         fuel_type=fuel_type,
         max_monthly_rent=max_monthly_rent,
     )
-
-    vehicles = await handler.handle(
-        SearchVehiclesQuery(criteria=criteria),
-    )
-
+    vehicles = await handler.handle(SearchVehiclesQuery(criteria=criteria))
     return [
         VehicleListItemDTO(
             id=vehicle.id,
@@ -276,31 +258,22 @@ async def list_service_options(
 )
 async def get_vehicle_detail(
     vehicle_id: UUID,
-    handler: GetVehicleDetailQueryHandler = Depends(
-        get_vehicle_detail_handler,
-    ),
+    handler: GetVehicleDetailQueryHandler = Depends(get_vehicle_detail_handler),
 ) -> VehicleDetailDTO:
     """Retourne les informations détaillées d'un véhicule."""
-    query = GetVehicleDetailQuery(
-        vehicle_id=vehicle_id,
-    )
-
+    query = GetVehicleDetailQuery(vehicle_id=vehicle_id)
     result = await handler.handle(query)
-
     if result is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Véhicule non trouvé",
         )
-
     vehicle, service_orms = result
-
     if not (vehicle.is_available_for_rental() or vehicle.is_available_for_sale()):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Véhicule non disponible",
         )
-
     services = [
         ServiceDTO(
             id=service.service_id,
@@ -311,7 +284,6 @@ async def get_vehicle_detail(
         )
         for service in vehicle.services
     ]
-
     return VehicleDetailDTO(
         id=vehicle.id,
         brand=vehicle.brand,
@@ -342,11 +314,8 @@ async def get_vehicle_detail(
 )
 async def add_vehicle(
     payload: CreateVehicleRequest,
-    # Utilisation de require_role(Role.ADMIN) validée par notre architecture globale
     current_user: User = Depends(require_role(Role.ADMIN)),
-    handler: AddVehicleCommandHandler = Depends(
-        get_add_vehicle_command_handler,
-    ),
+    handler: AddVehicleCommandHandler = Depends(get_add_vehicle_command_handler),
 ) -> VehicleResponse:
     """Ajoute un véhicule dans le système."""
     command = AddVehicleCommand(
@@ -367,13 +336,11 @@ async def add_vehicle(
             for service in payload.services
         ),
     )
-
     try:
         created_vehicle = await handler.handle(command)
         return VehicleResponse.model_validate(created_vehicle)
     except DomainError as err:
-        # Aligné sur 422 Unprocessable Entity demandé par le ticket en cas de données invalides
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=str(err),
+            detail="Invalid vehicle data",
         ) from err
