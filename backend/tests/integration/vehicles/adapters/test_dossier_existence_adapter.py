@@ -5,7 +5,7 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.dossiers.domain.value_objects.dossier_status import DossierStatus
-from src.dossiers.infrastructure.models.dossier_model import DossierModel
+from src.dossiers.infrastructure.orm.dossier_model import DossierModel
 from src.dossiers.infrastructure.adapters.dossier_existence_adapter import (
     DossierExistenceAdapter,
 )

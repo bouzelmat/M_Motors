@@ -3,7 +3,7 @@ import { Box, Container, Grid, Button, useTheme } from "@mui/material";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import { Link } from "react-router-dom";
 import { SectionHeading } from "../../shared/ui/components/SectionHeading";
-import { VehicleCard } from "../../shared/ui/components/VehicleCard";
+import { VehicleCard } from "../../vehicles/ui/components/VehicleCard";
 import { useRevealOnScroll } from "../../shared/ui/hooks/useRevealOnScroll";
 
 const featuredVehicles = [

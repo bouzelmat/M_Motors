@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useSubscriptionTunnelStore } from "../../../application/stores/useSubscriptionTunnelStore";
+import { useSubscriptionTunnelStore } from "../../../../dossiers/application/stores/useSubscriptionTunnelStore";
 
 const mockUseVehicleDetailQuery = vi.fn();
 

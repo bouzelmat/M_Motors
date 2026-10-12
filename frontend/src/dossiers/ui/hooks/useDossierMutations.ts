@@ -3,7 +3,7 @@ import {
 	DossiersClient,
 	type CreateDossierRequest,
 	type DocumentType,
-} from "../../../api/clients/DossiersClient";
+} from "../../infrastructure/DossiersClient";
 
 export function useCreateDossier() {
 	const queryClient = useQueryClient();

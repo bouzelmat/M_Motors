@@ -4,7 +4,7 @@ import {
   Typography,
 } from "@mui/material";
 
-import type { ServiceDTO } from "../../infrastructure/vehicle.types";
+import type { ServiceDTO } from "../../infrastructure/dto/vehicle.dto";
 
 interface ServiceOptionRowProps {
   service: ServiceDTO;

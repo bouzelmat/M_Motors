@@ -13,7 +13,7 @@ import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 
 import { useAuthStore } from "../../../auth/ui/hooks/useAuth";
-import { getApiErrorMessage } from "../../../api/apiErrorMessage";
+import { getApiErrorMessage } from "../../../shared/infrastructure/http/apiErrorMessage";
 import { vehiclesClient } from "../../infrastructure/VehiclesClient";
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;

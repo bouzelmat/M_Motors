@@ -24,7 +24,7 @@ import type { UseQueryResult } from "@tanstack/react-query";
 
 import { useVehiclesQuery } from "../../../application/hooks/useVehiclesQuery";
 import { useVehicleFilterStore } from "../../../application/stores/useVehicleFilterStore";
-import type { VehicleListItemDTO } from "../../../infrastructure/vehicle.types";
+import type { VehicleListItemDTO } from "../../../infrastructure/dto/vehicle.dto";
 import { CatalogPage } from "../CatalogPage";
 
 vi.mock(

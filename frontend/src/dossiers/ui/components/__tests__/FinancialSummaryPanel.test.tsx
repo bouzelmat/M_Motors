@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
 import { FinancialSummaryPanel } from "../FinancialSummaryPanel";
-import type { AdminDossierDetailResponse } from "../../../../api/clients/DossiersClient";
+import type { AdminDossierDetailResponse } from "../../../infrastructure/DossiersClient";
 
 const createMockDossier = (
 	overrides: Partial<AdminDossierDetailResponse> = {}

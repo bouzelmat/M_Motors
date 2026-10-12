@@ -3,17 +3,19 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 
 import { VehicleCard } from "../VehicleCard";
 
-import type { VehicleListItemDTO } from "../../../infrastructure/vehicle.types";
-
 describe("VehicleCard", () => {
-  const mockVehicle: Readonly<VehicleListItemDTO> = {
+  const vehicle = {
     id: "1",
     brand: "Peugeot",
     model: "208",
+    version: "Active",
     year: 2023,
-    monthly_rent: "350.00",
-    photo_url: null,
-    included_services: ["Assurance", "Entretien"],
+    mileage: 18500,
+    fuelType: "Hybride",
+    transmission: "Automatique",
+    price: 350,
+    mode: "LOCATION" as const,
+    imageUrl: "https://example.com/car.jpg",
   };
 
   function CurrentPath() {
@@ -23,83 +25,53 @@ describe("VehicleCard", () => {
   it("navigates to the vehicle detail route when clicked", () => {
     render(
       <MemoryRouter initialEntries={["/catalogue"]}>
-        <VehicleCard vehicle={mockVehicle} />
+        <VehicleCard {...vehicle} />
         <Routes>
           <Route path="/catalogue" element={<div />} />
-          <Route path="/vehicles/:vehicleId" element={<CurrentPath />} />
+          <Route path="/catalogue/:vehicleId" element={<CurrentPath />} />
         </Routes>
       </MemoryRouter>,
     );
 
     fireEvent.click(screen.getByTestId("vehicle-card"));
 
-    expect(screen.getByText("/vehicles/peugeot-208-2023-1")).toBeInTheDocument();
+    expect(screen.getByText("/catalogue/1")).toBeInTheDocument();
   });
 
-  it("should render vehicle information", () => {
+  it("renders vehicle information and the selected commercial mode", () => {
     render(
       <MemoryRouter>
-        <VehicleCard vehicle={mockVehicle} />
+        <VehicleCard {...vehicle} />
       </MemoryRouter>,
     );
 
-    expect(
-      screen.getByText("Peugeot 208"),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByText("2023"),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByText("350.00 € / mois"),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByText("Location"),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByText(
-        "Services inclus : Assurance, Entretien",
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Peugeot 208")).toBeInTheDocument();
+    expect(screen.getByText("Active")).toBeInTheDocument();
+    expect(screen.getByText("LOCATION LLD")).toBeInTheDocument();
+    expect(screen.getByText("/mois")).toBeInTheDocument();
   });
 
-  it("should display the placeholder image when no photo is provided", () => {
+  it("uses the default vehicle image when no image is provided", () => {
     render(
       <MemoryRouter>
-        <VehicleCard vehicle={mockVehicle} />
+        <VehicleCard {...vehicle} imageUrl={undefined} />
       </MemoryRouter>,
     );
 
-    const image = screen.getByRole("img", {
-      name: "Peugeot 208",
-    });
-
-    expect(image).toHaveAttribute(
+    expect(screen.getByRole("img", { name: "Peugeot 208" })).toHaveAttribute(
       "src",
-      "/placeholder-car.png",
+      "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=800&q=80",
     );
   });
 
-  it("should display the vehicle image when a photo is provided", () => {
-    const vehicleWithPhoto: VehicleListItemDTO = {
-      ...mockVehicle,
-      photo_url: "https://example.com/car.jpg",
-    };
-
+  it("displays the provided vehicle image", () => {
     render(
       <MemoryRouter>
-        <VehicleCard vehicle={vehicleWithPhoto} />
+        <VehicleCard {...vehicle} />
       </MemoryRouter>,
     );
 
-    const image = screen.getByRole("img", {
-      name: "Peugeot 208",
-    });
-
-    expect(image).toHaveAttribute(
+    expect(screen.getByRole("img", { name: "Peugeot 208" })).toHaveAttribute(
       "src",
       "https://example.com/car.jpg",
     );

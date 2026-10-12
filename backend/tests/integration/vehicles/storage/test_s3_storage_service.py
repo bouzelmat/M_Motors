@@ -9,7 +9,7 @@ import pytest
 import requests
 from moto import mock_aws
 
-from src.config import get_settings
+from src.shared.infrastructure.config import get_settings
 from src.vehicles.infrastructure.storage.s3_storage_service import S3StorageService
 
 AWS_REGION = "eu-west-3"

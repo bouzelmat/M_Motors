@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { ServiceSelector } from "../ServiceSelector";
-import type { ServiceSelection } from "../../../../vehicles/application/stores/useSubscriptionTunnelStore";
+import type { ServiceSelection } from "../../../../dossiers/application/models/ServiceSelection";
 
 const mockOptionalService: ServiceSelection = {
   id: "insurance-1",

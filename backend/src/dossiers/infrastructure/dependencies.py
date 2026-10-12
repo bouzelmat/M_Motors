@@ -31,6 +31,9 @@ from src.dossiers.application.use_cases.list_pending_dossiers import (
 from src.dossiers.application.use_cases.list_dossier_history import (
     ListDossierHistoryUseCase,
 )
+from src.dossiers.application.ports.dossier_read_repository import (
+    DossierReadRepository,
+)
 from src.dossiers.domain.ports.document_repository import DocumentRepository
 from src.dossiers.domain.ports.dossier_repository import DossierRepository
 from src.dossiers.infrastructure.adapters.document_repository import (
@@ -51,6 +54,13 @@ def get_dossier_repository(
     session: AsyncSession = Depends(get_session),
 ) -> DossierRepository:
     """Fournit une instance du dépôt de dossiers liée à la session courante."""
+    return SQLAlchemyDossierRepository(session)
+
+
+def get_dossier_read_repository(
+    session: AsyncSession = Depends(get_session),
+) -> DossierReadRepository:
+    """Fournit un adaptateur de lecture des projections de dossiers."""
     return SQLAlchemyDossierRepository(session)
 
 
@@ -111,14 +121,14 @@ def get_cancel_dossier_handler(
 
 
 def get_list_pending_dossiers_use_case(
-    repository: DossierRepository = Depends(get_dossier_repository),
+    repository: DossierReadRepository = Depends(get_dossier_read_repository),
 ) -> ListPendingDossiersUseCase:
     """Fournit une instance du cas d'usage de consultation des dossiers en attente."""
     return ListPendingDossiersUseCase(dossier_repository=repository)
 
 
 def get_list_dossier_history_use_case(
-    repository: DossierRepository = Depends(get_dossier_repository),
+    repository: DossierReadRepository = Depends(get_dossier_read_repository),
 ) -> ListDossierHistoryUseCase:
     """Fournit le cas d'usage de consultation des dossiers clôturés."""
     return ListDossierHistoryUseCase(dossier_repository=repository)

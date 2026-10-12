@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
 import axios from "axios";
 import { DocumentUploader } from "../DocumentUploader";
-import { DossiersClient } from "../../../../api/clients/DossiersClient";
+import { DossiersClient } from "../../../infrastructure/DossiersClient";
 
 // Mock d'Axios incluant la structure nécessaire pour apiClient.ts
 vi.mock("axios", () => {
@@ -27,7 +27,7 @@ vi.mock("axios", () => {
     };
 });
 
-vi.mock("../../../../api/clients/DossiersClient");
+vi.mock("../../../infrastructure/DossiersClient");
 
 describe("DocumentUploader", () => {
     const dossierId = "dossier-123";

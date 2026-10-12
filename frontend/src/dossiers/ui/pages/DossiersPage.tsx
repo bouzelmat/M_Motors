@@ -19,8 +19,8 @@ import {
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import { useAuthStore } from "../../../auth/ui/hooks/useAuth";
 import { useDossiers } from "../hooks/useDossiers";
-import { getApiErrorMessage } from "../../../api/apiErrorMessage";
-import { StatusBadge } from "../../../shared/ui/components/StatusBadge";
+import { getApiErrorMessage } from "../../../shared/infrastructure/http/apiErrorMessage";
+import { StatusBadge } from "../components/StatusBadge";
 import { DossierTimeline } from "../components/DossierTimeline";
 import { DOCUMENT_TYPE_LABELS } from "../components/DocumentUploader";
 

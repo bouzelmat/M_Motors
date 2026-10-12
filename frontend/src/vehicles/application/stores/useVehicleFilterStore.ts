@@ -1,6 +1,8 @@
 import { create } from "zustand";
 
-export type CatalogMode = "rental" | "sale";
+import type { CatalogMode } from "../../domain/value-objects/catalogMode";
+
+export type { CatalogMode } from "../../domain/value-objects/catalogMode";
 
 export interface VehicleFilterState {
   mode: CatalogMode;

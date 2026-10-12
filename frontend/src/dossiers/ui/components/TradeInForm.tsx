@@ -7,7 +7,7 @@ import {
   Typography,
   Grid,
 } from "@mui/material";
-import { useSubscriptionTunnelStore } from "../../../vehicles/application/stores/useSubscriptionTunnelStore";
+import { useSubscriptionTunnelStore } from "../../application/stores/useSubscriptionTunnelStore";
 
 export const TradeInForm: React.FC = () => {
   const { tradeIn, setTradeIn } = useSubscriptionTunnelStore();

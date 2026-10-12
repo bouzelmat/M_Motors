@@ -18,7 +18,7 @@ import { VehiclePhotoUploadPage } from "../vehicles/ui/pages/VehiclePhotoUploadP
 import { SimulatorPage } from "../vehicles/ui/pages/SimulatorPage";
 import { NewDossierPage } from "../dossiers/ui/pages/NewDossierPage";
 import { AccountDossierPage } from "../dossiers/ui/pages/AccountDossierPage";
-import { MainLayout } from "../components/layout/MainLayout";
+import { MainLayout } from "../shared/ui/layout/MainLayout";
 
 export const router = createBrowserRouter([
 	{

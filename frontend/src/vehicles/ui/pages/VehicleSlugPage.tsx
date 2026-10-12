@@ -3,7 +3,7 @@ import { useQueries } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 
 import { vehiclesClient } from "../../infrastructure/VehiclesClient";
-import type { CatalogMode } from "../../infrastructure/vehicle.types";
+import type { CatalogMode } from "../../domain/value-objects/catalogMode";
 import { VehicleDetailPage } from "./VehicleDetailPage";
 import { createVehicleSlug } from "../vehicleSlug";
 

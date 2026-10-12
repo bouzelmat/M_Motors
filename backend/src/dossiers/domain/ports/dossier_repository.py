@@ -4,7 +4,6 @@ from datetime import datetime
 from typing import Protocol
 from uuid import UUID
 
-from src.dossiers.application.queries.read_models import PendingDossierReadModel
 from src.dossiers.domain.entities.dossier import Dossier
 
 
@@ -32,15 +31,4 @@ class DossierRepository(Protocol):
 
     async def find_rejected_since(self, days: int) -> list[Dossier]:
         """Récupère tous les dossiers REJECTED dont la date de rejet est égale ou antérieure à days jours."""
-        ...
-
-    async def list_pending(
-        self,
-        sort_by: str = "submitted_at",
-    ) -> list[PendingDossierReadModel]:
-        """Récupère tous les dossiers en attente de traitement avec les informations client et véhicule."""
-        ...
-
-    async def list_history(self) -> list[PendingDossierReadModel]:
-        """Récupère les dossiers ayant reçu une décision ou ayant été clôturés."""
         ...

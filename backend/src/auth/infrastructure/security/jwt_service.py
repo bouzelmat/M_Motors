@@ -5,7 +5,7 @@ from typing import Any
 
 from jose import JWTError, jwt
 
-from src.config import get_settings
+from src.shared.infrastructure.config import get_settings
 
 
 class JWTService:

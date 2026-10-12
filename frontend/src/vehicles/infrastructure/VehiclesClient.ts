@@ -1,4 +1,4 @@
-﻿import { apiClient } from "../../api/apiClient";
+import { apiClient } from "../../shared/infrastructure/http/apiClient";
 import axios from "axios";
 import {
     ConfirmPhotoUploadDTO,
@@ -11,7 +11,7 @@ import {
     VehicleListItemDTO,
     VehicleResponseDTO,
     VehiclePhotoDTO,
-} from "./vehicle.types";
+} from "./dto/vehicle.dto";
 
 /** Client HTTP du contexte Vehicles. */
 export class VehiclesClient {

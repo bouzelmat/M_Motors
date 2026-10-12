@@ -13,8 +13,8 @@ import {
 	InputLabel,
 } from "@mui/material";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
-import { getApiErrorMessage } from "../../../api/apiErrorMessage";
-import { DossiersClient, type DocumentType } from "../../../api/clients/DossiersClient";
+import { getApiErrorMessage } from "../../../shared/infrastructure/http/apiErrorMessage";
+import { DossiersClient, type DocumentType } from "../../infrastructure/DossiersClient";
 
 interface DocumentUploaderProps {
 	dossierId: string;

@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.orm import DeclarativeBase
 
-from src.config import get_settings
+from src.shared.infrastructure.config import get_settings
 
 
 class Base(DeclarativeBase):

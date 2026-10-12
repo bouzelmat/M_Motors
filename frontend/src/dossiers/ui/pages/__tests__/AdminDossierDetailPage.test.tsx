@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 
-import { apiClient } from "../../../../api/apiClient";
+import { apiClient } from "../../../../shared/infrastructure/http/apiClient";
 import { useDossierDetail } from "../../hooks/useDossierDetail";
 import { AdminDossierDetailPage } from "../AdminDossierDetailPage";
 

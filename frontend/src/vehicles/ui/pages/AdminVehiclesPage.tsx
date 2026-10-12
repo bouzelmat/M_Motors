@@ -22,9 +22,9 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import { useNavigate } from "react-router-dom";
 
-import { getApiErrorMessage } from "../../../api/apiErrorMessage";
+import { getApiErrorMessage } from "../../../shared/infrastructure/http/apiErrorMessage";
 import { vehiclesClient } from "../../infrastructure/VehiclesClient";
-import type { VehicleResponseDTO } from "../../infrastructure/vehicle.types";
+import type { VehicleResponseDTO } from "../../infrastructure/dto/vehicle.dto";
 
 const STATUS_LABELS: Record<VehicleResponseDTO["status"], string> = {
 	AVAILABLE: "Disponible",

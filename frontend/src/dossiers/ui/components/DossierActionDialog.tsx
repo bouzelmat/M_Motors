@@ -14,7 +14,7 @@ import {
 	FormHelperText,
 	Alert,
 } from "@mui/material";
-import { DocumentType } from "../../../api/clients/DossiersClient";
+import { DocumentType } from "../../infrastructure/DossiersClient";
 
 const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
 	IDENTITY_CARD: "Pièce d'identité",

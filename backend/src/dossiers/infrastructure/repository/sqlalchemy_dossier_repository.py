@@ -10,14 +10,17 @@ from sqlalchemy.orm import selectinload
 from src.auth.infrastructure.orm.user_model import UserModel
 from src.dossiers.application.constants import HISTORICAL_STATUSES, PENDING_STATUSES
 from src.dossiers.application.queries.read_models import PendingDossierReadModel
+from src.dossiers.application.ports.dossier_read_repository import (
+    DossierReadRepository,
+)
 from src.dossiers.domain.entities.dossier import Dossier
 from src.dossiers.domain.ports.dossier_repository import DossierRepository
-from src.dossiers.infrastructure.mapper.dossier_mapper import DossierMapper
-from src.dossiers.infrastructure.models.dossier_model import DossierModel
+from src.dossiers.infrastructure.mappers.dossier_mapper import DossierMapper
+from src.dossiers.infrastructure.orm.dossier_model import DossierModel
 from src.vehicles.infrastructure.orm.vehicle_model import VehicleModel
 
 
-class SQLAlchemyDossierRepository(DossierRepository):
+class SQLAlchemyDossierRepository(DossierRepository, DossierReadRepository):
     """Adaptateur de dépôt pour les dossiers utilisant SQLAlchemy."""
 
     ALLOWED_SORT_FIELDS = {

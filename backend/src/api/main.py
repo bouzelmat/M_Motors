@@ -8,11 +8,11 @@ from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from src.api.middleware import get_middleware
-from src.api.rest.admin_dossier_routes import router as admin_dossier_router
-from src.api.rest.auth_routes import router as auth_router
-from src.api.rest.dossier_routes import router as dossier_router
-from src.api.rest.health_routes import router as health_router
+
+from src.dossiers.api.routes.admin_dossier_routes import router as admin_dossier_router
+from src.auth.api.routes.auth_routes import router as auth_router
+from src.dossiers.api.routes.dossier_routes import router as dossier_router
+from src.shared.api.routes.health_routes import router as health_router
 from src.dossiers.application.consumers.send_dossier_email import (
     SendDocumentsRequestedEmailConsumer,
     SendDossierRejectedEmailConsumer,
@@ -28,8 +28,9 @@ from src.shared.domain.exceptions import (
     NotFoundError,
 )
 from src.shared.infrastructure.messaging.in_memory_event_bus import get_event_bus
-from src.vehicles.api.endpoints.catalog import router as vehicles_router
-from src.vehicles.api.endpoints.photos import router as photos_router
+from src.shared.infrastructure.http.middleware_registry import get_middleware
+from src.vehicles.api.routes.catalog_routes import router as vehicles_router
+from src.vehicles.api.routes.photo_routes import router as photos_router
 
 logger = logging.getLogger(__name__)
 

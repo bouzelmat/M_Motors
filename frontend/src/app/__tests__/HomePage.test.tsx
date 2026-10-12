@@ -6,11 +6,11 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { ThemeProvider } from "@mui/material";
 
 import { theme } from "../../shared/ui/theme/theme";
-import { useSubscriptionTunnelStore } from "../../vehicles/application/stores/useSubscriptionTunnelStore";
+import { useSubscriptionTunnelStore } from "../../dossiers/application/stores/useSubscriptionTunnelStore";
 import { useVehicleFilterStore } from "../../vehicles/application/stores/useVehicleFilterStore";
 import { useVehiclesQuery } from "../../vehicles/application/hooks/useVehiclesQuery";
 import { vehiclesClient } from "../../vehicles/infrastructure/VehiclesClient";
-import type { VehicleDetailDTO, VehicleListItemDTO } from "../../vehicles/infrastructure/vehicle.types";
+import type { VehicleDetailDTO, VehicleListItemDTO } from "../../vehicles/infrastructure/dto/vehicle.dto";
 import { CatalogPage } from "../../vehicles/ui/pages/CatalogPage";
 import { HomePage } from "../HomePage";
 
@@ -20,8 +20,8 @@ vi.mock("../../vehicles/application/hooks/useVehiclesQuery", () => ({
 
 const rentalVehicle: VehicleListItemDTO = {
     id: "vehicle-1",
-    brand: "Peugeot",
-    model: "e-208",
+    brand: "Tesla",
+    model: "Model 3",
     year: 2024,
     monthly_rent: "329.00",
     photo_url: null,
@@ -34,7 +34,7 @@ const vehicleDetail: VehicleDetailDTO = {
     mileage: 12000,
     energy_type: "ELECTRIQUE",
     catalog_type: "BOTH",
-    description: "Citadine électrique",
+    description: "Berline électrique",
     services: [],
 };
 

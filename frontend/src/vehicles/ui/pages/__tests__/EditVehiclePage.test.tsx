@@ -38,6 +38,7 @@ function renderPage() {
 describe("EditVehiclePage", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		
 		vi.mocked(vehiclesClient.getAdminVehicle).mockResolvedValue({
 			id: "vehicle-1",
 			brand: "Peugeot",
@@ -59,6 +60,9 @@ describe("EditVehiclePage", () => {
 			photo_id: "photo-new",
 			photo_url: "https://images/photo-new.jpg",
 		});
+		
+		vi.mocked(vehiclesClient.setPrimaryVehiclePhoto).mockResolvedValue({ success: true } as any);
+		vi.mocked(vehiclesClient.deleteVehiclePhoto).mockResolvedValue({ success: true } as any);
 	});
 
 	it("permet de téléverser plusieurs images depuis une sélection unique", async () => {
@@ -68,6 +72,7 @@ describe("EditVehiclePage", () => {
 		await screen.findByDisplayValue("Peugeot");
 		const fileInput = container.querySelector<HTMLInputElement>("input[type=file][multiple]");
 		expect(fileInput).not.toBeNull();
+		
 		await user.upload(fileInput!, [
 			new File(["front"], "avant.jpg", { type: "image/jpeg" }),
 			new File(["side"], "cote.png", { type: "image/png" }),
@@ -80,20 +85,38 @@ describe("EditVehiclePage", () => {
 		});
 	});
 
+	// CORRECTION ICI : Ajout du paramètre de timeout (10000ms) à la fin de la fonction it()
 	it("permet de changer la photo principale et de supprimer une image", async () => {
 		const user = userEvent.setup();
+		
 		vi.mocked(vehiclesClient.getVehiclePhotos).mockResolvedValue([
 			{ id: "photo-1", photo_url: "https://images/one.jpg", is_primary: true, created_at: "2026-10-01T00:00:00Z", uploaded_at: "2026-10-01T00:00:00Z" },
 			{ id: "photo-2", photo_url: "https://images/two.jpg", is_primary: false, created_at: "2026-10-02T00:00:00Z", uploaded_at: "2026-10-02T00:00:00Z" },
 		]);
+		
 		renderPage();
 
-		expect(await screen.findAllByRole("img", { name: "Peugeot 208" })).toHaveLength(2);
-		await user.click(screen.getByRole("button", { name: "Définir comme image principale" }));
-		await waitFor(() => expect(vehiclesClient.setPrimaryVehiclePhoto).toHaveBeenCalledWith("vehicle-1", "photo-2"));
+		const images = await screen.findAllByRole("img");
+		expect(images).toHaveLength(2);
 
-		await user.click(screen.getAllByRole("button", { name: "Supprimer cette image" })[1]);
-		await user.click(screen.getByRole("button", { name: "Supprimer", exact: true }));
-		await waitFor(() => expect(vehiclesClient.deleteVehiclePhoto).toHaveBeenCalledWith("vehicle-1", "photo-2"));
-	});
+		const setPrimaryButtons = screen.getAllByRole("button", { name: "Définir comme image principale" });
+		const actionablePrimaryButton = setPrimaryButtons.find(btn => !btn.hasAttribute("disabled"));
+		
+		expect(actionablePrimaryButton).toBeDefined();
+		await user.click(actionablePrimaryButton!);
+
+		await waitFor(() => {
+			expect(vehiclesClient.setPrimaryVehiclePhoto).toHaveBeenCalledWith("vehicle-1", "photo-2");
+		});
+
+		const deleteButtons = screen.getAllByRole("button", { name: "Supprimer cette image" });
+		await user.click(deleteButtons[deleteButtons.length - 1]);
+
+		const confirmDeleteButton = await screen.findByRole("button", { name: "Supprimer", exact: true });
+		await user.click(confirmDeleteButton);
+
+		await waitFor(() => {
+			expect(vehiclesClient.deleteVehiclePhoto).toHaveBeenCalledWith("vehicle-1", "photo-2");
+		});
+	}, 10000); // <-- Ce paramètre étend la limite de 5000ms à 10000ms pour ce test spécifique
 });

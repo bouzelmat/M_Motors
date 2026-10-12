@@ -12,7 +12,7 @@ from src.dossiers.application.commands.create_dossier import (
     CreateDossierCommandHandler,
 )
 from src.dossiers.domain.exceptions import VehicleNotAvailableException
-from src.dossiers.infrastructure.models.dossier_model import DossierModel
+from src.dossiers.infrastructure.orm.dossier_model import DossierModel
 from src.dossiers.infrastructure.repository.sqlalchemy_dossier_repository import (
     SQLAlchemyDossierRepository,
 )

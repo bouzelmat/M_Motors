@@ -7,8 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.dossiers.domain.entities.document import Document
 from src.dossiers.domain.ports.document_repository import DocumentRepository
-from src.dossiers.infrastructure.models.document_model import DocumentModel
-from src.dossiers.infrastructure.mapper.document_mapper import DocumentMapper
+from src.dossiers.infrastructure.orm.document_model import DocumentModel
+from src.dossiers.infrastructure.mappers.document_mapper import DocumentMapper
 
 
 class SqlAlchemyDocumentRepository(DocumentRepository):

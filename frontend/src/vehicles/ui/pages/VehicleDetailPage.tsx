@@ -21,10 +21,10 @@ import { useVehicleDetailQuery } from "../../application/hooks/useVehicleDetailQ
 import { ServiceOptionRow } from "../components/ServiceOptionRow";
 import { SwitchCatalogTypeButton } from "../components/SwitchCatalogTypeButton";
 import { useAuthStore } from "../../../auth/ui/hooks/useAuth";
-import { useSubscriptionTunnelStore } from "../../application/stores/useSubscriptionTunnelStore";
-import { getApiErrorMessage } from "../../../api/apiErrorMessage";
+import { useSubscriptionTunnelStore } from "../../../dossiers/application/stores/useSubscriptionTunnelStore";
+import { getApiErrorMessage } from "../../../shared/infrastructure/http/apiErrorMessage";
 import { PriceTag } from "../../../shared/ui/components/PriceTag";
-import { ModeBadge } from "../../../shared/ui/components/ModeBadge";
+import { ModeBadge } from "../components/ModeBadge";
 
 export const VehicleDetailPage: React.FC<{ vehicleIdOverride?: string }> = ({ vehicleIdOverride }) => {
   const { vehicleId } = useParams<{ vehicleId: string }>();
