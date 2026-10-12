@@ -144,12 +144,12 @@ async def update_vehicle(
     except NotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(exc),
+            detail="Resource not found",
         ) from exc
     except DomainError as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=str(exc),
+            detail="Invalid vehicle data",
         ) from exc
 
 
@@ -168,7 +168,7 @@ async def delete_vehicle(
         await handler.handle(DeleteVehicleCommand(vehicle_id=vehicle_id))
     except NotFoundError as exc:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
+            status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found"
         ) from exc
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -342,5 +342,5 @@ async def add_vehicle(
     except DomainError as err:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=str(err),
+            detail="Invalid vehicle data",
         ) from err

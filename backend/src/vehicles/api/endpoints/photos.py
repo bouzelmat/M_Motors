@@ -176,16 +176,16 @@ async def generate_photo_upload_url(
         )
     except VehicleNotFoundError as exc:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
+            status_code=status.HTTP_404_NOT_FOUND, detail="Invalid upload request"
         ) from exc
     except InvalidImageFormatError as exc:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid upload request"
         ) from exc
     except FileSizeExceededError as exc:
         raise HTTPException(
             status_code=status.HTTP_413_CONTENT_TOO_LARGE,
-            detail=str(exc),
+            detail="Invalid upload request",
         ) from exc
     except ClientError as err:
         raise HTTPException(

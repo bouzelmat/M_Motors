@@ -52,7 +52,7 @@ async def toggle_catalog_type(
         return JSONResponse(
             status_code=status.HTTP_409_CONFLICT,
             content={
-                "detail": str(exc),
+                "detail": "Vehicle has active dossiers",
                 "vehicle_id": str(exc.vehicle_id),
                 "requires_confirmation": True,
             },
@@ -60,10 +60,10 @@ async def toggle_catalog_type(
     except NotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,  # 🔴 CORRECTION: 404 au lieu de 400
-            detail=str(exc),
+            detail="Véhicule introuvable",
         ) from exc
     except DomainError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(exc),
+            detail="Invalid vehicle transition",
         ) from exc
