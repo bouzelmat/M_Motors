@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useAuthStore } from "../../../../auth/ui/hooks/useAuth";
 import { ProtectedRoute } from "../../../../auth/ui/components/ProtectedRoute";
 import { AdminDossiersPage } from "../AdminDossiersPage";
-import { DossiersClient } from "../../../../api/clients/DossiersClient";
+import { DossiersClient } from "../../../infrastructure/DossiersClient";
 
 // Configuration du mock Zustand
 vi.mock("../../../../auth/ui/hooks/useAuth", () => {

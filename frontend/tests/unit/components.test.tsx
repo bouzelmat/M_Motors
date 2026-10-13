@@ -2,12 +2,12 @@ import { render, screen } from "@testing-library/react";
 import { ThemeProvider } from "@mui/material";
 import { BrowserRouter } from "react-router-dom";
 import { theme } from "../../src/shared/ui/theme/theme";
-import { ModeBadge } from "../../src/shared/ui/components/ModeBadge";
-import { StatusBadge } from "../../src/shared/ui/components/StatusBadge";
+import { ModeBadge } from "../../src/vehicles/ui/components/ModeBadge";
+import { StatusBadge } from "../../src/dossiers/ui/components/StatusBadge";
 import { PriceTag } from "../../src/shared/ui/components/PriceTag";
-import { SpecLine } from "../../src/shared/ui/components/SpecLine";
+import { SpecLine } from "../../src/vehicles/ui/components/SpecLine";
 import { SectionHeading } from "../../src/shared/ui/components/SectionHeading";
-import { VehicleCard } from "../../src/shared/ui/components/VehicleCard";
+import { VehicleCard } from "../../src/vehicles/ui/components/VehicleCard";
 
 const renderWithTheme = (ui: React.ReactNode) => {
   return render(

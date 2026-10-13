@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import type { ServiceDTO } from "../../../infrastructure/vehicle.types";
+import type { ServiceDTO } from "../../../infrastructure/dto/vehicle.dto";
 import { ServiceOptionRow } from "../ServiceOptionRow";
 
 describe("ServiceOptionRow", () => {

@@ -15,7 +15,7 @@ sys.path.insert(0, str(BACKEND_ROOT))
 from src.auth.domain.value_objects import Role
 from src.auth.infrastructure.orm.user_model import UserModel
 from src.dossiers.domain.value_objects.dossier_status import DossierStatus
-from src.dossiers.infrastructure.models.dossier_model import DossierModel
+from src.dossiers.infrastructure.orm.dossier_model import DossierModel
 from src.shared.infrastructure.database import get_session_factory
 from src.vehicles.domain.entities.vehicle import Vehicle
 from src.vehicles.domain.value_objects.catalog_type import CatalogType

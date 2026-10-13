@@ -22,7 +22,7 @@ import ReplayIcon from "@mui/icons-material/Replay";
 import DirectionCarIcon from "@mui/icons-material/DirectionsCar";
 import { useVehicleFilterStore, CatalogMode } from "../../application/stores/useVehicleFilterStore";
 import { useVehiclesQuery } from "../../application/hooks/useVehiclesQuery";
-import { VehicleCard as SharedVehicleCard } from "../../../shared/ui/components/VehicleCard";
+import { VehicleCard } from "../components/VehicleCard";
 import { FilterBar } from "../components/FilterBar";
 import { FilterBottomSheet } from "../components/FilterBottomSheet";
 
@@ -237,7 +237,7 @@ export const CatalogPage: React.FC = () => {
         <Grid container spacing={3} data-testid="vehicle-catalog">
           {vehicles.map((v) => (
             <Grid item key={v.id} xs={12} sm={6} lg={4}>
-              <SharedVehicleCard
+              <VehicleCard
                 id={v.id}
                 brand={v.brand}
                 model={v.model}

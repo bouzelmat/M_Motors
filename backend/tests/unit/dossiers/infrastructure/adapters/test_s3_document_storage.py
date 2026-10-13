@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from botocore.exceptions import ClientError
 
-from src.config import Settings
+from src.shared.infrastructure.config import Settings
 from src.dossiers.infrastructure.adapters.s3_document_storage import (
     S3DocumentStorageAdapter,
 )

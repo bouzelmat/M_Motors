@@ -4,7 +4,7 @@ import {
 } from "@tanstack/react-query";
 
 import { vehiclesClient } from "../../infrastructure/VehiclesClient";
-import type { VehicleDetailDTO } from "../../infrastructure/vehicle.types";
+import type { VehicleDetailDTO } from "../../infrastructure/dto/vehicle.dto";
 
 const STALE_TIME_MS = 5 * 60 * 1000;
 

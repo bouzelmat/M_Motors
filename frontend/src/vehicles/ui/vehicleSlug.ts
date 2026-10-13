@@ -1,4 +1,4 @@
-import type { VehicleListItemDTO } from "../infrastructure/vehicle.types";
+import type { VehicleListItemDTO } from "../infrastructure/dto/vehicle.dto";
 
 type VehicleSlugSource = Pick<VehicleListItemDTO, "id" | "brand" | "model" | "year">;
 

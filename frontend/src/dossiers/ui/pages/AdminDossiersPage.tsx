@@ -27,7 +27,7 @@ import ReplayIcon from "@mui/icons-material/Replay";
 import { useNavigate } from "react-router-dom";
 import { usePendingDossiers } from "../hooks/usePendingDossiers";
 import { useDossierHistory } from "../hooks/useDossierHistory";
-import { getApiErrorMessage } from "../../../api/apiErrorMessage";
+import { getApiErrorMessage } from "../../../shared/infrastructure/http/apiErrorMessage";
 
 const STATUS_LABELS: Record<string, string> = {
   SUBMITTED: "En cours d’étude",

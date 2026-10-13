@@ -6,7 +6,7 @@ import {
 	Divider,
 	Box,
 } from "@mui/material";
-import type { AdminDossierDetailResponse } from "../../../api/clients/DossiersClient";
+import type { AdminDossierDetailResponse } from "../../infrastructure/DossiersClient";
 
 interface FinancialSummaryPanelProps {
 	dossier: AdminDossierDetailResponse;

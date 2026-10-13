@@ -35,10 +35,10 @@ class SQLAlchemyUserRepository(UserRepository):
             return None
         return UserMapper.to_domain(user_model)
 
-    async def find_by_id(self, id: UUID) -> User | None:
+    async def find_by_id(self, user_id: UUID) -> User | None:
         """Find a user by ID."""
         result = await self._session.execute(
-            select(UserModel).where(UserModel.id == str(id))
+            select(UserModel).where(UserModel.id == str(user_id))
         )
         user_model = result.scalar_one_or_none()
         if user_model is None:

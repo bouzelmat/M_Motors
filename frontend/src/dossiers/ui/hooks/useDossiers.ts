@@ -1,10 +1,10 @@
-﻿import { useQuery, type UseQueryResult } from "@tanstack/react-query";
+import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 
 import {
 	DossiersClient,
 	type DossierStatus,
 	type DossierListItem,
-} from "../../../api/clients/DossiersClient";
+} from "../../infrastructure/DossiersClient";
 
 const STALE_TIME_MS = 60 * 1000;
 const FINAL_STATUSES: readonly DossierStatus[] = [

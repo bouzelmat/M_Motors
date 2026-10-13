@@ -1,4 +1,68 @@
-# ID_Règle	Action	Commentaire
+# OWASP ZAP — Règles de blocage pipeline
+# Format : ID_Règle<TAB>Action<TAB>Commentaire
+# Actions : FAIL (bloque le pipeline) | WARN (avertit sans bloquer) | IGNORE (masqué)
+
+# ============================================================
+# FAILLES CRITIQUES — Bloquent le pipeline (FAIL)
+# ============================================================
+# Injection
+40012	FAIL	Cross Site Scripting (Reflected)
+40014	FAIL	Cross Site Scripting (Persistent)
+40016	FAIL	Cross Site Scripting (Persistent) - Prime
+40017	FAIL	Cross Site Scripting (Persistent) - Spider
+40018	FAIL	SQL Injection
+40019	FAIL	SQL Injection - MySQL
+40020	FAIL	SQL Injection - Hypersonic SQL
+40021	FAIL	SQL Injection - Oracle
+40022	FAIL	SQL Injection - PostgreSQL
+40024	FAIL	SQL Injection - SQLite
+40026	FAIL	Cross Site Scripting (DOM Based)
+40027	FAIL	SQL Injection - MsSQL
+40028	FAIL	ELMAH Information Leak
+40029	FAIL	Trace.axd Information Leak
+40031	FAIL	.htaccess Information Leak
+40032	FAIL	.htaccess Information Leak - Backup file
+90019	FAIL	Server-Side Request Forgery
+90020	FAIL	Remote OS Command Injection
+90021	FAIL	XPath Injection
+90023	FAIL	XML External Entity Attack
+90024	FAIL	Generic Padding Oracle
+90025	FAIL	Expression Language Injection
+90026	FAIL	SOAP Action Spoofing
+90028	FAIL	Insecure JSONP
+90029	FAIL	SOAP XML Injection
+90030	FAIL	WSDL XML Injection
+10058	FAIL	Cross-Origin-Resource-Sharing Misconfiguration
+10099	FAIL	Source Code Disclosure - Web3
+10908	FAIL	Eclipse IDE Information Leak
+20019	FAIL	External Redirect
+90011	FAIL	Charset Mismatch
+
+# ============================================================
+# RISQUES MOYENS — Avertissent sans bloquer (WARN)
+# ============================================================
+10106	WARN	HTTP Only Site — Faux positif en local, TLS géré par reverse proxy en prod
+10035	WARN	Strict-Transport-Security Header Missing — À activer en production
+10098	WARN	Cross-Domain Misconfiguration
+10063	WARN	Permissions Policy Header Not Set
+90022	WARN	Application Error Disclosure — À corriger mais ne bloque pas
+10023	WARN	Information Disclosure - Debug Error Messages — À désactiver en prod
+100000	WARN	A Server Error response code was returned — À corriger mais ne bloque pas
+10015	WARN	Re-examine Cache-control Directives
+10017	WARN	Cross-Domain JavaScript Source File Inclusion
+10020	WARN	Anti-clickjacking Header Missing
+10109	WARN	Modern Web Application
+10110	WARN	Insufficient Site Isolation Against Spectre Vulnerability
+10111	WARN	Authentication Request Identified — Informationnel
+10112	WARN	Session Management Response Identified — Informationnel
+10113	WARN	Verification Request Identified — Informationnel
+10104	WARN	User Agent Fuzzer — Informationnel
+10202	WARN	Absence of Anti-CSRF Tokens — Non applicable sur API JWT
+3	WARN	Vulnerable JS Library — Géré par SCA
+
+# ============================================================
+# ALERTES INFORMATIONNELLES — Ignorées (IGNORE)
+# ============================================================
 10096	IGNORE	Timestamp Disclosure - Ignore les alertes de format de date fréquentes dans les logs et réponses API
 10021	IGNORE	X-Content-Type-Options Header Missing - Géré par l'infrastructure cloud (CloudFront) et non l'application directement
 10038	IGNORE	Content Security Policy (CSP) Misconfiguration - Les API REST retournent du JSON, le CSP est géré sur le Frontend

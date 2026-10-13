@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from uuid import uuid4
 
-from src.dossiers.application.schemas.dossier_response import (
+from src.dossiers.api.schemas.dossier_response import (
     AdminDossierDetailResponse,
     DossierListItemResponse,
     DossierStatusResponse,

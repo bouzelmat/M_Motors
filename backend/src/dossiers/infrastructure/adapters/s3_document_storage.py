@@ -7,7 +7,7 @@ from uuid import UUID
 import boto3
 from botocore.config import Config
 
-from src.config import Settings
+from src.shared.infrastructure.config import Settings
 from src.dossiers.domain.ports.document_storage_port import DocumentStoragePort
 
 

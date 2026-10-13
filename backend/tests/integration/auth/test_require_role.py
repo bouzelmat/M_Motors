@@ -9,7 +9,7 @@ from src.auth.domain.entities import User
 from src.auth.domain.value_objects import Email, Role
 from src.auth.infrastructure.orm.user_model import UserModel
 from src.auth.infrastructure.security.jwt_service import JWTService
-from src.api.dependencies import require_role
+from src.auth.api.dependencies import require_role
 from src.shared.infrastructure.database import get_session
 
 

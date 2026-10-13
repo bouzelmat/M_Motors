@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
+from src.auth.infrastructure.security.jwt_service import JWTService
 
 
 @pytest.fixture(autouse=True)
@@ -192,6 +193,24 @@ async def test_get_me_without_token(async_client: AsyncClient) -> None:
     """Test accessing /me without token returns 401."""
     response = await async_client.get("/api/v1/auth/me")
     assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_get_me_with_invalid_uuid_subject_returns_401(
+    async_client: AsyncClient,
+) -> None:
+    """A signed token with a non-UUID subject must return 401, not 500."""
+    token = JWTService().create_access_token(
+        data={"sub": "zap-test-user-id", "role": "admin"}
+    )
+
+    response = await async_client.get(
+        "/api/v1/auth/me",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Invalid token"
 
 
 @pytest.mark.asyncio

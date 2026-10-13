@@ -5,8 +5,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { SubscriptionConfirmationPage } from "../SubscriptionConfirmationPage";
-import { useSubscriptionTunnelStore } from "../../../../vehicles/application/stores/useSubscriptionTunnelStore";
-import { DossiersClient } from "../../../../api/clients/DossiersClient";
+import { useSubscriptionTunnelStore } from "../../../application/stores/useSubscriptionTunnelStore";
+import { DossiersClient } from "../../../infrastructure/DossiersClient";
 
 const mockNavigate = vi.fn();
 
@@ -18,7 +18,7 @@ vi.mock("react-router-dom", async () => {
   };
 });
 
-vi.mock("../../../../api/clients/DossiersClient", () => ({
+vi.mock("../../../infrastructure/DossiersClient", () => ({
   DossiersClient: {
     createDossier: vi.fn(),
   },

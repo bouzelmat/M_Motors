@@ -1,5 +1,5 @@
 import React from "react";
-import type { DossierStatus } from "../../../api/clients/DossiersClient";
+import type { DossierStatus } from "../../infrastructure/DossiersClient";
 
 interface DossierStatusCardProps {
 	readonly status: DossierStatus;

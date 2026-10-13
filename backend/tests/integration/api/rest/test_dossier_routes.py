@@ -8,8 +8,8 @@ from starlette import status
 from src.dossiers.domain.value_objects.document_status import DocumentStatus
 from src.dossiers.domain.value_objects.dossier_status import DossierStatus
 from src.dossiers.domain.value_objects.document_type import DocumentType
-from src.dossiers.infrastructure.models.document_model import DocumentModel
-from src.dossiers.infrastructure.models.dossier_model import DossierModel
+from src.dossiers.infrastructure.orm.document_model import DocumentModel
+from src.dossiers.infrastructure.orm.dossier_model import DossierModel
 
 
 @pytest.mark.asyncio

@@ -11,7 +11,7 @@ from src.dossiers.domain.entities.dossier import Dossier
 from src.dossiers.domain.value_objects.dossier_status import DossierStatus
 from src.dossiers.domain.value_objects.financing_plan import FinancingPlan
 from src.dossiers.domain.value_objects.trade_in import TradeIn
-from src.dossiers.infrastructure.models.dossier_model import DossierModel
+from src.dossiers.infrastructure.orm.dossier_model import DossierModel
 from src.dossiers.infrastructure.repository.sqlalchemy_dossier_repository import (
     SQLAlchemyDossierRepository,
 )

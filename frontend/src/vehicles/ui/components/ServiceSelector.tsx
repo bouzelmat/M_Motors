@@ -9,7 +9,7 @@ import {
   Paper,
   Typography,
 } from "@mui/material";
-import type { ServiceSelection } from "../../../vehicles/application/stores/useSubscriptionTunnelStore";
+import type { ServiceSelection } from "../../../dossiers/application/models/ServiceSelection";
 
 interface ServiceSelectorProps {
   readonly services: readonly ServiceSelection[];

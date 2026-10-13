@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import axios from "axios";
 
-import { apiClient } from "../../../../src/api/apiClient";
+import { apiClient } from "../../../../src/shared/infrastructure/http/apiClient";
 import { VehiclesClient } from "../../../../src/vehicles/infrastructure/VehiclesClient";
-import { GetCatalogParams } from "../../../../src/vehicles/infrastructure/vehicle.types";
+import { GetCatalogParams } from "../../../../src/vehicles/infrastructure/dto/vehicle.dto";
 
 describe("VehiclesClient", () => {
     beforeEach(() => {

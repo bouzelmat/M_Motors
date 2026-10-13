@@ -1,4 +1,4 @@
-﻿import { apiClient } from "../../api/apiClient";
+import { apiClient } from "../../shared/infrastructure/http/apiClient";
 import { RegisterRequest, RegisterResponse, LoginRequest, LoginResponse } from "./auth.types";
 
 export class AuthClient {

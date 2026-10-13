@@ -5,7 +5,7 @@ import logging
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-from src.config import Settings
+from src.shared.infrastructure.config import Settings
 from src.dossiers.application.use_cases.purge_rejected_dossiers import (
     PurgeRejectedDossiersUseCase,
 )
