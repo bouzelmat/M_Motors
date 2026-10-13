@@ -93,7 +93,17 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.CI_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.CI_AWS_SECRET_ACCESS_KEY }}
           AWS_ENDPOINT_URL: http://localhost:9090
-        run: alembic upgrade head
+        run: |
+          # Pytest supprime les tables ORM en fin de session, mais conserve
+          # alembic_version. Il faut donc réinitialiser le schéma avant de
+          # relancer Alembic, sinon `upgrade head` est considéré comme déjà fait.
+          PGPASSWORD=m_motors psql \
+            --host=localhost \
+            --port=5432 \
+            --username=m_motors \
+            --dbname=test_m_motors \
+            --command='DROP SCHEMA public CASCADE; CREATE SCHEMA public;'
+          alembic upgrade head
 
       # ==========================================
       # ETAPE 2 : CREATION DE L'UTILISATEUR ET DU TOKEN DE TEST POUR ZAP
