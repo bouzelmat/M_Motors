@@ -18,7 +18,7 @@ class UserRepository(Protocol):
         """Find a user by email address."""
         ...
 
-    async def find_by_id(self, id: UUID) -> User | None:
+    async def find_by_id(self, user_id: UUID) -> User | None:
         """Find a user by ID."""
         ...
 

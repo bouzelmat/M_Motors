@@ -2,10 +2,10 @@ import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { DossierActionBar } from "../DossierActionBar";
-import { DossiersClient } from "../../../../api/clients/DossiersClient";
+import { DossiersClient } from "../../../infrastructure/DossiersClient";
 
 
-vi.mock("../../../../api/clients/DossiersClient", () => ({
+vi.mock("../../../infrastructure/DossiersClient", () => ({
 	DossiersClient: {
 		validateDossier: vi.fn(),
 		rejectDossier: vi.fn(),

@@ -14,7 +14,7 @@ from src.auth.domain.entities import User
 from src.auth.domain.value_objects import Email, Role
 from src.auth.infrastructure.orm.user_model import UserModel
 from src.auth.infrastructure.security.jwt_service import JWTService
-from src.config import get_settings
+from src.shared.infrastructure.config import get_settings
 from src.vehicles.application.use_cases.generate_presigned_url import (
     MAX_FILE_SIZE_BYTES,
 )

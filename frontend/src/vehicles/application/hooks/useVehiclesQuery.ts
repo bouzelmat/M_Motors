@@ -2,7 +2,7 @@ import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 
 import { vehiclesClient } from "../../infrastructure/VehiclesClient";
 import type { CatalogMode } from "../stores/useVehicleFilterStore";
-import type { VehicleListItemDTO } from "../../infrastructure/vehicle.types";
+import type { VehicleListItemDTO } from "../../infrastructure/dto/vehicle.dto";
 
 const STALE_TIME_MS = 5 * 60 * 1000;
 

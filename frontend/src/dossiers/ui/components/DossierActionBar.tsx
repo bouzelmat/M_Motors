@@ -3,8 +3,8 @@ import { Box, Button, Stack, Alert } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
 import AttachFileIcon from "@mui/icons-material/AttachFile";
-import { getApiErrorMessage } from "../../../api/apiErrorMessage";
-import type { DocumentType, DossierStatus } from "../../../api/clients/DossiersClient";
+import { getApiErrorMessage } from "../../../shared/infrastructure/http/apiErrorMessage";
+import type { DocumentType, DossierStatus } from "../../infrastructure/DossiersClient";
 import {
 	useValidateDossier,
 	useRejectDossier,

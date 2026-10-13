@@ -9,7 +9,7 @@ import {
 	Box,
 } from "@mui/material";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
-import { DocumentListItem } from "../../../api/clients/DossiersClient";
+import { DocumentListItem } from "../../infrastructure/DossiersClient";
 
 interface DocumentListProps {
 	documents: DocumentListItem[];

@@ -12,7 +12,7 @@ import {
 	Chip,
 } from "@mui/material";
 import VisibilityIcon from "@mui/icons-material/Visibility";
-import type { PendingDossierItem } from "../../../api/clients/DossiersClient";
+import type { PendingDossierItem } from "../../infrastructure/DossiersClient";
 
 interface AdminDossiersListProps {
 	readonly items: readonly PendingDossierItem[];

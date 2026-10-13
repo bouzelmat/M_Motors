@@ -4,11 +4,11 @@ import { Alert, Box, Button, Chip, CircularProgress, Container, Dialog, DialogAc
 import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 import { useParams } from "react-router-dom";
 
-import type { DossierStatus, DocumentStatus, DocumentType } from "../../../api/clients/DossiersClient";
+import type { DossierStatus, DocumentStatus, DocumentType } from "../../infrastructure/DossiersClient";
 import { useDossierStatus } from "../hooks/useDossierStatus";
 import { useQuery } from "@tanstack/react-query";
-import { DossiersClient } from "../../../api/clients/DossiersClient";
-import { getApiErrorMessage } from "../../../api/apiErrorMessage";
+import { DossiersClient } from "../../infrastructure/DossiersClient";
+import { getApiErrorMessage } from "../../../shared/infrastructure/http/apiErrorMessage";
 import { DOCUMENT_TYPE_LABELS, DocumentUploader } from "../components/DocumentUploader";
 
 const STATUS_LABELS: Record<DossierStatus, string> = {

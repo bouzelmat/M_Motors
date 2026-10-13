@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import {
     Alert,
     Box,
@@ -18,7 +18,7 @@ import {
     Typography,
 } from "@mui/material";
 
-import type { CatalogType, CreateVehicleRequestDTO, EnergyType, ServiceDTO } from "../../infrastructure/vehicle.types";
+import type { CatalogType, CreateVehicleRequestDTO, EnergyType, ServiceDTO } from "../../infrastructure/dto/vehicle.dto";
 
 interface VehicleAddFormProps {
     onSubmit: (data: CreateVehicleRequestDTO) => Promise<void>;

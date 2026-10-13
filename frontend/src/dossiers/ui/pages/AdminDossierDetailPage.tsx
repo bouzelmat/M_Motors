@@ -18,8 +18,8 @@ import {
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import { useDossierDetail } from "../hooks/useDossierDetail"; // Assure-toi que ce hook existe ou utilise DossiersClient directement
-import { getApiErrorMessage } from "../../../api/apiErrorMessage";
-import { DossiersClient } from "../../../api/clients/DossiersClient";
+import { getApiErrorMessage } from "../../../shared/infrastructure/http/apiErrorMessage";
+import { DossiersClient } from "../../infrastructure/DossiersClient";
 import { DossierActionBar } from "../components/DossierActionBar";
 import { FinancialSummaryPanel } from "../components/FinancialSummaryPanel";
 

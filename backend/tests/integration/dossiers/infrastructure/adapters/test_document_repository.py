@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.dossiers.domain.entities.document import Document
 from src.dossiers.domain.value_objects.document_type import DocumentType
 from src.dossiers.domain.value_objects.dossier_status import DossierStatus
-from src.dossiers.infrastructure.models.dossier_model import DossierModel
+from src.dossiers.infrastructure.orm.dossier_model import DossierModel
 from src.dossiers.infrastructure.adapters.document_repository import (
     SqlAlchemyDocumentRepository,
 )

@@ -27,13 +27,13 @@ import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
-import { DossiersClient } from "../../../api/clients/DossiersClient";
-import { getApiErrorMessage } from "../../../api/apiErrorMessage";
-import { useSubscriptionTunnelStore } from "../../../vehicles/application/stores/useSubscriptionTunnelStore";
+import { DossiersClient } from "../../infrastructure/DossiersClient";
+import { getApiErrorMessage } from "../../../shared/infrastructure/http/apiErrorMessage";
+import { useSubscriptionTunnelStore } from "../../application/stores/useSubscriptionTunnelStore";
 import { useVehicleDetailQuery } from "../../../vehicles/application/hooks/useVehicleDetailQuery";
 import { useCreateDossier, useSubmitDossier } from "../hooks/useDossierMutations";
 import { DocumentUploader } from "../components/DocumentUploader";
-import { FinancingSimulator } from "../../../vehicles/ui/components/FinancingSimulator";
+import { FinancingSimulator } from "../components/FinancingSimulator";
 import { TradeInForm } from "../components/TradeInForm";
 import { PriceTag } from "../../../shared/ui/components/PriceTag";
 

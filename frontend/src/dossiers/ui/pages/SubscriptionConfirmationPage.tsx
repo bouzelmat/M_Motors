@@ -12,9 +12,9 @@ import {
   Alert,
 } from "@mui/material";
 
-import { useSubscriptionTunnelStore } from "../../../vehicles/application/stores/useSubscriptionTunnelStore";
+import { useSubscriptionTunnelStore } from "../../application/stores/useSubscriptionTunnelStore";
 import { useCreateDossier } from "../hooks/useDossierMutations";
-import { getApiErrorMessage } from "../../../api/apiErrorMessage";
+import { getApiErrorMessage } from "../../../shared/infrastructure/http/apiErrorMessage";
 
 export const SubscriptionConfirmationPage: React.FC = () => {
   const navigate = useNavigate();

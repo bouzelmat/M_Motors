@@ -1,10 +1,10 @@
-﻿import { useQuery, type UseQueryResult } from "@tanstack/react-query";
+import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 
 import {
 	DossiersClient,
 	type DossierStatus,
 	type DossierStatusResponse,
-} from "../../../api/clients/DossiersClient";
+} from "../../infrastructure/DossiersClient";
 
 const FINAL_STATUSES: readonly DossierStatus[] = [
 	"VALIDATED",

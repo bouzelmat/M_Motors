@@ -16,9 +16,9 @@ import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { calculateMonthlyPayment } from "../../../dossiers/application/utils/financing";
-import { useSubscriptionTunnelStore } from "../../application/stores/useSubscriptionTunnelStore";
+import { useSubscriptionTunnelStore } from "../../../dossiers/application/stores/useSubscriptionTunnelStore";
 import { useVehicleDetailQuery } from "../../application/hooks/useVehicleDetailQuery";
-import { getApiErrorMessage } from "../../../api/apiErrorMessage";
+import { getApiErrorMessage } from "../../../shared/infrastructure/http/apiErrorMessage";
 
 const DEFAULT_AMOUNT = 25000;
 const DEFAULT_DURATION = 48;

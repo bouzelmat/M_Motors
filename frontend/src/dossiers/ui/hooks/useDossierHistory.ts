@@ -2,7 +2,7 @@ import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import {
 	DossiersClient,
 	type PendingDossierItem,
-} from "../../../api/clients/DossiersClient";
+} from "../../infrastructure/DossiersClient";
 
 export function useDossierHistory(): UseQueryResult<PendingDossierItem[], Error> {
 	return useQuery({

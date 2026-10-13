@@ -24,9 +24,9 @@ import StarIcon from "@mui/icons-material/Star";
 import StarOutlineIcon from "@mui/icons-material/StarOutline";
 import { useNavigate, useParams } from "react-router-dom";
 
-import { getApiErrorMessage } from "../../../api/apiErrorMessage";
+import { getApiErrorMessage } from "../../../shared/infrastructure/http/apiErrorMessage";
 import { vehiclesClient } from "../../infrastructure/VehiclesClient";
-import type { CreateVehicleRequestDTO } from "../../infrastructure/vehicle.types";
+import type { CreateVehicleRequestDTO } from "../../infrastructure/dto/vehicle.dto";
 import { VehicleAddForm } from "../components/VehicleAddForm";
 
 export function EditVehiclePage() {

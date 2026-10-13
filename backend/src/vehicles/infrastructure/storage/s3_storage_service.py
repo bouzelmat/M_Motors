@@ -8,7 +8,7 @@ try:
 except ImportError:
     BOTO3_AVAILABLE = False
 
-from src.config import get_settings
+from src.shared.infrastructure.config import get_settings
 from src.vehicles.domain.ports.storage_service import StorageService
 
 

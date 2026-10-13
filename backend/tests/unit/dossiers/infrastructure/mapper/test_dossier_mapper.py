@@ -9,10 +9,10 @@ from src.dossiers.domain.entities.dossier import Dossier
 from src.dossiers.domain.value_objects.dossier_status import DossierStatus
 from src.dossiers.domain.value_objects.financing_plan import FinancingPlan
 from src.dossiers.domain.value_objects.trade_in import TradeIn
-from src.dossiers.infrastructure.models.dossier_model import DossierModel
-from src.dossiers.infrastructure.models.financing_plan_model import FinancingPlanModel
-from src.dossiers.infrastructure.models.trade_in_model import TradeInModel
-from src.dossiers.infrastructure.mapper.dossier_mapper import DossierMapper
+from src.dossiers.infrastructure.orm.dossier_model import DossierModel
+from src.dossiers.infrastructure.orm.financing_plan_model import FinancingPlanModel
+from src.dossiers.infrastructure.orm.trade_in_model import TradeInModel
+from src.dossiers.infrastructure.mappers.dossier_mapper import DossierMapper
 
 
 def test_to_domain_with_minimal_model() -> None:

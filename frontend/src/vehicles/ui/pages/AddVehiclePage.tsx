@@ -1,14 +1,14 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Alert, Container, Paper, Typography } from "@mui/material";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useAuthStore } from "../../../auth/ui/hooks/useAuth";
 import { vehiclesClient } from "../../infrastructure/VehiclesClient";
-import { CreateVehicleRequestDTO } from "../../infrastructure/vehicle.types";
+import { CreateVehicleRequestDTO } from "../../infrastructure/dto/vehicle.dto";
 import { VehicleAddForm } from "../components/VehicleAddForm";
-import { getApiErrorMessage } from "../../../api/apiErrorMessage";
-import type { ServiceDTO } from "../../infrastructure/vehicle.types";
+import { getApiErrorMessage } from "../../../shared/infrastructure/http/apiErrorMessage";
+import type { ServiceDTO } from "../../infrastructure/dto/vehicle.dto";
 
 export const AddVehiclePage: React.FC = () => {
     const navigate = useNavigate();
