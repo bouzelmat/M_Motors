@@ -29,12 +29,23 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
-      - name: Terraform init, workspace and create ECR
+      - name: Terraform init, workspace and handle ECR state
         working-directory: ${{ env.TF_DIR }}
         run: |
           terraform init
           terraform workspace select staging || terraform workspace new staging
-          # CRUCIAL : Création du dépôt ECR AVANT le push Docker
+          
+          # Vérifie si le dépôt est déjà dans l'état Terraform
+          if ! terraform state show aws_ecr_repository.backend > /dev/null 2>&1; then
+            echo "⚠️ Le dépôt ECR n'est pas dans l'état. Tentative d'importation de la ressource existante..."
+            # Si l'import échoue (ex: le dépôt n'existe pas encore), on ignore l'erreur 
+            # pour laisser la commande 'apply' suivante le créer normalement.
+            terraform import aws_ecr_repository.backend m-motors/backend || true
+          else
+            echo "✅ Le dépôt ECR est déjà connu de Terraform."
+          fi
+
+          # Création ou synchronisation du dépôt ECR
           terraform apply -auto-approve -target=aws_ecr_repository.backend
 
       - name: Login to ECR
@@ -61,7 +72,7 @@ jobs:
             -var="image_tag=${{ github.sha }}" \
             $BUDGET_ARG
 
-      - name: Export Terraform Outputs
+      - name: Export Terraform Outputs to GitHub Environment
         working-directory: ${{ env.TF_DIR }}
         id: tf-outputs
         run: |
