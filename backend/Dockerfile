@@ -18,11 +18,13 @@ COPY alembic ./alembic
 COPY scripts ./scripts
 COPY src ./src
 COPY tests ./tests
+COPY entrypoint.sh ./entrypoint.sh
 
 RUN useradd --create-home --shell /bin/bash appuser
+RUN chmod +x ./entrypoint.sh
 
 USER appuser
 
 EXPOSE 8000
 
-CMD ["uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+ENTRYPOINT ["/app/entrypoint.sh"]

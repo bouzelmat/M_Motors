@@ -54,3 +54,7 @@ Thumbs.db
 # Docker / local data
 docker-data/
 postgres-data/
+
+.terraform/
+*.tfstate*
+backend/venv/
