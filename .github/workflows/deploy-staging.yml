@@ -15,7 +15,6 @@ jobs:
     environment: staging
     permissions:
       contents: read
-      # id-token: write # Décommentez si vous passez à l'authentification OIDC à l'avenir
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,21 +29,12 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
-      - name: Terraform init, workspace and import ECR
+      - name: Terraform init, workspace and create ECR
         working-directory: ${{ env.TF_DIR }}
         run: |
           terraform init
           terraform workspace select staging || terraform workspace new staging
-          
-          # Mécanique d'importation idempotente : vérifie si la ressource est déjà dans l'état
-          if terraform state show aws_ecr_repository.backend > /dev/null 2>&1; then
-            echo "✅ Le dépôt ECR est déjà connu de Terraform. Import ignoré."
-          else
-            echo "⚠️ Le dépôt ECR n'est pas dans l'état. Importation de la ressource manuelle en cours..."
-            terraform import aws_ecr_repository.backend m-motors/backend
-          fi
-          
-          # Synchronisation : applique uniquement les différences de config (ex: scan_on_push)
+          # CRUCIAL : Création du dépôt ECR AVANT le push Docker
           terraform apply -auto-approve -target=aws_ecr_repository.backend
 
       - name: Login to ECR
@@ -67,16 +57,14 @@ jobs:
         run: |
           BUDGET_ARG=""
           if [ -n "$BUDGET_EMAIL" ]; then BUDGET_ARG="-var=budget_alert_email=$BUDGET_EMAIL"; fi
-          
           terraform apply -auto-approve \
             -var="image_tag=${{ github.sha }}" \
             $BUDGET_ARG
 
-      - name: Export Terraform Outputs to GitHub Environment
+      - name: Export Terraform Outputs
         working-directory: ${{ env.TF_DIR }}
         id: tf-outputs
         run: |
-          # Extraction sécurisée des métadonnées sans changer de contexte de répertoire
           echo "ecs_url=$(terraform output -raw ecs_express_service_url)" >> $GITHUB_OUTPUT
           echo "frontend_bucket=$(terraform output -raw frontend_bucket_name)" >> $GITHUB_OUTPUT
           echo "cloudfront_id=$(terraform output -raw frontend_cloudfront_distribution_id)" >> $GITHUB_OUTPUT
@@ -84,16 +72,11 @@ jobs:
       - name: Build frontend and publish to S3
         working-directory: frontend
         env:
-          # Injection déterministe des variables extraites à l'étape précédente
           VITE_API_BASE_URL: "https://${{ steps.tf-outputs.outputs.ecs_url }}"
         run: |
           npm ci
           npm run build
-          
-          # Synchronisation vers le bucket
           aws s3 sync dist/ "s3://${{ steps.tf-outputs.outputs.frontend_bucket }}" --delete
-          
-          # Invalidation du cache CloudFront
           aws cloudfront create-invalidation \
             --distribution-id "${{ steps.tf-outputs.outputs.cloudfront_id }}" \
             --paths '/*'
