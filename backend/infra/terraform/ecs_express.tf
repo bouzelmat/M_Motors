@@ -64,8 +64,7 @@ resource "aws_iam_role" "ecs_infrastructure" {
   })
 }
 
-# CORRECTION : Remplacement de l'attachement de politique gérée par une politique en ligne
-# pour contourner l'erreur 404 NoSuchEntity sur les comptes restreints ou nouveaux.
+# CORRECTION 1 : Politique en ligne pour contourner le blocage 404 de la politique gérée
 resource "aws_iam_role_policy" "ecs_infrastructure_inline" {
   name = "${local.common_name}-ecs-infra-policy"
   role = aws_iam_role.ecs_infrastructure.id
@@ -212,10 +211,11 @@ resource "aws_ecs_express_gateway_service" "backend" {
     max_task_count            = local.ecs_is_production ? 3 : 1
   }
 
+  # CORRECTION 2 : Le depends_on pointe maintenant vers la politique en ligne (inline)
   depends_on = [
     aws_iam_role_policy_attachment.ecs_execution_managed,
     aws_iam_role_policy.ecs_execution_secrets,
-    aws_iam_role_policy.ecs_infrastructure_inline, # CORRECTION : Pointe vers la nouvelle politique en ligne
+    aws_iam_role_policy.ecs_infrastructure_inline, # <-- C'est ici que la modification a été faite
     aws_iam_role_policy.ecs_task,
     aws_db_instance.postgres,
     aws_secretsmanager_secret_version.database_password,
