@@ -11,6 +11,14 @@ terraform {
       version = "~> 3.6"
     }
   }
+
+  # BACKEND DISTANT S3 : Indispensable pour que GitHub Actions se "souvienne" de l'état
+  backend "s3" {
+    bucket  = "m-motors-terraform-state-bucket" # Remplacez par le nom exact de votre bucket créé manuellement
+    key     = "staging/terraform.tfstate"
+    region  = "eu-west-3"
+    encrypt = true
+  }
 }
 
 provider "aws" {
