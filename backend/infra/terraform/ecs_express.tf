@@ -64,9 +64,35 @@ resource "aws_iam_role" "ecs_infrastructure" {
   })
 }
 
-resource "aws_iam_role_policy_attachment" "ecs_infrastructure_managed" {
-  role       = aws_iam_role.ecs_infrastructure.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonECSInfrastructureRoleforExpressGatewayServices"
+# CORRECTION : Remplacement de l'attachement de politique gérée par une politique en ligne
+# pour contourner l'erreur 404 NoSuchEntity sur les comptes restreints ou nouveaux.
+resource "aws_iam_role_policy" "ecs_infrastructure_inline" {
+  name = "${local.common_name}-ecs-infra-policy"
+  role = aws_iam_role.ecs_infrastructure.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "elasticloadbalancing:*",
+          "ec2:CreateSecurityGroup",
+          "ec2:DeleteSecurityGroup",
+          "ec2:AuthorizeSecurityGroupIngress",
+          "ec2:AuthorizeSecurityGroupEgress",
+          "ec2:RevokeSecurityGroupIngress",
+          "ec2:RevokeSecurityGroupEgress",
+          "ec2:DescribeSecurityGroups",
+          "ec2:DescribeVpcs",
+          "ec2:DescribeSubnets",
+          "application-autoscaling:*",
+          "iam:CreateServiceLinkedRole"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
 }
 
 resource "aws_iam_role" "ecs_task" {
@@ -189,7 +215,7 @@ resource "aws_ecs_express_gateway_service" "backend" {
   depends_on = [
     aws_iam_role_policy_attachment.ecs_execution_managed,
     aws_iam_role_policy.ecs_execution_secrets,
-    aws_iam_role_policy_attachment.ecs_infrastructure_managed,
+    aws_iam_role_policy.ecs_infrastructure_inline, # CORRECTION : Pointe vers la nouvelle politique en ligne
     aws_iam_role_policy.ecs_task,
     aws_db_instance.postgres,
     aws_secretsmanager_secret_version.database_password,

@@ -72,7 +72,7 @@ resource "aws_db_instance" "postgres" {
   publicly_accessible    = false
 
   multi_az                = local.rds_is_production
-  backup_retention_period = 3
+  backup_retention_period = 1 # CORRECTION : Limité à 1 jour pour respecter le Free Tier AWS
   backup_window           = "03:00-04:00"
   maintenance_window      = "sun:04:00-sun:05:00"
   copy_tags_to_snapshot   = true
