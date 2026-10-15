@@ -160,7 +160,8 @@ resource "aws_ecs_express_gateway_service" "backend" {
   cpu                     = local.ecs_is_production ? "1024" : "256"
   memory                  = local.ecs_is_production ? "2048" : "512"
   health_check_path       = "/health"
-  wait_for_steady_state   = true
+  # CORRECTION CRITIQUE : Désactivation de l'attente de stabilisation pour éviter le timeout
+  wait_for_steady_state   = false
 
   network_configuration {
     subnets         = local.ecs_subnets
