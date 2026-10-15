@@ -64,7 +64,7 @@ resource "aws_iam_role" "ecs_infrastructure" {
   })
 }
 
-# CORRECTION FINALE : Politique complète pour ECS Express Mode
+# CORRECTION FINALE : Politique complète avec TOUTES les permissions requises
 resource "aws_iam_role_policy" "ecs_infrastructure_inline" {
   name = "${local.common_name}-ecs-infra-policy"
   role = aws_iam_role.ecs_infrastructure.id
@@ -177,10 +177,42 @@ resource "aws_iam_role_policy" "ecs_infrastructure_inline" {
         Sid    = "ECRPermissions"
         Effect = "Allow"
         Action = [
-          "ecr:DescribeRepositories",
-          "ecr:GetAuthorizationToken"
+          "ecr:GetAuthorizationToken",
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage",
+          "ecr:DescribeRepositories"
         ]
         Resource = "*"
+      },
+      {
+        Sid    = "ECSPermissions"
+        Effect = "Allow"
+        Action = [
+          "ecs:CreateService",
+          "ecs:UpdateService",
+          "ecs:DeleteService",
+          "ecs:DescribeServices",
+          "ecs:RegisterTaskDefinition",
+          "ecs:RunTask",
+          "ecs:StopTask",
+          "ecs:DescribeTasks",
+          "ecs:ListTasks",
+          "ecs:DescribeTaskDefinition"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "SecretsManagerPermissions"
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:DescribeSecret"
+        ]
+        Resource = [
+          aws_secretsmanager_secret.database_password.arn,
+          aws_secretsmanager_secret.application_key.arn
+        ]
       }
     ]
   })
