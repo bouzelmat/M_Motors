@@ -64,7 +64,7 @@ resource "aws_iam_role" "ecs_infrastructure" {
   })
 }
 
-# CORRECTION FINALE : Politique en ligne avec toutes les permissions EC2, ELB, Logs et Autoscaling requises par ECS Express Mode
+# CORRECTION FINALE : Politique en ligne alignée à 100% sur la politique gérée AWS
 resource "aws_iam_role_policy" "ecs_infrastructure_inline" {
   name = "${local.common_name}-ecs-infra-policy"
   role = aws_iam_role.ecs_infrastructure.id
@@ -85,16 +85,27 @@ resource "aws_iam_role_policy" "ecs_infrastructure_inline" {
           "ec2:DescribeSecurityGroups",
           "ec2:DescribeVpcs",
           "ec2:DescribeSubnets",
-          "ec2:DescribeRouteTables",         # AJOUT : Requis pour le routage ALB
-          "ec2:DescribeNetworkInterfaces",   # AJOUT : Requis pour l'attachement ENI
-          "ec2:DescribeAvailabilityZones",   # AJOUT : Requis pour la validation Multi-AZ
+          "ec2:DescribeRouteTables",
+          "ec2:DescribeNetworkInterfaces",
+          "ec2:DescribeAvailabilityZones",
+          # AJOUT CRUCIAL : Permissions de gestion des interfaces réseau (ENI) pour ALB et Fargate
+          "ec2:CreateNetworkInterface",
+          "ec2:DeleteNetworkInterface",
+          "ec2:AssignPrivateIpAddresses",
+          "ec2:UnassignPrivateIpAddresses",
           "application-autoscaling:*",
           "iam:CreateServiceLinkedRole",
           "logs:DescribeLogGroups",
           "logs:DescribeLogStreams",
           "logs:CreateLogGroup",
           "logs:CreateLogStream",
-          "logs:PutLogEvents"
+          "logs:PutLogEvents",
+          "logs:DeleteLogGroup",
+          "logs:PutRetentionPolicy",
+          "logs:DeleteRetentionPolicy",
+          "cloudwatch:PutMetricAlarm",
+          "cloudwatch:DeleteAlarms",
+          "cloudwatch:DescribeAlarms"
         ]
         Resource = "*"
       }
