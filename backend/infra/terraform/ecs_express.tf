@@ -64,7 +64,7 @@ resource "aws_iam_role" "ecs_infrastructure" {
   })
 }
 
-# CORRECTION FINALE : Politique complète avec TOUTES les permissions requises
+# POLITIQUE COMPLÈTE AVEC TOUTES LES PERMISSIONS REQUISES
 resource "aws_iam_role_policy" "ecs_infrastructure_inline" {
   name = "${local.common_name}-ecs-infra-policy"
   role = aws_iam_role.ecs_infrastructure.id
@@ -92,6 +92,9 @@ resource "aws_iam_role_policy" "ecs_infrastructure_inline" {
           "ec2:DeleteTags",
           "ec2:CreateNetworkInterface",
           "ec2:DeleteNetworkInterface",
+          "ec2:AttachNetworkInterface",
+          "ec2:DetachNetworkInterface",
+          "ec2:ModifyNetworkInterfaceAttribute",
           "ec2:AssignPrivateIpAddresses",
           "ec2:UnassignPrivateIpAddresses",
           "ec2:DescribeInstances",
@@ -103,23 +106,7 @@ resource "aws_iam_role_policy" "ecs_infrastructure_inline" {
         Sid    = "ELBPermissions"
         Effect = "Allow"
         Action = [
-          "elasticloadbalancing:*",
-          "elasticloadbalancing:CreateLoadBalancer",
-          "elasticloadbalancing:DeleteLoadBalancer",
-          "elasticloadbalancing:CreateTargetGroup",
-          "elasticloadbalancing:DeleteTargetGroup",
-          "elasticloadbalancing:CreateListener",
-          "elasticloadbalancing:DeleteListener",
-          "elasticloadbalancing:CreateRule",
-          "elasticloadbalancing:DeleteRule",
-          "elasticloadbalancing:DescribeLoadBalancers",
-          "elasticloadbalancing:DescribeTargetGroups",
-          "elasticloadbalancing:DescribeListeners",
-          "elasticloadbalancing:DescribeRules",
-          "elasticloadbalancing:RegisterTargets",
-          "elasticloadbalancing:DeregisterTargets",
-          "elasticloadbalancing:AddTags",
-          "elasticloadbalancing:RemoveTags"
+          "elasticloadbalancing:*"
         ]
         Resource = "*"
       },
@@ -199,6 +186,18 @@ resource "aws_iam_role_policy" "ecs_infrastructure_inline" {
           "ecs:DescribeTasks",
           "ecs:ListTasks",
           "ecs:DescribeTaskDefinition"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "ECSAgentPermissions"
+        Effect = "Allow"
+        Action = [
+          "ecs:Poll",
+          "ecs:StartTelemetrySession",
+          "ecs:SubmitTaskStateChange",
+          "ecs:SubmitContainerStateChange",
+          "ecs:UpdateContainerInstancesState"
         ]
         Resource = "*"
       },
