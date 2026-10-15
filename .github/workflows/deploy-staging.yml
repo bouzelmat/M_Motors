@@ -29,17 +29,24 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
-      - name: Terraform init, workspace and handle ECR state
+      - name: Terraform init, workspace and sync state
         working-directory: ${{ env.TF_DIR }}
         run: |
           terraform init
           terraform workspace select staging || terraform workspace new staging
           
-          # Vérifie si le dépôt est déjà dans l'état Terraform
+          # Synchronisation de l'état Terraform avec la réalité AWS
+          echo "🔄 Synchronisation de l'état Terraform avec AWS..."
+          terraform refresh -auto-approve || true
+          
+          # Suppression du service ECS de l'état s'il n'existe plus dans AWS
+          # (cas où il a été supprimé manuellement via la console)
+          echo "🧹 Nettoyage des ressources fantômes de l'état..."
+          terraform state rm aws_ecs_express_gateway_service.backend || true
+          
+          # Gestion de l'ECR
           if ! terraform state show aws_ecr_repository.backend > /dev/null 2>&1; then
-            echo "⚠️ Le dépôt ECR n'est pas dans l'état. Tentative d'importation de la ressource existante..."
-            # Si l'import échoue (ex: le dépôt n'existe pas encore), on ignore l'erreur 
-            # pour laisser la commande 'apply' suivante le créer normalement.
+            echo "️ Le dépôt ECR n'est pas dans l'état. Tentative d'importation..."
             terraform import aws_ecr_repository.backend m-motors/backend || true
           else
             echo "✅ Le dépôt ECR est déjà connu de Terraform."
