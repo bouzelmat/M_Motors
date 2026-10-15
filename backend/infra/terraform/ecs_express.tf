@@ -65,6 +65,7 @@ resource "aws_iam_role" "ecs_infrastructure" {
 }
 
 # CORRECTION 1 : Politique en ligne pour contourner le blocage 404 de la politique gérée
+# + AJOUT CRUCIAL : Permissions CloudWatch Logs pour ECS Express Mode
 resource "aws_iam_role_policy" "ecs_infrastructure_inline" {
   name = "${local.common_name}-ecs-infra-policy"
   role = aws_iam_role.ecs_infrastructure.id
@@ -86,7 +87,13 @@ resource "aws_iam_role_policy" "ecs_infrastructure_inline" {
           "ec2:DescribeVpcs",
           "ec2:DescribeSubnets",
           "application-autoscaling:*",
-          "iam:CreateServiceLinkedRole"
+          "iam:CreateServiceLinkedRole",
+          # Permissions CloudWatch Logs ajoutées pour résoudre l'erreur AccessDenied
+          "logs:DescribeLogGroups",
+          "logs:DescribeLogStreams",
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
         ]
         Resource = "*"
       }
