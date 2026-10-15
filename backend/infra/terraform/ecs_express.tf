@@ -64,7 +64,7 @@ resource "aws_iam_role" "ecs_infrastructure" {
   })
 }
 
-# POLITIQUE COMPLÈTE AVEC TOUTES LES PERMISSIONS REQUISES
+# CORRECTION FINALE : Politique en ligne complète remplaçant la politique gérée qui échouait
 resource "aws_iam_role_policy" "ecs_infrastructure_inline" {
   name = "${local.common_name}-ecs-infra-policy"
   role = aws_iam_role.ecs_infrastructure.id
@@ -185,7 +185,14 @@ resource "aws_iam_role_policy" "ecs_infrastructure_inline" {
           "ecs:StopTask",
           "ecs:DescribeTasks",
           "ecs:ListTasks",
-          "ecs:DescribeTaskDefinition"
+          "ecs:DescribeTaskDefinition",
+          "ecs:DescribeTaskSets",
+          "ecs:CreateTaskSet",
+          "ecs:UpdateTaskSet",
+          "ecs:DeleteTaskSet",
+          "ecs:TagResource",
+          "ecs:ListServiceDeployments",
+          "ecs:DescribeServiceDeployments"
         ]
         Resource = "*"
       },
@@ -264,7 +271,7 @@ resource "aws_ecs_express_gateway_service" "backend" {
   cpu                     = local.ecs_is_production ? "1024" : "256"
   memory                  = local.ecs_is_production ? "2048" : "512"
   health_check_path       = "/health"
-  wait_for_steady_state   = false
+  wait_for_steady_state   = false # Désactivé pour éviter les timeouts du pipeline GitHub
 
   network_configuration {
     subnets         = local.ecs_subnets
@@ -337,7 +344,7 @@ resource "aws_ecs_express_gateway_service" "backend" {
   depends_on = [
     aws_iam_role_policy_attachment.ecs_execution_managed,
     aws_iam_role_policy.ecs_execution_secrets,
-    aws_iam_role_policy.ecs_infrastructure_inline,
+    aws_iam_role_policy.ecs_infrastructure_inline, # Pointe vers la nouvelle politique en ligne complète
     aws_iam_role_policy.ecs_task,
     aws_db_instance.postgres,
     aws_secretsmanager_secret_version.database_password,
