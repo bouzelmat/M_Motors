@@ -64,7 +64,7 @@ resource "aws_iam_role" "ecs_infrastructure" {
   })
 }
 
-# CORRECTION FINALE : Politique en ligne alignée à 100% sur la politique gérée AWS
+# CORRECTION FINALE : Politique complète pour ECS Express Mode
 resource "aws_iam_role_policy" "ecs_infrastructure_inline" {
   name = "${local.common_name}-ecs-infra-policy"
   role = aws_iam_role.ecs_infrastructure.id
@@ -73,9 +73,9 @@ resource "aws_iam_role_policy" "ecs_infrastructure_inline" {
     Version = "2012-10-17"
     Statement = [
       {
+        Sid    = "EC2Permissions"
         Effect = "Allow"
         Action = [
-          "elasticloadbalancing:*",
           "ec2:CreateSecurityGroup",
           "ec2:DeleteSecurityGroup",
           "ec2:AuthorizeSecurityGroupIngress",
@@ -88,13 +88,54 @@ resource "aws_iam_role_policy" "ecs_infrastructure_inline" {
           "ec2:DescribeRouteTables",
           "ec2:DescribeNetworkInterfaces",
           "ec2:DescribeAvailabilityZones",
-          # AJOUT CRUCIAL : Permissions de gestion des interfaces réseau (ENI) pour ALB et Fargate
+          "ec2:CreateTags",
+          "ec2:DeleteTags",
           "ec2:CreateNetworkInterface",
           "ec2:DeleteNetworkInterface",
           "ec2:AssignPrivateIpAddresses",
           "ec2:UnassignPrivateIpAddresses",
-          "application-autoscaling:*",
-          "iam:CreateServiceLinkedRole",
+          "ec2:DescribeInstances",
+          "ec2:DescribeInstanceStatus"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "ELBPermissions"
+        Effect = "Allow"
+        Action = [
+          "elasticloadbalancing:*",
+          "elasticloadbalancing:CreateLoadBalancer",
+          "elasticloadbalancing:DeleteLoadBalancer",
+          "elasticloadbalancing:CreateTargetGroup",
+          "elasticloadbalancing:DeleteTargetGroup",
+          "elasticloadbalancing:CreateListener",
+          "elasticloadbalancing:DeleteListener",
+          "elasticloadbalancing:CreateRule",
+          "elasticloadbalancing:DeleteRule",
+          "elasticloadbalancing:DescribeLoadBalancers",
+          "elasticloadbalancing:DescribeTargetGroups",
+          "elasticloadbalancing:DescribeListeners",
+          "elasticloadbalancing:DescribeRules",
+          "elasticloadbalancing:RegisterTargets",
+          "elasticloadbalancing:DeregisterTargets",
+          "elasticloadbalancing:AddTags",
+          "elasticloadbalancing:RemoveTags"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "ACMPermissions"
+        Effect = "Allow"
+        Action = [
+          "acm:DescribeCertificate",
+          "acm:ListCertificates"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "CloudWatchPermissions"
+        Effect = "Allow"
+        Action = [
           "logs:DescribeLogGroups",
           "logs:DescribeLogStreams",
           "logs:CreateLogGroup",
@@ -105,7 +146,39 @@ resource "aws_iam_role_policy" "ecs_infrastructure_inline" {
           "logs:DeleteRetentionPolicy",
           "cloudwatch:PutMetricAlarm",
           "cloudwatch:DeleteAlarms",
-          "cloudwatch:DescribeAlarms"
+          "cloudwatch:DescribeAlarms",
+          "cloudwatch:PutMetricData"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "AutoScalingPermissions"
+        Effect = "Allow"
+        Action = [
+          "application-autoscaling:*",
+          "autoscaling:DescribeAutoScalingGroups",
+          "autoscaling:DescribeAutoScalingInstances",
+          "autoscaling:DescribeLaunchConfigurations",
+          "autoscaling:DescribeScalingActivities"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "IAMPermissions"
+        Effect = "Allow"
+        Action = [
+          "iam:CreateServiceLinkedRole",
+          "iam:PassRole",
+          "iam:GetRole"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "ECRPermissions"
+        Effect = "Allow"
+        Action = [
+          "ecr:DescribeRepositories",
+          "ecr:GetAuthorizationToken"
         ]
         Resource = "*"
       }
@@ -160,7 +233,6 @@ resource "aws_ecs_express_gateway_service" "backend" {
   cpu                     = local.ecs_is_production ? "1024" : "256"
   memory                  = local.ecs_is_production ? "2048" : "512"
   health_check_path       = "/health"
-  # CORRECTION CRITIQUE : Désactivation de l'attente de stabilisation pour éviter le timeout
   wait_for_steady_state   = false
 
   network_configuration {
