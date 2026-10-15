@@ -64,8 +64,7 @@ resource "aws_iam_role" "ecs_infrastructure" {
   })
 }
 
-# CORRECTION 1 : Politique en ligne pour contourner le blocage 404 de la politique gérée
-# + AJOUT CRUCIAL : Permissions CloudWatch Logs pour ECS Express Mode
+# CORRECTION FINALE : Politique en ligne avec toutes les permissions EC2, ELB, Logs et Autoscaling requises par ECS Express Mode
 resource "aws_iam_role_policy" "ecs_infrastructure_inline" {
   name = "${local.common_name}-ecs-infra-policy"
   role = aws_iam_role.ecs_infrastructure.id
@@ -86,9 +85,11 @@ resource "aws_iam_role_policy" "ecs_infrastructure_inline" {
           "ec2:DescribeSecurityGroups",
           "ec2:DescribeVpcs",
           "ec2:DescribeSubnets",
+          "ec2:DescribeRouteTables",         # AJOUT : Requis pour le routage ALB
+          "ec2:DescribeNetworkInterfaces",   # AJOUT : Requis pour l'attachement ENI
+          "ec2:DescribeAvailabilityZones",   # AJOUT : Requis pour la validation Multi-AZ
           "application-autoscaling:*",
           "iam:CreateServiceLinkedRole",
-          # Permissions CloudWatch Logs ajoutées pour résoudre l'erreur AccessDenied
           "logs:DescribeLogGroups",
           "logs:DescribeLogStreams",
           "logs:CreateLogGroup",
@@ -218,11 +219,10 @@ resource "aws_ecs_express_gateway_service" "backend" {
     max_task_count            = local.ecs_is_production ? 3 : 1
   }
 
-  # CORRECTION 2 : Le depends_on pointe maintenant vers la politique en ligne (inline)
   depends_on = [
     aws_iam_role_policy_attachment.ecs_execution_managed,
     aws_iam_role_policy.ecs_execution_secrets,
-    aws_iam_role_policy.ecs_infrastructure_inline, # <-- C'est ici que la modification a été faite
+    aws_iam_role_policy.ecs_infrastructure_inline,
     aws_iam_role_policy.ecs_task,
     aws_db_instance.postgres,
     aws_secretsmanager_secret_version.database_password,
