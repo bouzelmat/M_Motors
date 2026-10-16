@@ -64,7 +64,7 @@ resource "aws_iam_role" "ecs_infrastructure" {
   })
 }
 
-# CORRECTION FINALE : Politique en ligne complète remplaçant la politique gérée qui échouait
+# POLITIQUE EN LIGNE COMPLÈTE ET CORRIGÉE
 resource "aws_iam_role_policy" "ecs_infrastructure_inline" {
   name = "${local.common_name}-ecs-infra-policy"
   role = aws_iam_role.ecs_infrastructure.id
@@ -120,6 +120,7 @@ resource "aws_iam_role_policy" "ecs_infrastructure_inline" {
         Resource = "*"
       },
       {
+        # C'EST CE BLOC QUI MANQUAIT ET QUI BLOQUAIT TOUT
         Sid    = "CloudWatchPermissions"
         Effect = "Allow"
         Action = [
@@ -270,7 +271,8 @@ resource "aws_ecs_express_gateway_service" "backend" {
   task_role_arn           = aws_iam_role.ecs_task.arn
   cpu                     = local.ecs_is_production ? "1024" : "256"
   memory                  = local.ecs_is_production ? "2048" : "512"
-  health_check_path       = "/health"
+  # ✅ CORRECTION CRITIQUE : health_check_path avec trailing slash pour éviter la redirection 301
+  health_check_path       = "/health/"
   wait_for_steady_state   = false # Désactivé pour éviter les timeouts du pipeline GitHub
 
   network_configuration {
