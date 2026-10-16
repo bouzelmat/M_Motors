@@ -35,15 +35,16 @@ jobs:
           terraform init
           terraform workspace select staging || terraform workspace new staging
           
-          # Synchronisation de l'état Terraform avec la réalité AWS
-          echo "🔄 Synchronisation de l'état Terraform avec AWS..."
-          terraform refresh -auto-approve || true
+          # 1. SYNCHRONISATION IDÉMPOTENTE : Importer le service ECS s'il existe dans AWS mais pas dans l'état Terraform.
+          # Cela empêche définitivement l'erreur "Resource Already Exists" causée par l'ancien "state rm".
+          if ! terraform state show aws_ecs_express_gateway_service.backend > /dev/null 2>&1; then
+            echo "⚠️ Le service ECS n'est pas dans l'état Terraform. Tentative d'importation..."
+            terraform import aws_ecs_express_gateway_service.backend m-motors-staging-backend || echo "Import ignoré (service inexistant), ce n'est pas bloquant."
+          else
+            echo "✅ Le service ECS est déjà connu de Terraform."
+          fi
           
-          # Suppression du service ECS de l'état s'il n'existe plus dans AWS
-          echo "🧹 Nettoyage des ressources fantômes de l'état..."
-          terraform state rm aws_ecs_express_gateway_service.backend || true
-          
-          # Gestion de l'ECR
+          # 2. Gestion idempotente de l'ECR
           if ! terraform state show aws_ecr_repository.backend > /dev/null 2>&1; then
             echo "⚠️ Le dépôt ECR n'est pas dans l'état. Tentative d'importation..."
             terraform import aws_ecr_repository.backend m-motors/backend || true
@@ -51,7 +52,7 @@ jobs:
             echo "✅ Le dépôt ECR est déjà connu de Terraform."
           fi
 
-          # Création ou synchronisation du dépôt ECR
+          # 3. S'assurer que le dépôt ECR est à jour
           terraform apply -auto-approve -target=aws_ecr_repository.backend
 
       - name: Login to ECR
@@ -89,8 +90,7 @@ jobs:
       - name: Build frontend and publish to S3
         working-directory: frontend
         env:
-          # ✅ CORRECTION : Suppression du "https://" en dur. 
-          # L'output Terraform "ecs_express_service_url" contient déjà "https://..."
+          # ✅ VOTRE CORRECTION : L'output Terraform contient déjà "https://..."
           VITE_API_BASE_URL: "${{ steps.tf-outputs.outputs.ecs_url }}"
         run: |
           npm ci
