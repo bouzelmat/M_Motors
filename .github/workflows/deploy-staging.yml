@@ -8,6 +8,7 @@ on:
 env:
   AWS_REGION: eu-west-3
   TF_DIR: backend/infra/terraform
+  AWS_ACCOUNT_ID: 594366804579
 
 jobs:
   deploy:
@@ -35,11 +36,13 @@ jobs:
           terraform init
           terraform workspace select staging || terraform workspace new staging
           
-          # 1. SYNCHRONISATION IDÉMPOTENTE : Importer le service ECS s'il existe dans AWS mais pas dans l'état Terraform.
-          # L'ID d'import pour un service ECS doit être au format "nom_du_cluster/nom_du_service"
+          # 1. SYNCHRONISATION IDÉMPOTENTE : Importer le service ECS Express Gateway 
+          # avec son ARN complet (requis par le provider AWS v6 pour ce type de ressource)
+          ECS_SERVICE_ARN="arn:aws:ecs:${AWS_REGION}:${AWS_ACCOUNT_ID}:service/default/m-motors-staging-backend"
+          
           if ! terraform state show aws_ecs_express_gateway_service.backend > /dev/null 2>&1; then
-            echo "⚠️ Le service ECS n'est pas dans l'état Terraform. Tentative d'importation..."
-            terraform import aws_ecs_express_gateway_service.backend default/m-motors-staging-backend
+            echo "⚠️ Le service ECS n'est pas dans l'état Terraform. Tentative d'importation avec l'ARN complet..."
+            terraform import aws_ecs_express_gateway_service.backend "$ECS_SERVICE_ARN"
           else
             echo "✅ Le service ECS est déjà connu de Terraform."
           fi
@@ -90,7 +93,7 @@ jobs:
       - name: Build frontend and publish to S3
         working-directory: frontend
         env:
-          # ✅ VOTRE CORRECTION : L'output Terraform contient déjà "https://..."
+          # L'output Terraform contient déjà "https://..."
           VITE_API_BASE_URL: "${{ steps.tf-outputs.outputs.ecs_url }}"
         run: |
           npm ci
