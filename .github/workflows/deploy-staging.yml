@@ -40,13 +40,12 @@ jobs:
           terraform refresh -auto-approve || true
           
           # Suppression du service ECS de l'état s'il n'existe plus dans AWS
-          # (cas où il a été supprimé manuellement via la console)
           echo "🧹 Nettoyage des ressources fantômes de l'état..."
           terraform state rm aws_ecs_express_gateway_service.backend || true
           
           # Gestion de l'ECR
           if ! terraform state show aws_ecr_repository.backend > /dev/null 2>&1; then
-            echo "️ Le dépôt ECR n'est pas dans l'état. Tentative d'importation..."
+            echo "⚠️ Le dépôt ECR n'est pas dans l'état. Tentative d'importation..."
             terraform import aws_ecr_repository.backend m-motors/backend || true
           else
             echo "✅ Le dépôt ECR est déjà connu de Terraform."
@@ -90,7 +89,9 @@ jobs:
       - name: Build frontend and publish to S3
         working-directory: frontend
         env:
-          VITE_API_BASE_URL: "https://${{ steps.tf-outputs.outputs.ecs_url }}"
+          # ✅ CORRECTION : Suppression du "https://" en dur. 
+          # L'output Terraform "ecs_express_service_url" contient déjà "https://..."
+          VITE_API_BASE_URL: "${{ steps.tf-outputs.outputs.ecs_url }}"
         run: |
           npm ci
           npm run build
