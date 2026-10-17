@@ -4,8 +4,6 @@ from fastapi import APIRouter, HTTPException, status
 
 from src.shared.api.schemas.health_schemas import HealthResponse
 from src.shared.infrastructure.database import execute_health_check
-
-# Remplacement par la dépendance partagée centralisée
 from src.shared.infrastructure.dependencies import SessionDep
 
 router = APIRouter(tags=["health"])
