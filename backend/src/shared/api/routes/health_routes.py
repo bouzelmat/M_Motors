@@ -12,6 +12,7 @@ router = APIRouter(tags=["health"])
 
 
 @router.get("/health", response_model=HealthResponse, status_code=status.HTTP_200_OK)
+@router.get("/health/", response_model=HealthResponse, status_code=status.HTTP_200_OK)
 async def read_health(
     session: SessionDep,  # Utilisation de SessionDep à la place de get_db_session
 ) -> HealthResponse:
