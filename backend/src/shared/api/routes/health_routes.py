@@ -9,19 +9,15 @@ from src.shared.infrastructure.dependencies import SessionDep
 router = APIRouter(tags=["health"])
 
 
+# ✅ UNE SEULE route, SANS slash final. C'est le standard absolu.
 @router.get("/health", response_model=HealthResponse, status_code=status.HTTP_200_OK)
-@router.get("/health/", response_model=HealthResponse, status_code=status.HTTP_200_OK)
-async def read_health(
-    session: SessionDep,  # Utilisation de SessionDep à la place de get_db_session
-) -> HealthResponse:
+async def read_health(session: SessionDep) -> HealthResponse:
     """Validate the database connectivity with a lightweight query."""
-
     try:
         await execute_health_check(session)
-    except Exception as exc:  # pragma: no cover - defensive boundary
+    except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Database unavailable",
         ) from exc
-
     return HealthResponse(status="ok", database="reachable")
