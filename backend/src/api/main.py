@@ -8,11 +8,11 @@ from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-
-from src.dossiers.api.routes.admin_dossier_routes import router as admin_dossier_router
 from src.auth.api.routes.auth_routes import router as auth_router
+from src.dossiers.api.routes.admin_dossier_routes import (
+    router as admin_dossier_router,
+)
 from src.dossiers.api.routes.dossier_routes import router as dossier_router
-from src.shared.api.routes.health_routes import router as health_router
 from src.dossiers.application.consumers.send_dossier_email import (
     SendDocumentsRequestedEmailConsumer,
     SendDossierRejectedEmailConsumer,
@@ -21,14 +21,17 @@ from src.dossiers.application.consumers.send_dossier_email import (
 from src.dossiers.domain.events.documents_requested import DocumentsRequested
 from src.dossiers.domain.events.dossier_rejected import DossierRejected
 from src.dossiers.domain.events.dossier_validated import DossierValidated
+from src.shared.api.routes.health_routes import router as health_router
 from src.shared.domain.exceptions import (
     ConflictError,
     DomainError,
     ForbiddenError,
     NotFoundError,
 )
-from src.shared.infrastructure.messaging.in_memory_event_bus import get_event_bus
 from src.shared.infrastructure.http.middleware_registry import get_middleware
+from src.shared.infrastructure.messaging.in_memory_event_bus import (
+    get_event_bus,
+)
 from src.vehicles.api.routes.catalog_routes import router as vehicles_router
 from src.vehicles.api.routes.photo_routes import router as photos_router
 
@@ -36,7 +39,7 @@ logger = logging.getLogger(__name__)
 
 
 def _register_event_consumers() -> None:
-    """Enregistre les consommateurs d'événements sur le bus singleton."""
+    """Enregistre les consommateurs d événements sur le bus singleton."""
     bus = get_event_bus()
     validated_consumer = SendDossierValidatedEmailConsumer()
     bus.subscribe(DossierValidated, validated_consumer.handle)
@@ -48,7 +51,7 @@ def _register_event_consumers() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Gère le démarrage et l'arrêt propre de l'application."""
+    """Gère le démarrage et l arrêt propre de l application."""
     _register_event_consumers()
     yield
 
@@ -60,6 +63,7 @@ def create_app() -> FastAPI:
         version="0.1.0",
         lifespan=lifespan,
         debug=False,  # 🔴 CORRECTION: Désactive le mode debug (Problème 6)
+        redirect_slashes=False,  # ✅ CORRECTION CRITIQUE : Empêche FastAPI de générer des redirections 301 automatiques
     )
 
     # --- GLOBAL EXCEPTION HANDLERS ---
