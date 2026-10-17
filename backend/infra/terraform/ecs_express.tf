@@ -64,7 +64,6 @@ resource "aws_iam_role" "ecs_infrastructure" {
   })
 }
 
-# POLITIQUE EN LIGNE COMPLÈTE ET CORRIGÉE
 resource "aws_iam_role_policy" "ecs_infrastructure_inline" {
   name = "${local.common_name}-ecs-infra-policy"
   role = aws_iam_role.ecs_infrastructure.id
@@ -76,66 +75,40 @@ resource "aws_iam_role_policy" "ecs_infrastructure_inline" {
         Sid    = "EC2Permissions"
         Effect = "Allow"
         Action = [
-          "ec2:CreateSecurityGroup",
-          "ec2:DeleteSecurityGroup",
-          "ec2:AuthorizeSecurityGroupIngress",
-          "ec2:AuthorizeSecurityGroupEgress",
-          "ec2:RevokeSecurityGroupIngress",
-          "ec2:RevokeSecurityGroupEgress",
-          "ec2:DescribeSecurityGroups",
-          "ec2:DescribeVpcs",
-          "ec2:DescribeSubnets",
-          "ec2:DescribeRouteTables",
-          "ec2:DescribeNetworkInterfaces",
-          "ec2:DescribeAvailabilityZones",
-          "ec2:CreateTags",
-          "ec2:DeleteTags",
-          "ec2:CreateNetworkInterface",
-          "ec2:DeleteNetworkInterface",
-          "ec2:AttachNetworkInterface",
-          "ec2:DetachNetworkInterface",
-          "ec2:ModifyNetworkInterfaceAttribute",
-          "ec2:AssignPrivateIpAddresses",
-          "ec2:UnassignPrivateIpAddresses",
-          "ec2:DescribeInstances",
-          "ec2:DescribeInstanceStatus"
+          "ec2:CreateSecurityGroup", "ec2:DeleteSecurityGroup",
+          "ec2:AuthorizeSecurityGroupIngress", "ec2:AuthorizeSecurityGroupEgress",
+          "ec2:RevokeSecurityGroupIngress", "ec2:RevokeSecurityGroupEgress",
+          "ec2:DescribeSecurityGroups", "ec2:DescribeVpcs", "ec2:DescribeSubnets",
+          "ec2:DescribeRouteTables", "ec2:DescribeNetworkInterfaces",
+          "ec2:DescribeAvailabilityZones", "ec2:CreateTags", "ec2:DeleteTags",
+          "ec2:CreateNetworkInterface", "ec2:DeleteNetworkInterface",
+          "ec2:AttachNetworkInterface", "ec2:DetachNetworkInterface",
+          "ec2:ModifyNetworkInterfaceAttribute", "ec2:AssignPrivateIpAddresses",
+          "ec2:UnassignPrivateIpAddresses", "ec2:DescribeInstances", "ec2:DescribeInstanceStatus"
         ]
         Resource = "*"
       },
       {
         Sid    = "ELBPermissions"
         Effect = "Allow"
-        Action = [
-          "elasticloadbalancing:*"
-        ]
+        Action = ["elasticloadbalancing:*"]
         Resource = "*"
       },
       {
         Sid    = "ACMPermissions"
         Effect = "Allow"
-        Action = [
-          "acm:DescribeCertificate",
-          "acm:ListCertificates"
-        ]
+        Action = ["acm:DescribeCertificate", "acm:ListCertificates"]
         Resource = "*"
       },
       {
-        # C'EST CE BLOC QUI MANQUAIT ET QUI BLOQUAIT TOUT
         Sid    = "CloudWatchPermissions"
         Effect = "Allow"
         Action = [
-          "logs:DescribeLogGroups",
-          "logs:DescribeLogStreams",
-          "logs:CreateLogGroup",
-          "logs:CreateLogStream",
-          "logs:PutLogEvents",
-          "logs:DeleteLogGroup",
-          "logs:PutRetentionPolicy",
-          "logs:DeleteRetentionPolicy",
-          "cloudwatch:PutMetricAlarm",
-          "cloudwatch:DeleteAlarms",
-          "cloudwatch:DescribeAlarms",
-          "cloudwatch:PutMetricData"
+          "logs:DescribeLogGroups", "logs:DescribeLogStreams", "logs:CreateLogGroup",
+          "logs:CreateLogStream", "logs:PutLogEvents", "logs:DeleteLogGroup",
+          "logs:PutRetentionPolicy", "logs:DeleteRetentionPolicy",
+          "cloudwatch:PutMetricAlarm", "cloudwatch:DeleteAlarms",
+          "cloudwatch:DescribeAlarms", "cloudwatch:PutMetricData"
         ]
         Resource = "*"
       },
@@ -143,10 +116,8 @@ resource "aws_iam_role_policy" "ecs_infrastructure_inline" {
         Sid    = "AutoScalingPermissions"
         Effect = "Allow"
         Action = [
-          "application-autoscaling:*",
-          "autoscaling:DescribeAutoScalingGroups",
-          "autoscaling:DescribeAutoScalingInstances",
-          "autoscaling:DescribeLaunchConfigurations",
+          "application-autoscaling:*", "autoscaling:DescribeAutoScalingGroups",
+          "autoscaling:DescribeAutoScalingInstances", "autoscaling:DescribeLaunchConfigurations",
           "autoscaling:DescribeScalingActivities"
         ]
         Resource = "*"
@@ -154,22 +125,15 @@ resource "aws_iam_role_policy" "ecs_infrastructure_inline" {
       {
         Sid    = "IAMPermissions"
         Effect = "Allow"
-        Action = [
-          "iam:CreateServiceLinkedRole",
-          "iam:PassRole",
-          "iam:GetRole"
-        ]
+        Action = ["iam:CreateServiceLinkedRole", "iam:PassRole", "iam:GetRole"]
         Resource = "*"
       },
       {
         Sid    = "ECRPermissions"
         Effect = "Allow"
         Action = [
-          "ecr:GetAuthorizationToken",
-          "ecr:BatchCheckLayerAvailability",
-          "ecr:GetDownloadUrlForLayer",
-          "ecr:BatchGetImage",
-          "ecr:DescribeRepositories"
+          "ecr:GetAuthorizationToken", "ecr:BatchCheckLayerAvailability",
+          "ecr:GetDownloadUrlForLayer", "ecr:BatchGetImage", "ecr:DescribeRepositories"
         ]
         Resource = "*"
       },
@@ -177,23 +141,12 @@ resource "aws_iam_role_policy" "ecs_infrastructure_inline" {
         Sid    = "ECSPermissions"
         Effect = "Allow"
         Action = [
-          "ecs:CreateService",
-          "ecs:UpdateService",
-          "ecs:DeleteService",
-          "ecs:DescribeServices",
-          "ecs:RegisterTaskDefinition",
-          "ecs:RunTask",
-          "ecs:StopTask",
-          "ecs:DescribeTasks",
-          "ecs:ListTasks",
-          "ecs:DescribeTaskDefinition",
-          "ecs:DescribeTaskSets",
-          "ecs:CreateTaskSet",
-          "ecs:UpdateTaskSet",
-          "ecs:DeleteTaskSet",
-          "ecs:TagResource",
-          "ecs:ListServiceDeployments",
-          "ecs:DescribeServiceDeployments"
+          "ecs:CreateService", "ecs:UpdateService", "ecs:DeleteService",
+          "ecs:DescribeServices", "ecs:RegisterTaskDefinition", "ecs:RunTask",
+          "ecs:StopTask", "ecs:DescribeTasks", "ecs:ListTasks",
+          "ecs:DescribeTaskDefinition", "ecs:DescribeTaskSets", "ecs:CreateTaskSet",
+          "ecs:UpdateTaskSet", "ecs:DeleteTaskSet", "ecs:TagResource",
+          "ecs:ListServiceDeployments", "ecs:DescribeServiceDeployments"
         ]
         Resource = "*"
       },
@@ -201,21 +154,15 @@ resource "aws_iam_role_policy" "ecs_infrastructure_inline" {
         Sid    = "ECSAgentPermissions"
         Effect = "Allow"
         Action = [
-          "ecs:Poll",
-          "ecs:StartTelemetrySession",
-          "ecs:SubmitTaskStateChange",
-          "ecs:SubmitContainerStateChange",
-          "ecs:UpdateContainerInstancesState"
+          "ecs:Poll", "ecs:StartTelemetrySession", "ecs:SubmitTaskStateChange",
+          "ecs:SubmitContainerStateChange", "ecs:UpdateContainerInstancesState"
         ]
         Resource = "*"
       },
       {
         Sid    = "SecretsManagerPermissions"
         Effect = "Allow"
-        Action = [
-          "secretsmanager:GetSecretValue",
-          "secretsmanager:DescribeSecret"
-        ]
+        Action = ["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"]
         Resource = [
           aws_secretsmanager_secret.database_password.arn,
           aws_secretsmanager_secret.application_key.arn
@@ -248,17 +195,10 @@ resource "aws_iam_role_policy" "ecs_task" {
     Version = "2012-10-17"
     Statement = [{
       Effect = "Allow"
-      Action = [
-        "s3:ListBucket",
-        "s3:GetObject",
-        "s3:PutObject",
-        "s3:DeleteObject"
-      ]
+      Action = ["s3:ListBucket", "s3:GetObject", "s3:PutObject", "s3:DeleteObject"]
       Resource = [
-        aws_s3_bucket.vehicle_photos.arn,
-        "${aws_s3_bucket.vehicle_photos.arn}/*",
-        aws_s3_bucket.dossier_documents.arn,
-        "${aws_s3_bucket.dossier_documents.arn}/*"
+        aws_s3_bucket.vehicle_photos.arn, "${aws_s3_bucket.vehicle_photos.arn}/*",
+        aws_s3_bucket.dossier_documents.arn, "${aws_s3_bucket.dossier_documents.arn}/*"
       ]
     }]
   })
@@ -269,11 +209,12 @@ resource "aws_ecs_express_gateway_service" "backend" {
   execution_role_arn      = aws_iam_role.ecs_execution.arn
   infrastructure_role_arn = aws_iam_role.ecs_infrastructure.arn
   task_role_arn           = aws_iam_role.ecs_task.arn
-  cpu                     = local.ecs_is_production ? "1024" : "256"
-  memory                  = local.ecs_is_production ? "2048" : "512"
-  # ✅ CORRECTION CRITIQUE : health_check_path avec trailing slash pour éviter la redirection 301
-  health_check_path       = "/health/"
-  wait_for_steady_state   = false # Désactivé pour éviter les timeouts du pipeline GitHub
+  cpu                     = local.ecs_is_production ? "1024" : "512"
+  memory                  = local.ecs_is_production ? "2048" : "1024"
+  
+  # ✅ CORRECTION CRITIQUE : health_check_path SANS slash final pour correspondre à FastAPI
+  health_check_path       = "/health"
+  wait_for_steady_state   = false
 
   network_configuration {
     subnets         = local.ecs_subnets
@@ -346,7 +287,7 @@ resource "aws_ecs_express_gateway_service" "backend" {
   depends_on = [
     aws_iam_role_policy_attachment.ecs_execution_managed,
     aws_iam_role_policy.ecs_execution_secrets,
-    aws_iam_role_policy.ecs_infrastructure_inline, # Pointe vers la nouvelle politique en ligne complète
+    aws_iam_role_policy.ecs_infrastructure_inline,
     aws_iam_role_policy.ecs_task,
     aws_db_instance.postgres,
     aws_secretsmanager_secret_version.database_password,
