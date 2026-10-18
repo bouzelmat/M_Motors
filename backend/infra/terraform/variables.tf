@@ -35,14 +35,14 @@ variable "budget_alert_email" {
   nullable    = true
 }
 
-# ✅ CORRECTION CRITIQUE : Origines explicites au lieu de "*" pour les URLs pré-signées
+# ✅ 1. Pour S3 (Uploads directs via URLs pré-signées)
 variable "frontend_allowed_origins" {
   description = "Origines autorisées par CORS pour les uploads/téléchargements directs vers S3 via URLs pré-signées."
   type        = list(string)
   default = [
-    "https://dqe7j4xdl3l19.cloudfront.net", # Votre domaine CloudFront (Staging/Prod)
-    "http://localhost:5173",                # Développement local (Vite)
-    "http://localhost:3000",                # Développement local (React/Next)
+    "https://dge7j4xdl31l9.cloudfront.net", 
+    "http://localhost:5173",
+    "http://localhost:3000",
     "http://127.0.0.1:5173",
     "http://127.0.0.1:3000"
   ]
@@ -57,7 +57,13 @@ variable "frontend_build_api_base_url" {
 variable "allowed_cors_origins" {
   description = "Origines CORS exposées par l’API backend."
   type        = list(string)
-  default     = []
+  default = [
+    "https://dge7j4xdl31l9.cloudfront.net", 
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:3000"
+  ]
 }
 
 variable "monitoring_alert_email" {
