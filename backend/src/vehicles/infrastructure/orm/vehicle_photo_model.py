@@ -3,7 +3,7 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.shared.infrastructure.database import Base
@@ -21,7 +21,7 @@ class VehiclePhotoModel(Base):
         index=True,
     )
     object_key: Mapped[str] = mapped_column(String(500), nullable=False, unique=True)
-    photo_url: Mapped[str] = mapped_column(String(1000), nullable=False)
+    photo_url: Mapped[str] = mapped_column(Text, nullable=False)
     content_type: Mapped[str] = mapped_column(String(100), nullable=False)
     uploaded_by: Mapped[UUID] = mapped_column(nullable=False)
     is_uploaded: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
