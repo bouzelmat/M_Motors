@@ -1,55 +1,47 @@
 import React from "react";
-import { Box, Container, Grid, Button, useTheme } from "@mui/material";
+import { Alert, Box, Container, Grid, Button, CircularProgress, useTheme } from "@mui/material";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import { Link } from "react-router-dom";
 import { SectionHeading } from "../../shared/ui/components/SectionHeading";
 import { VehicleCard } from "../../vehicles/ui/components/VehicleCard";
 import { useRevealOnScroll } from "../../shared/ui/hooks/useRevealOnScroll";
+import { useVehiclesQuery } from "../../vehicles/application/hooks/useVehiclesQuery";
+import type { VehicleListItemDTO } from "../../vehicles/infrastructure/dto/vehicle.dto";
 
-const featuredVehicles = [
-  {
-    id: "v1",
-    brand: "Tesla",
-    model: "Model 3",
-    version: "Grande Autonomie AWD",
-    year: 2023,
-    mileage: 18500,
-    fuelType: "Électrique",
-    transmission: "Automatique",
-    price: 389,
-    mode: "LOCATION" as const,
-    imageUrl: "https://images.unsplash.com/photo-1560958089-b8a1929cea89?auto=format&fit=crop&w=800&q=80",
-  },
-  {
-    id: "v2",
-    brand: "BMW",
-    model: "Série 4 Gran Coupé",
-    version: "420d M Sport",
-    year: 2022,
-    mileage: 32000,
-    fuelType: "Diesel",
-    transmission: "Automatique",
-    price: 34900,
-    mode: "ACHAT" as const,
-    imageUrl: "https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&w=800&q=80",
-  },
-  {
-    id: "v3",
-    brand: "Audi",
-    model: "e-tron GT",
-    version: "Quattro 530ch",
-    year: 2024,
-    mileage: 5400,
-    fuelType: "Électrique",
-    transmission: "Automatique",
-    price: 799,
-    mode: "LOCATION" as const,
-    imageUrl: "https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?auto=format&fit=crop&w=800&q=80",
-  },
-];
+type FeaturedVehicleCardProps = {
+  vehicle: VehicleListItemDTO;
+  index: number;
+};
+
+const FeaturedVehicleCard: React.FC<FeaturedVehicleCardProps> = ({ vehicle, index }) => {
+  const { ref, style } = useRevealOnScroll<HTMLDivElement>({ index, staggerMs: 100 });
+  const isSale = vehicle.catalog_type === "SALE";
+
+  return (
+    <div ref={ref} style={style}>
+      <VehicleCard
+        id={vehicle.id}
+        brand={vehicle.brand}
+        model={vehicle.model}
+        version={vehicle.year ? String(vehicle.year) : undefined}
+        year={vehicle.year}
+        mileage={vehicle.mileage ?? 0}
+        fuelType={vehicle.energy_type ?? "Non précisé"}
+        price={Number(isSale ? vehicle.price ?? 0 : vehicle.monthly_rent ?? 0)}
+        mode={isSale ? "ACHAT" : "LOCATION"}
+        imageUrl={vehicle.photo_url ?? undefined}
+      />
+    </div>
+  );
+};
 
 export const VehicleSelectionSection: React.FC = () => {
   const theme = useTheme();
+  const rentalQuery = useVehiclesQuery({ mode: "rental" });
+  const saleQuery = useVehiclesQuery({ mode: "sale" });
+  const featuredVehicles = [...(rentalQuery.data ?? []), ...(saleQuery.data ?? [])].slice(0, 3);
+  const isLoading = rentalQuery.isLoading || saleQuery.isLoading;
+  const hasError = rentalQuery.isError || saleQuery.isError;
 
   return (
     <Box sx={{ py: { xs: 8, md: 12 }, backgroundColor: theme.palette.background.default }}>
@@ -71,18 +63,33 @@ export const VehicleSelectionSection: React.FC = () => {
           </Button>
         </Box>
 
-        <Grid container spacing={3.5}>
-          {featuredVehicles.map((vehicle, index) => {
-            const { ref, style } = useRevealOnScroll<HTMLDivElement>({ index, staggerMs: 100 });
-            return (
+        {isLoading && (
+          <Box data-testid="home-vehicles-loading" sx={{ display: "flex", justifyContent: "center", py: 6 }}>
+            <CircularProgress aria-label="Chargement des véhicules" />
+          </Box>
+        )}
+
+        {hasError && (
+          <Alert severity="error" data-testid="home-vehicles-error">
+            Impossible de charger les véhicules disponibles.
+          </Alert>
+        )}
+
+        {!isLoading && !hasError && featuredVehicles.length === 0 && (
+          <Alert severity="info" data-testid="home-vehicles-empty">
+            Aucun véhicule n’est actuellement disponible dans le catalogue.
+          </Alert>
+        )}
+
+        {!isLoading && !hasError && featuredVehicles.length > 0 && (
+          <Grid container spacing={3.5}>
+            {featuredVehicles.map((vehicle, index) => (
               <Grid item xs={12} sm={6} md={4} key={vehicle.id}>
-                <div ref={ref} style={style}>
-                  <VehicleCard {...vehicle} />
-                </div>
+                <FeaturedVehicleCard vehicle={vehicle} index={index} />
               </Grid>
-            );
-          })}
-        </Grid>
+            ))}
+          </Grid>
+        )}
       </Container>
     </Box>
   );

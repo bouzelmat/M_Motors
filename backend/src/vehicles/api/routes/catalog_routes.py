@@ -217,6 +217,10 @@ async def list_vehicles(
             brand=vehicle.brand,
             model=vehicle.model,
             year=vehicle.year,
+            price=vehicle.price.value if vehicle.price else None,
+            mileage=vehicle.mileage.value,
+            energy_type=vehicle.energy_type.value,
+            catalog_type=vehicle.catalog_type,
             monthly_rent=(
                 vehicle.monthly_rent.value if vehicle.monthly_rent else Decimal("0.00")
             ),
