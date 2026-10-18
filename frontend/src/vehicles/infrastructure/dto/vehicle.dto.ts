@@ -11,6 +11,10 @@ export type VehicleListItemDTO = {
     readonly brand: string;
     readonly model: string;
     readonly year: number;
+    readonly price?: string | null;
+    readonly mileage?: number;
+    readonly energy_type?: EnergyType;
+    readonly catalog_type?: CatalogType;
     readonly monthly_rent: string | null; // Decimal sérialisé en chaîne
     readonly photo_url: string | null;
     readonly included_services: readonly string[];

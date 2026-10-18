@@ -1,8 +1,18 @@
 import { render, screen } from "@testing-library/react";
 import { ThemeProvider } from "@mui/material";
 import { BrowserRouter } from "react-router-dom";
+import { vi } from "vitest";
 import { theme } from "../../src/shared/ui/theme/theme";
 import { HomePage } from "../../src/app/HomePage";
+
+vi.mock("../../src/vehicles/application/hooks/useVehiclesQuery", () => ({
+  useVehiclesQuery: () => ({
+    data: [],
+    isLoading: false,
+    isError: false,
+    error: null,
+  }),
+}));
 
 const renderWithProviders = (ui: React.ReactNode) => {
   return render(

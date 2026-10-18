@@ -243,9 +243,9 @@ export const CatalogPage: React.FC = () => {
                 model={v.model}
                 version={v.year ? String(v.year) : undefined}
                 year={v.year || 2023}
-                mileage={v.mileage || 25000}
-                fuelType={v.fuel_type || "Hybride"}
-                price={isAchat ? Number(v.price || 25000) : Number(v.monthly_rent || 349)}
+                mileage={v.mileage ?? 0}
+                fuelType={v.energy_type || "Non précisé"}
+                price={isAchat ? Number(v.price || 0) : Number(v.monthly_rent || 0)}
                 mode={isAchat ? "ACHAT" : "LOCATION"}
                 imageUrl={v.photo_url || undefined}
               />
