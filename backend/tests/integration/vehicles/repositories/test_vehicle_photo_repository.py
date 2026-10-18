@@ -38,15 +38,19 @@ async def test_manage_multiple_vehicle_photos_and_primary_promotion(
         uploaded_by=uuid4(),
     )
     await repository.confirm_photo(first_photo)
+    long_photo_url = "https://photos.example/" + "a" * 1200
     second_photo = await repository.create_pending_photo(
         vehicle_id=vehicle.id,
         object_key=f"vehicles/{vehicle.id}/second.jpg",
-        photo_url="https://photos/second.jpg",
+        photo_url=long_photo_url,
         content_type="image/jpeg",
         uploaded_by=uuid4(),
     )
     await repository.confirm_photo(second_photo)
     await db_session.commit()
+
+    assert len(long_photo_url) > 1000
+    assert second_photo.photo_url == long_photo_url
 
     assert await repository.set_primary_photo(vehicle.id, second_photo.id)
     await db_session.commit()
