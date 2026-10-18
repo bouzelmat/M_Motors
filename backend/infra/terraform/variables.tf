@@ -35,10 +35,17 @@ variable "budget_alert_email" {
   nullable    = true
 }
 
+# ✅ CORRECTION CRITIQUE : Origines explicites au lieu de "*" pour les URLs pré-signées
 variable "frontend_allowed_origins" {
-  description = "Origines autorisées par CORS pour les uploads directs vers S3."
+  description = "Origines autorisées par CORS pour les uploads/téléchargements directs vers S3 via URLs pré-signées."
   type        = list(string)
-  default     = ["*"]
+  default = [
+    "https://dqe7j4xdl3l19.cloudfront.net", # Votre domaine CloudFront (Staging/Prod)
+    "http://localhost:5173",                # Développement local (Vite)
+    "http://localhost:3000",                # Développement local (React/Next)
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:3000"
+  ]
 }
 
 variable "frontend_build_api_base_url" {
@@ -48,13 +55,13 @@ variable "frontend_build_api_base_url" {
 }
 
 variable "allowed_cors_origins" {
-  description = "Origines CORS exposées par l’API."
+  description = "Origines CORS exposées par l’API backend."
   type        = list(string)
   default     = []
 }
 
 variable "monitoring_alert_email" {
-  description = "Adresse e-mail qui reçoit les alertes CloudWatch via SNS. La confirmation se fait via le lien reçu par e-mail."
+  description = "Adresse e-mail qui reçoit les alertes CloudWatch via SNS."
   type        = string
   default     = "omarbouzelmat99@gmail.com"
 }

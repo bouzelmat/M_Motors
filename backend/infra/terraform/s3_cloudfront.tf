@@ -1,3 +1,6 @@
+# ==============================================================================
+# 1. CRÉATION DES BUCKETS S3
+# ==============================================================================
 resource "aws_s3_bucket" "frontend" {
   bucket        = "${var.project_name}-frontend-${terraform.workspace}"
   force_destroy = terraform.workspace != "production"
@@ -13,6 +16,9 @@ resource "aws_s3_bucket" "dossier_documents" {
   force_destroy = terraform.workspace != "production"
 }
 
+# ==============================================================================
+# 2. SÉCURITÉ : BLOCAGE DE L'ACCÈS PUBLIC
+# ==============================================================================
 resource "aws_s3_bucket_public_access_block" "private" {
   for_each = {
     frontend          = aws_s3_bucket.frontend.id
@@ -27,6 +33,9 @@ resource "aws_s3_bucket_public_access_block" "private" {
   restrict_public_buckets = true
 }
 
+# ==============================================================================
+# 3. SÉCURITÉ : CHIFFREMENT ET VERSIONING
+# ==============================================================================
 resource "aws_s3_bucket_server_side_encryption_configuration" "private" {
   for_each = {
     frontend          = aws_s3_bucket.frontend.id
@@ -45,26 +54,46 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "private" {
 
 resource "aws_s3_bucket_versioning" "frontend" {
   bucket = aws_s3_bucket.frontend.id
-
   versioning_configuration {
     status = "Enabled"
   }
 }
 
+# ==============================================================================
+# 4. CONFIGURATION CORS (CRITIQUE POUR LES URLS PRÉ-SIGNÉES)
+# ==============================================================================
+
+# ✅ CORS pour les photos de véhicules (Admin)
 resource "aws_s3_bucket_cors_configuration" "vehicle_photos" {
   bucket = aws_s3_bucket.vehicle_photos.id
 
   cors_rule {
     allowed_headers = ["*"]
-    allowed_methods = ["GET", "POST", "PUT", "HEAD"]
+    allowed_methods = ["GET", "PUT", "POST", "DELETE", "HEAD"] # PUT pour upload, GET pour voir
     allowed_origins = var.frontend_allowed_origins
-    expose_headers  = ["ETag"]
+    expose_headers  = ["ETag", "x-amz-request-id", "x-amz-id-2"]
     max_age_seconds = 3600
   }
 }
 
+# ✅ CORS pour les documents de dossier (Client & Admin) - AJOUTÉ
+resource "aws_s3_bucket_cors_configuration" "dossier_documents" {
+  bucket = aws_s3_bucket.dossier_documents.id
+
+  cors_rule {
+    allowed_headers = ["*"]
+    allowed_methods = ["GET", "PUT", "POST", "DELETE", "HEAD"] # PUT pour upload, GET pour voir
+    allowed_origins = var.frontend_allowed_origins
+    expose_headers  = ["ETag", "x-amz-request-id", "x-amz-id-2"]
+    max_age_seconds = 3600
+  }
+}
+
+# ==============================================================================
+# 5. CONFIGURATION CLOUDFRONT (FRONTEND)
+# ==============================================================================
 resource "aws_cloudfront_origin_access_control" "frontend" {
-  name                              = "${local.common_name}-frontend-oac"
+  name                              = "${var.project_name}-frontend-oac"
   description                       = "CloudFront access to the private frontend bucket"
   origin_access_control_origin_type = "s3"
   signing_behavior                  = "always"
@@ -73,7 +102,7 @@ resource "aws_cloudfront_origin_access_control" "frontend" {
 
 resource "aws_cloudfront_distribution" "frontend" {
   enabled             = true
-  comment             = "${local.common_name} frontend"
+  comment             = "${var.project_name} frontend"
   default_root_object = "index.html"
   price_class         = "PriceClass_100"
 
@@ -121,6 +150,9 @@ resource "aws_cloudfront_distribution" "frontend" {
   }
 }
 
+# ==============================================================================
+# 6. POLITIQUES IAM (BUCKET POLICIES)
+# ==============================================================================
 data "aws_iam_policy_document" "frontend_bucket" {
   statement {
     sid       = "AllowCloudFrontReadOnly"
@@ -163,6 +195,8 @@ resource "aws_s3_bucket_policy" "frontend" {
   policy = data.aws_iam_policy_document.frontend_bucket.json
 }
 
+# Politique pour les buckets applicatifs (Photos & Documents)
+# Autorise le rôle ECS (backend) à générer des URLs pré-signées et gérer les objets
 resource "aws_s3_bucket_policy" "application_buckets" {
   for_each = {
     vehicle_photos = aws_s3_bucket.vehicle_photos
@@ -174,7 +208,7 @@ resource "aws_s3_bucket_policy" "application_buckets" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid       = "AllowApplicationBucket"
+        Sid       = "AllowApplicationBucketList"
         Effect    = "Allow"
         Principal = { AWS = aws_iam_role.ecs_task.arn }
         Action    = ["s3:ListBucket"]
