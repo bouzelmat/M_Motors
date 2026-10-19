@@ -115,6 +115,9 @@ export function EditVehiclePage() {
 			setFileError(`${invalidFile.name} doit être une image JPEG, PNG ou WebP de 10 Mo maximum.`);
 			return;
 		}
+		// CORRECTION : On ne déclenche plus la mutation ici.
+		// On se contente de mettre à jour l'état local pour que l'utilisateur
+		// puisse valider son choix via le bouton "Ajouter les images".
 		setSelectedFiles(files);
 	};
 
@@ -143,9 +146,9 @@ export function EditVehiclePage() {
 					{primaryPhotoMutation.isError && <Alert severity="error">{getApiErrorMessage(primaryPhotoMutation.error, "La photo principale n’a pas pu être modifiée.")}</Alert>}
 					{deletePhotoMutation.isError && <Alert severity="error">{getApiErrorMessage(deletePhotoMutation.error, "La suppression de la photo a échoué.")}</Alert>}
 					<Stack direction={{ xs: "column", sm: "row" }} alignItems={{ sm: "center" }} spacing={1.5}>
-						<Button component="label" variant="outlined" startIcon={<CloudUploadIcon />} disabled={uploadPhotosMutation.isPending}>
+						<Button component="label" htmlFor="vehicle-photo-upload" variant="outlined" startIcon={<CloudUploadIcon />} disabled={uploadPhotosMutation.isPending}>
 							Choisir des images
-							<input hidden type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={handleFilesSelected} />
+							<input id="vehicle-photo-upload" name="vehicle-photo-upload" hidden type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={handleFilesSelected} />
 						</Button>
 						<Typography variant="body2" color="text.secondary">
 							{selectedFiles.length ? `${selectedFiles.length} image${selectedFiles.length > 1 ? "s" : ""} sélectionnée${selectedFiles.length > 1 ? "s" : ""}` : "JPEG, PNG ou WebP · 10 Mo maximum par image"}

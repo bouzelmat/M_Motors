@@ -1,6 +1,7 @@
-"""Endpoints publics et d'administration pour le catalogue véhicules."""
-
+import asyncio
+import logging
 from decimal import Decimal
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
@@ -42,13 +43,41 @@ from src.vehicles.infrastructure.dependencies import (
     get_add_vehicle_command_handler,
     get_delete_vehicle_command_handler,
     get_search_vehicles_query_handler,
+    get_storage_service,
     get_vehicle_detail_handler,
     get_vehicle_repository,
     get_update_vehicle_command_handler,
 )
+from src.vehicles.infrastructure.storage.s3_storage_service import S3StorageService
 from src.vehicles.domain.ports.vehicle_repository import VehicleRepository
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/api/v1/vehicles", tags=["vehicles"])
+
+
+async def _resolve_photo_url(
+    vehicle: Any, storage_service: S3StorageService
+) -> str | None:
+    """Génère une URL pré-signée fraîche pour la photo principale du véhicule.
+
+    En cas d'échec de la génération (S3 indisponible, clé invalide, etc.),
+    on retombe silencieusement sur l'attribut `photo_url` du véhicule pour
+    garantir la résilience de l'API. Les erreurs sont loggées pour rester
+    observables.
+    """
+    photo_key = getattr(vehicle, "photo_key", None)
+    if photo_key:
+        try:
+            return await storage_service.get_object_url(photo_key)
+        except Exception as exc:  # noqa: BLE001 - fallback volontaire vers photo_url
+            logger.warning(
+                "Échec de la génération de l'URL pré-signée pour photo_key=%s: %s",
+                photo_key,
+                exc,
+            )
+            return getattr(vehicle, "photo_url", None)
+    return getattr(vehicle, "photo_url", None)
 
 
 @router.get(
@@ -74,6 +103,7 @@ async def list_all_vehicles(
 async def get_admin_vehicle(
     vehicle_id: UUID,
     repository: VehicleRepository = Depends(get_vehicle_repository),
+    storage_service: S3StorageService = Depends(get_storage_service),
 ) -> VehicleDetailDTO:
     """Retourne les détails d'un véhicule, même s'il n'est pas disponible."""
     result = await repository.find_by_id_with_services(vehicle_id)
@@ -82,6 +112,9 @@ async def get_admin_vehicle(
             status_code=status.HTTP_404_NOT_FOUND, detail="Véhicule non trouvé"
         )
     vehicle, _ = result
+
+    photo_url = await _resolve_photo_url(vehicle, storage_service)
+
     return VehicleDetailDTO(
         id=vehicle.id,
         brand=vehicle.brand,
@@ -93,7 +126,7 @@ async def get_admin_vehicle(
         mileage=vehicle.mileage.value,
         energy_type=vehicle.energy_type.value,
         description=vehicle.description,
-        photo_url=vehicle.photo_url,
+        photo_url=photo_url,
         included_services=[
             service.name for service in vehicle.services if service.included
         ],
@@ -199,6 +232,7 @@ async def list_vehicles(
         default=None, description="Loyer mensuel maximum"
     ),
     handler: SearchVehiclesQueryHandler = Depends(get_search_vehicles_query_handler),
+    storage_service: S3StorageService = Depends(get_storage_service),
 ) -> list[VehicleListItemDTO]:
     """Retourne les véhicules disponibles selon les critères."""
     search_mode = "sale" if mode == "purchase" else mode
@@ -211,24 +245,38 @@ async def list_vehicles(
         max_monthly_rent=max_monthly_rent,
     )
     vehicles = await handler.handle(SearchVehiclesQuery(criteria=criteria))
-    return [
-        VehicleListItemDTO(
-            id=vehicle.id,
-            brand=vehicle.brand,
-            model=vehicle.model,
-            year=vehicle.year,
-            price=vehicle.price.value if vehicle.price else None,
-            mileage=vehicle.mileage.value,
-            energy_type=vehicle.energy_type.value,
-            catalog_type=vehicle.catalog_type,
-            monthly_rent=(
-                vehicle.monthly_rent.value if vehicle.monthly_rent else Decimal("0.00")
-            ),
-            photo_url=vehicle.photo_url,
-            included_services=[],
+    photo_urls = (
+        await asyncio.gather(
+            *(_resolve_photo_url(v, storage_service) for v in vehicles)
         )
-        for vehicle in vehicles
-    ]
+        if vehicles
+        else []
+    )
+
+    result = []
+    # strict=True garantit qu'une divergence de longueur lèvera une ValueError
+    # explicite plutôt que de tronquer silencieusement la liste.
+    for vehicle, photo_url in zip(vehicles, photo_urls, strict=True):
+        result.append(
+            VehicleListItemDTO(
+                id=vehicle.id,
+                brand=vehicle.brand,
+                model=vehicle.model,
+                year=vehicle.year,
+                price=vehicle.price.value if vehicle.price else None,
+                mileage=vehicle.mileage.value,
+                energy_type=vehicle.energy_type.value,
+                catalog_type=vehicle.catalog_type,
+                monthly_rent=(
+                    vehicle.monthly_rent.value
+                    if vehicle.monthly_rent
+                    else Decimal("0.00")
+                ),
+                photo_url=photo_url,
+                included_services=[],
+            )
+        )
+    return result
 
 
 @router.get(
@@ -263,6 +311,7 @@ async def list_service_options(
 async def get_vehicle_detail(
     vehicle_id: UUID,
     handler: GetVehicleDetailQueryHandler = Depends(get_vehicle_detail_handler),
+    storage_service: S3StorageService = Depends(get_storage_service),
 ) -> VehicleDetailDTO:
     """Retourne les informations détaillées d'un véhicule."""
     query = GetVehicleDetailQuery(vehicle_id=vehicle_id)
@@ -278,6 +327,9 @@ async def get_vehicle_detail(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Véhicule non disponible",
         )
+
+    photo_url = await _resolve_photo_url(vehicle, storage_service)
+
     services = [
         ServiceDTO(
             id=service.service_id,
@@ -301,7 +353,7 @@ async def get_vehicle_detail(
         mileage=vehicle.mileage.value,
         energy_type=vehicle.energy_type.value,
         description=vehicle.description,
-        photo_url=vehicle.photo_url,
+        photo_url=photo_url,
         included_services=[
             service.name for service in vehicle.services if service.included
         ],

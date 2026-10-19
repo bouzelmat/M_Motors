@@ -142,6 +142,8 @@ export const VehicleAddForm: React.FC<VehicleAddFormProps> = ({
                 {apiError && <Alert severity="error">{apiError}</Alert>}
 
                 <TextField
+                    id="vehicle-brand"
+                    name="brand"
                     label="Marque"
                     value={brand}
                     onChange={(e) => setBrand(e.target.value)}
@@ -152,6 +154,8 @@ export const VehicleAddForm: React.FC<VehicleAddFormProps> = ({
                 />
 
                 <TextField
+                    id="vehicle-model"
+                    name="model"
                     label="Modèle"
                     value={model}
                     onChange={(e) => setModel(e.target.value)}
@@ -163,6 +167,8 @@ export const VehicleAddForm: React.FC<VehicleAddFormProps> = ({
 
                 <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
                     <TextField
+                        id="vehicle-year"
+                        name="year"
                         label="Année"
                         type="number"
                         value={year}
@@ -174,6 +180,8 @@ export const VehicleAddForm: React.FC<VehicleAddFormProps> = ({
                     />
 
                     <TextField
+                        id="vehicle-mileage"
+                        name="mileage"
                         label="Kilométrage (km)"
                         type="number"
                         value={mileage}
@@ -187,8 +195,10 @@ export const VehicleAddForm: React.FC<VehicleAddFormProps> = ({
 
                 <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
                     <FormControl fullWidth required error={Boolean(errors.energy_type)}>
-                        <InputLabel id="energy-type-label">Énergie</InputLabel>
+                        <InputLabel id="energy-type-label" htmlFor="vehicle-energy-type">Énergie</InputLabel>
                         <Select
+                            id="vehicle-energy-type"
+                            name="energy_type"
                             labelId="energy-type-label"
                             value={energyType}
                             label="Énergie"
@@ -203,8 +213,10 @@ export const VehicleAddForm: React.FC<VehicleAddFormProps> = ({
                     </FormControl>
 
                     <FormControl fullWidth required error={Boolean(errors.catalog_type)}>
-                        <InputLabel id="catalog-type-label">Type de catalogue</InputLabel>
+                        <InputLabel id="catalog-type-label" htmlFor="vehicle-catalog-type">Type de catalogue</InputLabel>
                         <Select
+                            id="vehicle-catalog-type"
+                            name="catalog_type"
                             labelId="catalog-type-label"
                             value={catalogType}
                             label="Type de catalogue"
@@ -222,6 +234,8 @@ export const VehicleAddForm: React.FC<VehicleAddFormProps> = ({
 
                 {(catalogType === "SALE" || catalogType === "BOTH") && (
                     <TextField
+                        id="vehicle-price"
+                        name="price"
                         label="Prix de vente (€)"
                         type="number"
                         value={price}
@@ -235,6 +249,8 @@ export const VehicleAddForm: React.FC<VehicleAddFormProps> = ({
 
                 {(catalogType === "RENTAL" || catalogType === "BOTH") && (
                     <TextField
+                        id="vehicle-monthly-rent"
+                        name="monthly_rent"
                         label="Loyer mensuel (€/mois)"
                         type="number"
                         value={monthlyRent}
@@ -272,6 +288,11 @@ export const VehicleAddForm: React.FC<VehicleAddFormProps> = ({
                                         <FormControlLabel
                                             control={
                                                 <Checkbox
+                                                    inputProps={{
+                                                        id: `service-checkbox-${service.id}`,
+                                                        name: `service_${service.id}`,
+                                                        "aria-label": service.name,
+                                                    }}
                                                     checked={Boolean(selection)}
                                                     onChange={(event) => {
                                                         setSelectedServices((current) => event.target.checked
@@ -291,6 +312,10 @@ export const VehicleAddForm: React.FC<VehicleAddFormProps> = ({
                                             sx={{ ml: 4 }}
                                             control={
                                                 <Switch
+                                                    inputProps={{
+                                                        id: `service-switch-${service.id}`,
+                                                        name: `service_included_${service.id}`,
+                                                    }}
                                                     checked={selection.included}
                                                     onChange={(event) => {
                                                         setSelectedServices((current) => current.map((item) =>
@@ -311,6 +336,8 @@ export const VehicleAddForm: React.FC<VehicleAddFormProps> = ({
                 )}
 
                 <TextField
+                    id="vehicle-description"
+                    name="description"
                     label="Description"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}

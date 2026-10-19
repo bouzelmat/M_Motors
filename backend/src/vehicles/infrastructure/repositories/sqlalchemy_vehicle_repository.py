@@ -62,7 +62,8 @@ class SQLAlchemyVehicleRepository(VehicleRepository):
             .options(
                 selectinload(VehicleModel.service_associations).selectinload(
                     VehicleServiceAssociation.service
-                )
+                ),
+                selectinload(VehicleModel.photos),
             )
         )
 
@@ -80,7 +81,8 @@ class SQLAlchemyVehicleRepository(VehicleRepository):
             .options(
                 selectinload(VehicleModel.service_associations).selectinload(
                     VehicleServiceAssociation.service
-                )
+                ),
+                selectinload(VehicleModel.photos),
             )
             .order_by(VehicleModel.brand, VehicleModel.model)
         )
@@ -102,7 +104,8 @@ class SQLAlchemyVehicleRepository(VehicleRepository):
             .options(
                 selectinload(VehicleModel.service_associations).selectinload(
                     VehicleServiceAssociation.service
-                )
+                ),
+                selectinload(VehicleModel.photos),
             )
             .with_for_update()
         )
@@ -119,7 +122,8 @@ class SQLAlchemyVehicleRepository(VehicleRepository):
         stmt = select(VehicleModel).options(
             selectinload(VehicleModel.service_associations).selectinload(
                 VehicleServiceAssociation.service
-            )
+            ),
+            selectinload(VehicleModel.photos),
         )
 
         # Uniquement les véhicules disponibles.
@@ -204,7 +208,8 @@ class SQLAlchemyVehicleRepository(VehicleRepository):
             .options(
                 selectinload(VehicleModel.service_associations).selectinload(
                     VehicleServiceAssociation.service
-                )
+                ),
+                selectinload(VehicleModel.photos),  # ✅ AJOUTÉ : Charger les photos
             )
         )
 
@@ -222,7 +227,7 @@ class SQLAlchemyVehicleRepository(VehicleRepository):
         self,
         vehicle_id: UUID,
         object_key: str,
-        photo_url: str,
+        # ✅ CORRIGÉ : photo_url supprimé
         content_type: str,
         uploaded_by: UUID,
     ) -> VehiclePhotoModel:
@@ -230,7 +235,7 @@ class SQLAlchemyVehicleRepository(VehicleRepository):
         photo = VehiclePhotoModel(
             vehicle_id=vehicle_id,
             object_key=object_key,
-            photo_url=photo_url,
+            # ✅ CORRIGÉ : photo_url supprimé
             content_type=content_type,
             uploaded_by=uploaded_by,
         )
