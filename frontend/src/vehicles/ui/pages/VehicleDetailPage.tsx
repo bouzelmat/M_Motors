@@ -36,7 +36,6 @@ export const VehicleDetailPage: React.FC<{ vehicleIdOverride?: string }> = ({ ve
 
   const { data: vehicle, isLoading, error } = useVehicleDetailQuery(resolvedVehicleId);
 
-  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [customPrice, setCustomPrice] = useState<string>("");
 
   if (isLoading) {
@@ -71,13 +70,8 @@ export const VehicleDetailPage: React.FC<{ vehicleIdOverride?: string }> = ({ ve
     ? Number(vehicle.price || 25000)
     : Number(vehicle.monthly_rent || 349);
 
-  const photos = [
-    vehicle.photo_url || "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=1200&q=80",
-    "https://images.unsplash.com/photo-1560958089-b8a1929cea89?auto=format&fit=crop&w=800&q=80",
-    "https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?auto=format&fit=crop&w=800&q=80",
-  ];
-
-  const currentMainPhoto = selectedPhoto || photos[0];
+  const mainPhoto =
+    vehicle.photo_url || "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=1200&q=80";
   const services = Array.isArray(vehicle.services) ? vehicle.services : [];
 
   const startPurchase = () => {
@@ -113,7 +107,7 @@ export const VehicleDetailPage: React.FC<{ vehicleIdOverride?: string }> = ({ ve
               >
                 <Box
                   component="img"
-                  src={currentMainPhoto}
+                  src={mainPhoto}
                   alt={`${vehicle.brand} ${vehicle.model}`}
                   sx={{
                     maxWidth: "100%",
@@ -127,33 +121,6 @@ export const VehicleDetailPage: React.FC<{ vehicleIdOverride?: string }> = ({ ve
                   }}
                 />
               </Box>
-
-              {/* Thumbnails Row */}
-              <Stack direction="row" spacing={2}>
-                {photos.map((photo, i) => (
-                  <Box
-                    key={i}
-                    onClick={() => setSelectedPhoto(photo)}
-                    sx={{
-                      width: 90,
-                      height: 60,
-                      borderRadius: 12,
-                      backgroundColor: theme.palette.background?.studio || "#E9EBEE",
-                      p: 0.5,
-                      cursor: "pointer",
-                      border: `2px solid ${photo === currentMainPhoto ? (isAchat ? (theme.palette.accent?.achat || "#E82127") : (theme.palette.accent?.location || "#3B82F6")) : "transparent"}`,
-                      transition: "all 150ms ease-out",
-                    }}
-                  >
-                    <Box
-                      component="img"
-                      src={photo}
-                      alt={`Thumbnail ${i}`}
-                      sx={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 8 }}
-                    />
-                  </Box>
-                ))}
-              </Stack>
             </Stack>
           </Grid>
 

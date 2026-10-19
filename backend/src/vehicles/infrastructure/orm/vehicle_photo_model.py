@@ -21,7 +21,8 @@ class VehiclePhotoModel(Base):
         index=True,
     )
     object_key: Mapped[str] = mapped_column(String(500), nullable=False, unique=True)
-    photo_url: Mapped[str] = mapped_column(Text, nullable=False)
+    # ✅ CORRIGÉ : photo_url est maintenant nullable (compatibilité avec anciennes données)
+    photo_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     content_type: Mapped[str] = mapped_column(String(100), nullable=False)
     uploaded_by: Mapped[UUID] = mapped_column(nullable=False)
     is_uploaded: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

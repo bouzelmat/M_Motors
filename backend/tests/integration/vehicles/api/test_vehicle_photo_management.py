@@ -49,18 +49,19 @@ async def test_admin_can_manage_vehicle_photo_gallery(
     await repository.save(vehicle)
     await db_session.commit()
 
+    # ✅ CORRECTION : Suppression de l'argument photo_url (3ème paramètre)
     first = await repository.create_pending_photo(
         vehicle.id,
         f"vehicles/{vehicle.id}/first.jpg",
-        "https://expired.example/first.jpg",
         "image/jpeg",
         uuid4(),
     )
     await repository.confirm_photo(first)
+
+    # ✅ CORRECTION : Suppression de l'argument photo_url (3ème paramètre)
     second = await repository.create_pending_photo(
         vehicle.id,
         f"vehicles/{vehicle.id}/second.jpg",
-        "https://expired.example/second.jpg",
         "image/jpeg",
         uuid4(),
     )

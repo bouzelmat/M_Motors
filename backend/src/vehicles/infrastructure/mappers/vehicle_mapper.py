@@ -29,6 +29,20 @@ class VehicleMapper:
             for association in orm.service_associations
         ]
 
+        photos = getattr(orm, "photos", None) or []
+        primary_photo = next(
+            (
+                photo
+                for photo in photos
+                if getattr(photo, "is_uploaded", False)
+                and getattr(photo, "is_primary", False)
+            ),
+            next(
+                (photo for photo in photos if getattr(photo, "is_uploaded", False)),
+                None,
+            ),
+        )
+
         return Vehicle(
             id=orm.id,
             brand=orm.brand,
@@ -46,16 +60,11 @@ class VehicleMapper:
             created_at=orm.created_at,
             updated_at=orm.updated_at,
             services=services,
-            photo_url=next(
-                (
-                    photo.photo_url
-                    for photo in orm.photos
-                    if photo.is_uploaded and photo.is_primary
-                ),
-                next(
-                    (photo.photo_url for photo in orm.photos if photo.is_uploaded),
-                    None,
-                ),
+            photo_url=(
+                getattr(primary_photo, "photo_url", None) if primary_photo else None
+            ),
+            photo_key=(
+                getattr(primary_photo, "object_key", None) if primary_photo else None
             ),
         )
 

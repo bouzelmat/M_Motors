@@ -59,7 +59,7 @@ async def toggle_catalog_type(
         )
     except NotFoundError as exc:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,  # 🔴 CORRECTION: 404 au lieu de 400
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="Véhicule introuvable",
         ) from exc
     except DomainError as exc:
