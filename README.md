@@ -54,7 +54,7 @@ Une fois les conteneurs démarrés, exécuter le seed depuis le conteneur backen
 docker compose exec backend python scripts/seed_admin.py
 ```
 
-Le script est idempotent : le relancer ne crée pas de doublon. Par défaut, il utilise `admin@example.com` et `Admin123!Secure`, sauf si les variables `SEED_ADMIN_EMAIL` et `SEED_ADMIN_PASSWORD` sont définies. Ces valeurs sont réservées au développement et ne doivent pas être utilisées en production.
+Le script est idempotent : le relancer ne crée pas de doublon. Par défaut, il utilise `admin@example.com` et `Admin123!Secure`, sauf si les variables `SEED_ADMIN_EMAIL` et `SEED_ADMIN_PASSWORD` sont définies. Ces valeurs sont réservées au développement et ne doivent pas être utilisées en production ( pour connaitre les identifiants de production il faut consulter la Copie examen )
 
 ## Remplir les catalogues de démonstration
 
