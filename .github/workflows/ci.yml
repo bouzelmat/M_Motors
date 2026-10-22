@@ -97,7 +97,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.CI_AWS_SECRET_ACCESS_KEY }}
           AWS_ENDPOINT_URL: http://localhost:9090
         run: |
-          pytest backend/tests/migration/ -v
+          pytest tests/migration/ -v
 
       - name: Recréer le schéma pour le scan ZAP
         env:
