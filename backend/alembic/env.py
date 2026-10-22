@@ -25,7 +25,7 @@ target_metadata = Base.metadata
 # Set the database URL (Priorité à l'environnement direct pour le staging/migration, sinon les settings)
 override_url = os.getenv("DATABASE_URL") or os.getenv("MIGRATION_DATABASE_URL")
 if override_url:
-    # Si on passe une URL synchrone psycopg, on l'utilise directement. 
+    # Si on passe une URL synchrone psycopg, on l'utilise directement.
     db_url = override_url
 else:
     settings = get_settings()
@@ -61,7 +61,7 @@ async def run_async_migrations() -> None:
     # Si l'URL utilise psycopg (synchrone), async_engine_from_config peut lever une erreur si on force l'async.
     # On s'assure d'utiliser le bon moteur selon le driver de l'URL active.
     current_url = config.get_main_option("sqlalchemy.url")
-    
+
     if "psycopg" in current_url:
         # Mode synchrone direct pour Alembic si on использует psycopg (corrigé sans run_sync)
         connectable = create_engine(current_url, poolclass=pool.NullPool)

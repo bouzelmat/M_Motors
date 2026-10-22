@@ -17,8 +17,7 @@ def init_legacy_db(db_file: str | Path = DB_FILE) -> Path:
     connection = sqlite3.connect(path)
     try:
         cursor = connection.cursor()
-        cursor.executescript(
-            """
+        cursor.executescript("""
             CREATE TABLE old_users (
                 usr_id INTEGER PRIMARY KEY,
                 usr_mail TEXT UNIQUE,
@@ -43,18 +42,53 @@ def init_legacy_db(db_file: str | Path = DB_FILE) -> Path:
                 veh_desc TEXT,
                 veh_created_at TEXT
             );
-            """
-        )
+            """)
         cursor.executemany(
             """INSERT INTO old_users
             (usr_id, usr_mail, usr_pwd, usr_firstname, usr_lastname,
              usr_role, usr_active, usr_created_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
             [
-                (1, "jean.dupont@email.com", BCRYPT_HASH, "Jean", "DUPONT", "CLIENT", 1, FIXED_DATE),
-                (2, "marie.curie@email.com", BCRYPT_HASH, "Marie", "CURIE", "ADMIN", 1, FIXED_DATE),
-                (3, "invalide-email-sans-at", BCRYPT_HASH, "John", "DOE", "CLIENT", 1, FIXED_DATE),
-                (4, "pierre.martin@email.com", "not-a-bcrypt-hash", None, "MARTIN", "CLIENT", 1, FIXED_DATE),
+                (
+                    1,
+                    "jean.dupont@email.com",
+                    BCRYPT_HASH,
+                    "Jean",
+                    "DUPONT",
+                    "CLIENT",
+                    1,
+                    FIXED_DATE,
+                ),
+                (
+                    2,
+                    "marie.curie@email.com",
+                    BCRYPT_HASH,
+                    "Marie",
+                    "CURIE",
+                    "ADMIN",
+                    1,
+                    FIXED_DATE,
+                ),
+                (
+                    3,
+                    "invalide-email-sans-at",
+                    BCRYPT_HASH,
+                    "John",
+                    "DOE",
+                    "CLIENT",
+                    1,
+                    FIXED_DATE,
+                ),
+                (
+                    4,
+                    "pierre.martin@email.com",
+                    "not-a-bcrypt-hash",
+                    None,
+                    "MARTIN",
+                    "CLIENT",
+                    1,
+                    FIXED_DATE,
+                ),
             ],
         )
         cursor.executemany(
@@ -63,11 +97,76 @@ def init_legacy_db(db_file: str | Path = DB_FILE) -> Path:
              veh_kms, veh_energy, veh_status, veh_catalog_type, veh_desc, veh_created_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             [
-                (1, "Peugeot", "208", 2021, 15000.0, None, 35000, "GASOLINE", "AVAILABLE", "SALE", "Super état.", FIXED_DATE),
-                (2, "Tesla", "Model 3", 2022, None, 699.0, 12000, "ELECTRIC", "AVAILABLE", "RENTAL", "Location longue durée.", FIXED_DATE),
-                (3, "Renault", "Clio", 2018, 9500.0, None, 85000, "DIESEL", "SOLD", "SALE", "Ancienne voiture.", FIXED_DATE),
-                (4, None, "Inconnu", 2020, 10000.0, None, 50000, "GASOLINE", "AVAILABLE", "SALE", "Sans marque.", FIXED_DATE),
-                (5, "BMW", "X1", 2023, None, None, 10000, "HYBRID", "AVAILABLE", "RENTAL", "Location sans loyer : rejet attendu.", FIXED_DATE),
+                (
+                    1,
+                    "Peugeot",
+                    "208",
+                    2021,
+                    15000.0,
+                    None,
+                    35000,
+                    "GASOLINE",
+                    "AVAILABLE",
+                    "SALE",
+                    "Super état.",
+                    FIXED_DATE,
+                ),
+                (
+                    2,
+                    "Tesla",
+                    "Model 3",
+                    2022,
+                    None,
+                    699.0,
+                    12000,
+                    "ELECTRIC",
+                    "AVAILABLE",
+                    "RENTAL",
+                    "Location longue durée.",
+                    FIXED_DATE,
+                ),
+                (
+                    3,
+                    "Renault",
+                    "Clio",
+                    2018,
+                    9500.0,
+                    None,
+                    85000,
+                    "DIESEL",
+                    "SOLD",
+                    "SALE",
+                    "Ancienne voiture.",
+                    FIXED_DATE,
+                ),
+                (
+                    4,
+                    None,
+                    "Inconnu",
+                    2020,
+                    10000.0,
+                    None,
+                    50000,
+                    "GASOLINE",
+                    "AVAILABLE",
+                    "SALE",
+                    "Sans marque.",
+                    FIXED_DATE,
+                ),
+                (
+                    5,
+                    "BMW",
+                    "X1",
+                    2023,
+                    None,
+                    None,
+                    10000,
+                    "HYBRID",
+                    "AVAILABLE",
+                    "RENTAL",
+                    "Location sans loyer : rejet attendu.",
+                    FIXED_DATE,
+                ),
             ],
         )
         connection.commit()
@@ -78,4 +177,3 @@ def init_legacy_db(db_file: str | Path = DB_FILE) -> Path:
 
 if __name__ == "__main__":
     print(f"Base legacy générée : {init_legacy_db()}")
-

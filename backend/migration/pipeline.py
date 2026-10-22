@@ -21,6 +21,7 @@ from typing import Any
 from sqlalchemy import MetaData, Table, create_engine, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.engine import Connection, Engine
+from sqlalchemy.exc import SQLAlchemyError
 
 logger = logging.getLogger(__name__)
 
@@ -98,7 +99,9 @@ def _normalise_email(value: Any) -> str:
     return email
 
 
-def _normalise_enum(value: Any, field: str, valid: set[str], default: str | None = None) -> str:
+def _normalise_enum(
+    value: Any, field: str, valid: set[str], default: str | None = None
+) -> str:
     normalised = str(value or default or "").strip().upper()
     if normalised not in valid:
         raise ValueError(f"{field} invalide: {value!r}")
@@ -113,13 +116,21 @@ def _energy(value: Any) -> str:
         raise ValueError(f"energy_type invalide: {value!r}") from exc
 
 
-def _reject(rejected: list[dict[str, Any]], entity: str, legacy_id: Any, reason: str, data: dict[str, Any]) -> None:
-    rejected.append({
-        "entity": entity,
-        "legacy_id": str(legacy_id),
-        "reason": reason,
-        "data": data,
-    })
+def _reject(
+    rejected: list[dict[str, Any]],
+    entity: str,
+    legacy_id: Any,
+    reason: str,
+    data: dict[str, Any],
+) -> None:
+    rejected.append(
+        {
+            "entity": entity,
+            "legacy_id": str(legacy_id),
+            "reason": reason,
+            "data": data,
+        }
+    )
 
 
 def _table_map(conn: Connection) -> Table:
@@ -131,11 +142,15 @@ def ensure_mapping_table(conn: Connection) -> Table:
     """Fail closed if Alembic has not created the technical table."""
     try:
         return _table_map(conn)
-    except Exception as exc:
-        raise MigrationError("La table migration_mapping est absente ou inaccessible") from exc
+    except (SQLAlchemyError, RuntimeError) as exc:
+        raise MigrationError(
+            "La table migration_mapping est absente ou inaccessible"
+        ) from exc
 
 
-def get_or_create_uuid(conn: Connection, mapping: Table, entity_type: str, legacy_id: Any) -> tuple[str, bool]:
+def get_or_create_uuid(
+    conn: Connection, mapping: Table, entity_type: str, legacy_id: Any
+) -> tuple[str, bool]:
     """Return the stable target UUID and whether a mapping was created."""
     if entity_type not in {"USER", "VEHICLE"}:
         raise MigrationError(f"entity_type interdit: {entity_type}")
@@ -150,11 +165,16 @@ def get_or_create_uuid(conn: Connection, mapping: Table, entity_type: str, legac
         return str(row.target_uuid), False
 
     target_uuid = str(uuid.uuid4())
-    stmt = pg_insert(mapping).values(
-        entity_type=entity_type,
-        legacy_id=key,
-        target_uuid=target_uuid,
-    ).on_conflict_do_nothing(index_elements=["entity_type", "legacy_id"]).returning(mapping.c.target_uuid)
+    stmt = (
+        pg_insert(mapping)
+        .values(
+            entity_type=entity_type,
+            legacy_id=key,
+            target_uuid=target_uuid,
+        )
+        .on_conflict_do_nothing(index_elements=["entity_type", "legacy_id"])
+        .returning(mapping.c.target_uuid)
+    )
     inserted = conn.execute(stmt).first()
     if inserted:
         return str(inserted.target_uuid), True
@@ -173,18 +193,24 @@ def _validate_target_tables(conn: Connection) -> tuple[Table, Table, Table]:
         users = Table("users", metadata, autoload_with=conn)
         vehicles = Table("vehicles", metadata, autoload_with=conn)
         mapping = ensure_mapping_table(conn)
-    except Exception as exc:
-        raise MigrationError("Le schéma cible users/vehicles/migration_mapping est incomplet") from exc
+    except (SQLAlchemyError, RuntimeError) as exc:
+        raise MigrationError(
+            "Le schéma cible users/vehicles/migration_mapping est incomplet"
+        ) from exc
     return users, vehicles, mapping
 
 
 def _write_report(reports_dir: Path, name: str, payload: Any) -> None:
     reports_dir.mkdir(parents=True, exist_ok=True)
-    (reports_dir / name).write_text(json.dumps(payload, indent=2, ensure_ascii=False, default=str), encoding="utf-8")
+    (reports_dir / name).write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False, default=str), encoding="utf-8"
+    )
 
 
 def _upsert_user(conn: Connection, table: Table, values: dict[str, Any]) -> str:
-    existing = conn.execute(select(table.c.id).where(table.c.email == values["email"])).first()
+    existing = conn.execute(
+        select(table.c.id).where(table.c.email == values["email"])
+    ).first()
     if existing and str(existing.id) != str(values["id"]):
         raise MigrationError(
             f"Email {values['email']} déjà lié à un UUID différent ({existing.id} != {values['id']})"
@@ -205,7 +231,9 @@ def _upsert_user(conn: Connection, table: Table, values: dict[str, Any]) -> str:
 
 
 def _upsert_vehicle(conn: Connection, table: Table, values: dict[str, Any]) -> str:
-    existing = conn.execute(select(table.c.id).where(table.c.id == values["id"])).first()
+    existing = conn.execute(
+        select(table.c.id).where(table.c.id == values["id"])
+    ).first()
     stmt = pg_insert(table).values(values)
     stmt = stmt.on_conflict_do_update(
         index_elements=["id"],
@@ -237,14 +265,32 @@ def run_etl(
     if batch_size <= 0:
         raise ValueError("batch_size doit être strictement positif")
     if target_url is None:
-        raise ValueError("target_url doit être fourni explicitement pour éviter une écriture accidentelle")
+        raise ValueError(
+            "target_url doit être fourni explicitement pour éviter une écriture accidentelle"
+        )
 
     reports_path = Path(reports_dir)
     started_at = datetime.now(timezone.utc)
     started_clock = time.monotonic()
     stats = {
-        "users": {"extracted": 0, "accepted": 0, "inserted": 0, "updated": 0, "rejected": 0, "mapping_created": 0, "mapping_reused": 0},
-        "vehicles": {"extracted": 0, "accepted": 0, "inserted": 0, "updated": 0, "rejected": 0, "mapping_created": 0, "mapping_reused": 0},
+        "users": {
+            "extracted": 0,
+            "accepted": 0,
+            "inserted": 0,
+            "updated": 0,
+            "rejected": 0,
+            "mapping_created": 0,
+            "mapping_reused": 0,
+        },
+        "vehicles": {
+            "extracted": 0,
+            "accepted": 0,
+            "inserted": 0,
+            "updated": 0,
+            "rejected": 0,
+            "mapping_created": 0,
+            "mapping_reused": 0,
+        },
     }
     rejected: list[dict[str, Any]] = []
     errors: list[str] = []
@@ -278,13 +324,17 @@ def run_etl(
                             "is_active": is_active,
                             "created_at": created_at,
                         }
-                        target_id, created = get_or_create_uuid(conn, mapping, "USER", row["usr_id"])
+                        target_id, created = get_or_create_uuid(
+                            conn, mapping, "USER", row["usr_id"]
+                        )
                         values["id"] = target_id
                         action = _upsert_user(conn, users, values)
                         stats["users"]["accepted"] += 1
                         stats["users"][action] += 1
-                        stats["users"]["mapping_created" if created else "mapping_reused"] += 1
-                    except Exception as exc:
+                        stats["users"][
+                            "mapping_created" if created else "mapping_reused"
+                        ] += 1
+                    except (ValueError, MigrationError, SQLAlchemyError) as exc:
                         stats["users"]["rejected"] += 1
                         _reject(rejected, "user", row["usr_id"], str(exc), dict(row))
 
@@ -298,9 +348,17 @@ def run_etl(
                 for row in rows:
                     stats["vehicles"]["extracted"] += 1
                     try:
-                        catalog_type = _normalise_enum(row["veh_catalog_type"], "catalog_type", VALID_CATALOG_TYPES)
-                        price = _decimal(row["veh_price"], "price", required=catalog_type == "SALE")
-                        monthly_rent = _decimal(row["veh_monthly_rent"], "monthly_rent", required=catalog_type == "RENTAL")
+                        catalog_type = _normalise_enum(
+                            row["veh_catalog_type"], "catalog_type", VALID_CATALOG_TYPES
+                        )
+                        price = _decimal(
+                            row["veh_price"], "price", required=catalog_type == "SALE"
+                        )
+                        monthly_rent = _decimal(
+                            row["veh_monthly_rent"],
+                            "monthly_rent",
+                            required=catalog_type == "RENTAL",
+                        )
                         if not row["veh_brand"] or not str(row["veh_brand"]).strip():
                             raise ValueError("brand obligatoire")
                         if not row["veh_model"] or not str(row["veh_model"]).strip():
@@ -316,18 +374,24 @@ def run_etl(
                             "price": price,
                             "mileage": mileage,
                             "energy_type": _energy(row["veh_energy"]),
-                            "status": _normalise_enum(row["veh_status"], "status", VALID_STATUSES, "AVAILABLE"),
+                            "status": _normalise_enum(
+                                row["veh_status"], "status", VALID_STATUSES, "AVAILABLE"
+                            ),
                             "catalog_type": catalog_type,
                             "monthly_rent": monthly_rent,
                             "description": row["veh_desc"],
                         }
-                        target_id, created = get_or_create_uuid(conn, mapping, "VEHICLE", row["veh_id"])
+                        target_id, created = get_or_create_uuid(
+                            conn, mapping, "VEHICLE", row["veh_id"]
+                        )
                         values["id"] = target_id
                         action = _upsert_vehicle(conn, vehicles, values)
                         stats["vehicles"]["accepted"] += 1
                         stats["vehicles"][action] += 1
-                        stats["vehicles"]["mapping_created" if created else "mapping_reused"] += 1
-                    except Exception as exc:
+                        stats["vehicles"][
+                            "mapping_created" if created else "mapping_reused"
+                        ] += 1
+                    except (ValueError, MigrationError, SQLAlchemyError) as exc:
                         stats["vehicles"]["rejected"] += 1
                         _reject(rejected, "vehicle", row["veh_id"], str(exc), dict(row))
 
@@ -361,4 +425,3 @@ class _DryRunRollback(Exception):
 
 
 __all__ = ["MigrationError", "MigrationResult", "get_or_create_uuid", "run_etl"]
-

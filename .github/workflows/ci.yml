@@ -53,9 +53,6 @@ jobs:
       - name: Black
         run: black --check .
 
-      # ==========================================
-      # ETAPE CRITIQUE : Migration de la base de données de test
-      # ==========================================
       - name: Run Alembic Migrations
         env:
           ENVIRONMENT: development
@@ -69,7 +66,7 @@ jobs:
           AWS_ENDPOINT_URL: http://localhost:9090
         run: alembic upgrade head
 
-      - name: Pytest
+      - name: Pytest Classic
         env:
           ENVIRONMENT: development
           DATABASE_URL: postgresql+asyncpg://m_motors:m_motors@localhost:5432/test_m_motors
@@ -81,6 +78,24 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.CI_AWS_SECRET_ACCESS_KEY }}
           AWS_ENDPOINT_URL: http://localhost:9090
         run: pytest --cov=src --cov-report=term-missing
+
+      # =====================================================================
+      # ÉTAPE CLÉ : Exécution de vos tests d'intégration de migration ETL
+      # =====================================================================
+      - name: Pytest Migration Integration Tests
+        env:
+          ENVIRONMENT: development
+          # C'est ici que l'on définit la variable qu'attendent vos tests de migration
+          MIGRATION_TEST_DATABASE_URL: postgresql://m_motors:m_motors@localhost:5432/test_m_motors
+          SECRET_KEY: ${{ secrets.CI_SECRET_KEY }}
+          S3_BUCKET_NAME: m-motors-photos-test
+          S3_DOCUMENTS_BUCKET_NAME: m-motors-documents-test
+          AWS_REGION: eu-west-3
+          AWS_ACCESS_KEY_ID: ${{ secrets.CI_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.CI_AWS_SECRET_ACCESS_KEY }}
+          AWS_ENDPOINT_URL: http://localhost:9090
+        run: |
+          pytest backend/tests/migration/ -v
 
       - name: Recréer le schéma pour le scan ZAP
         env:
@@ -94,9 +109,6 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.CI_AWS_SECRET_ACCESS_KEY }}
           AWS_ENDPOINT_URL: http://localhost:9090
         run: |
-          # Pytest supprime les tables ORM en fin de session, mais conserve
-          # alembic_version. Il faut donc réinitialiser le schéma avant de
-          # relancer Alembic, sinon `upgrade head` est considéré comme déjà fait.
           PGPASSWORD=m_motors psql \
             --host=localhost \
             --port=5432 \
@@ -105,9 +117,6 @@ jobs:
             --command='DROP SCHEMA public CASCADE; CREATE SCHEMA public;'
           alembic upgrade head
 
-      # ==========================================
-      # ETAPE 2 : CREATION DE L'UTILISATEUR ET DU TOKEN DE TEST POUR ZAP
-      # ==========================================
       - name: Créer un utilisateur de test pour ZAP
         env:
           ENVIRONMENT: development
@@ -124,9 +133,7 @@ jobs:
           cat << 'EOF' > create_zap_user.py
           import asyncio
           from uuid import UUID
-
           from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
-
           from src.auth.infrastructure.orm.user_model import UserModel
 
           DATABASE_URL = "postgresql+asyncpg://m_motors:m_motors@localhost:5432/test_m_motors"
@@ -135,7 +142,6 @@ jobs:
           async def main() -> None:
               engine = create_async_engine(DATABASE_URL)
               session_factory = async_sessionmaker(bind=engine, expire_on_commit=False)
-
               async with session_factory() as session:
                   session.add(
                       UserModel(
@@ -149,7 +155,6 @@ jobs:
                       )
                   )
                   await session.commit()
-
               await engine.dispose()
               print(f"Utilisateur ZAP créé : {ZAP_USER_ID}")
 
@@ -186,7 +191,6 @@ jobs:
               json.dump(zap_auth_header, f)
           print("Jeton ZAP généré avec succès.")
           EOF
-          
           PYTHONPATH=. python generate_zap_token.py
 
       - name: Lancer FastAPI en arrière-plan pour le scan
@@ -211,13 +215,8 @@ jobs:
         id: zap_scan
         continue-on-error: true
         run: |
-          # 1. Création propre du dossier d'artefact à la racine globale
           mkdir -p ${{ github.workspace }}/zap-reports
-
-          # 2. Extraction du token depuis le fichier situé dans backend/
           TOKEN_RAW=$(cat zap_headers.json | grep -oP 'Bearer \K[^"]+')
-
-          # 3. Exécution avec le fichier de règles + option -l FAIL
           docker run --rm \
             --user root \
             -v ${{ github.workspace }}:/zap/wrk/:rw \
@@ -246,28 +245,20 @@ jobs:
         if: always()
         run: |
           REPORT_FILE="${{ github.workspace }}/zap-reports/rapport_api_zap.html"
-
           if [ ! -f "$REPORT_FILE" ]; then
             echo "❌ Le rapport ZAP n'a pas été généré."
             exit 1
           fi
-
-          # Extraire le nombre d'alertes High depuis le tableau récapitulatif
           HIGH_COUNT=$(grep -oP '<td>High</td>\s*<td>\K[0-9]+' "$REPORT_FILE" | head -1 || echo "0")
-
           echo "=========================================="
           echo "Résumé des alertes ZAP :"
           echo "  High : $HIGH_COUNT"
           echo "=========================================="
-
           if [ "$HIGH_COUNT" -gt 0 ]; then
             echo "❌ ÉCHEC : $HIGH_COUNT alerte(s) de niveau High détectée(s)."
-            echo "Consultez le rapport : $REPORT_FILE"
-            echo "Voir l'artefact 'rapport-securite-api-owasp' dans ce workflow."
             exit 1
           fi
-
-          echo "✅ Aucune alerte High détectée. Pipeline autorisé à continuer."
+          echo "✅ Aucune alerte High détectée."
 
   frontend:
     name: Frontend quality gate

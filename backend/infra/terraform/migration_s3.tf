@@ -37,7 +37,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "legacy_migration"
 
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"  # Pas besoin de KMS pour ce cas d'usage
+      sse_algorithm = "AES256" # Pas besoin de KMS pour ce cas d'usage
     }
   }
 }
@@ -46,13 +46,13 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "legacy_migration"
 # 3. Rôle IAM DÉDIÉ pour l'ETL (isolation totale)
 # -----------------------------------------------------------------------------
 resource "aws_iam_role" "etl_migration" {
-  name = "${var.project_name}-staging-etl-migration"  # Ex: "m-motors-staging-etl-migration"
+  name = "${var.project_name}-staging-etl-migration" # Ex: "m-motors-staging-etl-migration"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
       Effect    = "Allow"
-      Principal = { Service = "ecs-tasks.amazonaws.com" }  # Pour ECS Express
+      Principal = { Service = "ecs-tasks.amazonaws.com" } # Pour ECS Express
       Action    = "sts:AssumeRole"
     }]
   })

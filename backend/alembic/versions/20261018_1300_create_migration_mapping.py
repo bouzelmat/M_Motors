@@ -18,8 +18,18 @@ def upgrade() -> None:
         sa.Column("entity_type", sa.String(length=32), nullable=False),
         sa.Column("legacy_id", sa.String(length=255), nullable=False),
         sa.Column("target_uuid", UUID(as_uuid=True), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
         sa.PrimaryKeyConstraint("entity_type", "legacy_id"),
         sa.UniqueConstraint("target_uuid", name="uq_migration_mapping_target_uuid"),
     )
