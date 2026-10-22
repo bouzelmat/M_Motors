@@ -9,8 +9,8 @@ import pytest
 from sqlalchemy import create_engine, text
 
 from scripts.mock_legacy import init_legacy_db
-from src.migration.pipeline import run_etl
-from src.migration.verification import run_verification
+from migration.pipeline import run_etl
+from migration.verification import run_verification
 
 
 TARGET_URL = os.getenv("MIGRATION_TEST_DATABASE_URL")

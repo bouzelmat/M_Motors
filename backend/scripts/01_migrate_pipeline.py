@@ -8,7 +8,7 @@ import logging
 import os
 from pathlib import Path
 
-from src.migration.pipeline import run_etl
+from migration.pipeline import run_etl
 
 
 def build_parser() -> argparse.ArgumentParser:

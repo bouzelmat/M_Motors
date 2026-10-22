@@ -1,4 +1,4 @@
-from src.migration.pipeline import _energy, _normalise_enum, _decimal, VALID_CATALOG_TYPES
+from migration.pipeline import _energy, _normalise_enum, _decimal, VALID_CATALOG_TYPES
 
 
 def test_legacy_energy_is_mapped_to_real_enum():

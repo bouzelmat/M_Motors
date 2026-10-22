@@ -1,0 +1,85 @@
+{
+  "steps": [
+    {
+      "step": "dry_run",
+      "status": "SUCCESS",
+      "stats": {
+        "users": {
+          "extracted": 4,
+          "accepted": 3,
+          "inserted": 3,
+          "updated": 0,
+          "rejected": 1,
+          "mapping_created": 3,
+          "mapping_reused": 0
+        },
+        "vehicles": {
+          "extracted": 5,
+          "accepted": 3,
+          "inserted": 3,
+          "updated": 0,
+          "rejected": 2,
+          "mapping_created": 3,
+          "mapping_reused": 0
+        }
+      }
+    },
+    {
+      "step": "first_execute",
+      "status": "SUCCESS",
+      "stats": {
+        "users": {
+          "extracted": 4,
+          "accepted": 3,
+          "inserted": 3,
+          "updated": 0,
+          "rejected": 1,
+          "mapping_created": 3,
+          "mapping_reused": 0
+        },
+        "vehicles": {
+          "extracted": 5,
+          "accepted": 3,
+          "inserted": 3,
+          "updated": 0,
+          "rejected": 2,
+          "mapping_created": 3,
+          "mapping_reused": 0
+        }
+      }
+    },
+    {
+      "step": "first_audit",
+      "status": "SUCCESS"
+    },
+    {
+      "step": "second_execute",
+      "status": "SUCCESS",
+      "stats": {
+        "users": {
+          "extracted": 4,
+          "accepted": 3,
+          "inserted": 0,
+          "updated": 3,
+          "rejected": 1,
+          "mapping_created": 0,
+          "mapping_reused": 3
+        },
+        "vehicles": {
+          "extracted": 5,
+          "accepted": 3,
+          "inserted": 0,
+          "updated": 3,
+          "rejected": 2,
+          "mapping_created": 0,
+          "mapping_reused": 3
+        }
+      }
+    },
+    {
+      "step": "second_audit",
+      "status": "SUCCESS"
+    }
+  ],
+  "final_status": "SUCCESS_FLUX_VALIDE"
+}

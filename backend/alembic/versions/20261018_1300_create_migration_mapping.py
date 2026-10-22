@@ -7,7 +7,7 @@ from alembic import op
 from sqlalchemy.dialects.postgresql import UUID
 
 revision: str = "20261018_migration_mapping"
-down_revision: str | None = "20261018_photo_url_text"
+down_revision: str | None = "20261018_make_photo_url_nullable"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
@@ -32,5 +32,3 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.drop_table("migration_mapping")
-
-

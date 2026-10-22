@@ -6,8 +6,8 @@ import json
 import os
 from pathlib import Path
 
-from src.migration.pipeline import run_etl
-from src.migration.verification import run_verification
+from migration.pipeline import run_etl
+from migration.verification import run_verification
 
 
 def main() -> int:

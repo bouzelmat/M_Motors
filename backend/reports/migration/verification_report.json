@@ -1,0 +1,36 @@
+{
+  "status": "OK",
+  "checks": {
+    "counts": {
+      "users": {
+        "legacy_valid": 3,
+        "mapped": 3,
+        "postgres": 3,
+        "match": true
+      },
+      "vehicles": {
+        "legacy_valid": 3,
+        "mapped": 3,
+        "postgres": 3,
+        "match": true
+      }
+    },
+    "duplicate_emails": {
+      "count": 0,
+      "details": []
+    },
+    "orphan_mappings": {
+      "count": 0,
+      "details": []
+    },
+    "invalid_vehicles": {
+      "count": 0,
+      "details": []
+    },
+    "unmapped_targets": {
+      "users": 0,
+      "vehicles": 0
+    }
+  },
+  "errors": []
+}

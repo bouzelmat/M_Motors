@@ -26,4 +26,3 @@ services:
       REPORTS_DIR: /app/reports/migration
     volumes:
       - ../reports:/app/reports
-

@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 import os
 
-from src.migration.verification import run_verification
+from migration.verification import run_verification
 
 
 def main() -> int:
