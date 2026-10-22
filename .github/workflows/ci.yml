@@ -85,8 +85,10 @@ jobs:
       - name: Pytest Migration Integration Tests
         env:
           ENVIRONMENT: development
-          # C'est ici que l'on définit la variable qu'attendent vos tests de migration
-          MIGRATION_TEST_DATABASE_URL: postgresql://m_motors:m_motors@localhost:5432/test_m_motors
+          # DATABASE_URL requis par Pydantic Settings (conftest.py / FastAPI)
+          DATABASE_URL: postgresql+asyncpg://m_motors:m_motors@localhost:5432/test_m_motors
+          # MIGRATION_TEST_DATABASE_URL requis par les tests de migration ETL
+          MIGRATION_TEST_DATABASE_URL: postgresql+psycopg://m_motors:m_motors@localhost:5432/test_m_motors
           SECRET_KEY: ${{ secrets.CI_SECRET_KEY }}
           S3_BUCKET_NAME: m-motors-photos-test
           S3_DOCUMENTS_BUCKET_NAME: m-motors-documents-test
