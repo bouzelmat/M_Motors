@@ -1,0 +1,30 @@
+{
+  "run_started_at": "2026-10-21T21:10:01.118752+00:00",
+  "duration_seconds": 0.271,
+  "source_db": "/app/legacy.db",
+  "mapping_scope": "us603-users-vehicles",
+  "dry_run": false,
+  "batch_size": 2,
+  "stats": {
+    "users": {
+      "extracted": 4,
+      "accepted": 3,
+      "inserted": 0,
+      "updated": 3,
+      "rejected": 1,
+      "mapping_created": 0,
+      "mapping_reused": 3
+    },
+    "vehicles": {
+      "extracted": 5,
+      "accepted": 3,
+      "inserted": 0,
+      "updated": 3,
+      "rejected": 2,
+      "mapping_created": 0,
+      "mapping_reused": 3
+    }
+  },
+  "rejected_count": 3,
+  "errors": []
+}

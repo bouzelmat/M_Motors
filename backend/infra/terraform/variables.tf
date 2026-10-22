@@ -11,7 +11,7 @@ variable "aws_region" {
 }
 
 variable "image_tag" {
-  description = "Tag immuable de l’image backend publiée dans ECR."
+  description = "Tag immuable de l'image backend publiée dans ECR."
   type        = string
   default     = "latest"
 }
@@ -35,12 +35,11 @@ variable "budget_alert_email" {
   nullable    = true
 }
 
-# ✅ 1. Pour S3 (Uploads directs via URLs pré-signées)
 variable "frontend_allowed_origins" {
   description = "Origines autorisées par CORS pour les uploads/téléchargements directs vers S3 via URLs pré-signées."
   type        = list(string)
   default = [
-    "https://dge7j4xdl31l9.cloudfront.net", 
+    "https://dge7j4xdl31l9.cloudfront.net",
     "http://localhost:5173",
     "http://localhost:3000",
     "http://127.0.0.1:5173",
@@ -55,10 +54,10 @@ variable "frontend_build_api_base_url" {
 }
 
 variable "allowed_cors_origins" {
-  description = "Origines CORS exposées par l’API backend."
+  description = "Origines CORS exposées par l'API backend."
   type        = list(string)
   default = [
-    "https://dge7j4xdl31l9.cloudfront.net", 
+    "https://dge7j4xdl31l9.cloudfront.net",
     "http://localhost:5173",
     "http://localhost:3000",
     "http://127.0.0.1:5173",
@@ -70,4 +69,11 @@ variable "monitoring_alert_email" {
   description = "Adresse e-mail qui reçoit les alertes CloudWatch via SNS."
   type        = string
   default     = "omarbouzelmat99@gmail.com"
+}
+
+# variable pour la migration de données
+variable "legacy_db_sha256" {
+  description = "Empreinte SHA-256 du fichier legacy.db pour validation d'intégrité."
+  type        = string
+  default     = "" # À remplir manuellement lors du dépôt (étape 6)
 }

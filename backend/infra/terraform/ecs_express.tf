@@ -89,15 +89,15 @@ resource "aws_iam_role_policy" "ecs_infrastructure_inline" {
         Resource = "*"
       },
       {
-        Sid    = "ELBPermissions"
-        Effect = "Allow"
-        Action = ["elasticloadbalancing:*"]
+        Sid      = "ELBPermissions"
+        Effect   = "Allow"
+        Action   = ["elasticloadbalancing:*"]
         Resource = "*"
       },
       {
-        Sid    = "ACMPermissions"
-        Effect = "Allow"
-        Action = ["acm:DescribeCertificate", "acm:ListCertificates"]
+        Sid      = "ACMPermissions"
+        Effect   = "Allow"
+        Action   = ["acm:DescribeCertificate", "acm:ListCertificates"]
         Resource = "*"
       },
       {
@@ -123,9 +123,9 @@ resource "aws_iam_role_policy" "ecs_infrastructure_inline" {
         Resource = "*"
       },
       {
-        Sid    = "IAMPermissions"
-        Effect = "Allow"
-        Action = ["iam:CreateServiceLinkedRole", "iam:PassRole", "iam:GetRole"]
+        Sid      = "IAMPermissions"
+        Effect   = "Allow"
+        Action   = ["iam:CreateServiceLinkedRole", "iam:PassRole", "iam:GetRole"]
         Resource = "*"
       },
       {
@@ -211,10 +211,10 @@ resource "aws_ecs_express_gateway_service" "backend" {
   task_role_arn           = aws_iam_role.ecs_task.arn
   cpu                     = local.ecs_is_production ? "1024" : "512"
   memory                  = local.ecs_is_production ? "2048" : "1024"
-  
+
   # ✅ CORRECTION CRITIQUE : health_check_path SANS slash final pour correspondre à FastAPI
-  health_check_path       = "/health"
-  wait_for_steady_state   = false
+  health_check_path     = "/health"
+  wait_for_steady_state = false
 
   network_configuration {
     subnets         = local.ecs_subnets

@@ -1,0 +1,55 @@
+[
+  {
+    "entity": "user",
+    "legacy_id": "3",
+    "reason": "Email absent ou invalide",
+    "data": {
+      "usr_id": 3,
+      "usr_mail": "invalide-email-sans-at",
+      "usr_pwd": "$2b$12$eImiTXuWVxfM37uY4JANjO5E/w929k1N3/19dG3g8k5R6lG",
+      "usr_firstname": "John",
+      "usr_lastname": "DOE",
+      "usr_role": "CLIENT",
+      "usr_active": 1,
+      "usr_created_at": "2026-01-15T10:00:00+00:00"
+    }
+  },
+  {
+    "entity": "vehicle",
+    "legacy_id": "4",
+    "reason": "brand obligatoire",
+    "data": {
+      "veh_id": 4,
+      "veh_brand": null,
+      "veh_model": "Inconnu",
+      "veh_year": 2020,
+      "veh_price": 10000.0,
+      "veh_monthly_rent": null,
+      "veh_kms": 50000,
+      "veh_energy": "GASOLINE",
+      "veh_status": "AVAILABLE",
+      "veh_catalog_type": "SALE",
+      "veh_desc": "Sans marque.",
+      "veh_created_at": "2026-01-15T10:00:00+00:00"
+    }
+  },
+  {
+    "entity": "vehicle",
+    "legacy_id": "5",
+    "reason": "monthly_rent obligatoire",
+    "data": {
+      "veh_id": 5,
+      "veh_brand": "BMW",
+      "veh_model": "X1",
+      "veh_year": 2023,
+      "veh_price": null,
+      "veh_monthly_rent": null,
+      "veh_kms": 10000,
+      "veh_energy": "HYBRID",
+      "veh_status": "AVAILABLE",
+      "veh_catalog_type": "RENTAL",
+      "veh_desc": "Location sans loyer : rejet attendu.",
+      "veh_created_at": "2026-01-15T10:00:00+00:00"
+    }
+  }
+]
