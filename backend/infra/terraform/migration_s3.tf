@@ -59,7 +59,7 @@ resource "aws_iam_role" "etl_migration" {
 
   tags = {
     Environment = "staging"
-    Purpose     = "ETL Legacy Migration (Read-Only)"
+    Purpose     = "ETL Legacy Migration Read-Only"
   }
 }
 
