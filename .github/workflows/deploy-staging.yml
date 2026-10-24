@@ -16,6 +16,7 @@ jobs:
     environment: staging
     permissions:
       contents: read
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -37,12 +38,10 @@ jobs:
           terraform workspace select staging || terraform workspace new staging
           
           # 1. SYNCHRONISATION IDÉMPOTENTE : Importer le service ECS Express Gateway 
-          # avec son ARN complet (requis par le provider AWS v6 pour ce type de ressource)
           ECS_SERVICE_ARN="arn:aws:ecs:${AWS_REGION}:${AWS_ACCOUNT_ID}:service/default/m-motors-staging-backend"
-          
           if ! terraform state show aws_ecs_express_gateway_service.backend > /dev/null 2>&1; then
-            echo "⚠️ Le service ECS n'est pas dans l'état Terraform. Tentative d'importation avec l'ARN complet..."
-            terraform import aws_ecs_express_gateway_service.backend "$ECS_SERVICE_ARN"
+            echo "⚠️ Le service ECS n'est pas dans l'état Terraform. Tentative d'importation..."
+            terraform import aws_ecs_express_gateway_service.backend "$ECS_SERVICE_ARN" || true
           else
             echo "✅ Le service ECS est déjà connu de Terraform."
           fi
@@ -55,8 +54,12 @@ jobs:
             echo "✅ Le dépôt ECR est déjà connu de Terraform."
           fi
 
-          # 3. S'assurer que le dépôt ECR est à jour
-          terraform apply -auto-approve -target=aws_ecr_repository.backend
+      # ✅ AJOUT : Validation de la syntaxe et de la cohérence avant tout déploiement
+      - name: Terraform Validate
+        working-directory: ${{ env.TF_DIR }}
+        run: |
+          terraform fmt -check
+          terraform validate
 
       - name: Login to ECR
         id: login-ecr
@@ -79,8 +82,10 @@ jobs:
         run: |
           BUDGET_ARG=""
           if [ -n "$BUDGET_EMAIL" ]; then BUDGET_ARG="-var=budget_alert_email=$BUDGET_EMAIL"; fi
+          
           MONITORING_ARG=""
           if [ -n "$MONITORING_EMAIL" ]; then MONITORING_ARG="-var=monitoring_alert_email=$MONITORING_EMAIL"; fi
+          
           terraform apply -auto-approve \
             -var="image_tag=${{ github.sha }}" \
             $BUDGET_ARG \
@@ -97,7 +102,6 @@ jobs:
       - name: Build frontend and publish to S3
         working-directory: frontend
         env:
-          # L'output Terraform contient déjà "https://..."
           VITE_API_BASE_URL: "${{ steps.tf-outputs.outputs.ecs_url }}"
         run: |
           npm ci
