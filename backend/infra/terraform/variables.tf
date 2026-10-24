@@ -69,12 +69,11 @@ variable "monitoring_alert_email" {
   description = "Adresse e-mail qui reçoit les alertes CloudWatch via SNS."
   type        = string
   default     = "omarbouzelmat99@gmail.com"
-  nullable    = true  
+  nullable    = true
 }
 
-# ✅ Variable pour la migration de données
 variable "legacy_db_sha256" {
   description = "Empreinte SHA-256 du fichier legacy.db pour validation d'intégrité."
   type        = string
-  default     = "25D030575968DF260CCB3125027B5D2463D5040DCB7AB172070B0FFCF9CDFA11"
+  default     = ""
 }
