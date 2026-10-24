@@ -10,3 +10,9 @@ venv_*/
 .mypy_cache/
 .coverage
 .git/
+
+# Databases / Legacy local data
+*.db
+*.sqlite
+*.sqlite3
+legacy.db

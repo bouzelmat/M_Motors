@@ -58,3 +58,10 @@ postgres-data/
 .terraform/
 *.tfstate*
 backend/venv/
+
+# Databases / Legacy local data 
+*.db
+*.sqlite
+*.sqlite3
+**/legacy.db
+backend/legacy.db
