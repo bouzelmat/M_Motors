@@ -75,12 +75,16 @@ jobs:
         working-directory: ${{ env.TF_DIR }}
         env:
           BUDGET_EMAIL: ${{ secrets.BUDGET_ALERT_EMAIL }}
+          MONITORING_EMAIL: ${{ secrets.MONITORING_ALERT_EMAIL }}
         run: |
           BUDGET_ARG=""
           if [ -n "$BUDGET_EMAIL" ]; then BUDGET_ARG="-var=budget_alert_email=$BUDGET_EMAIL"; fi
+          MONITORING_ARG=""
+          if [ -n "$MONITORING_EMAIL" ]; then MONITORING_ARG="-var=monitoring_alert_email=$MONITORING_EMAIL"; fi
           terraform apply -auto-approve \
             -var="image_tag=${{ github.sha }}" \
-            $BUDGET_ARG
+            $BUDGET_ARG \
+            $MONITORING_ARG
 
       - name: Export Terraform Outputs to GitHub Environment
         working-directory: ${{ env.TF_DIR }}
