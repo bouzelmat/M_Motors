@@ -17,19 +17,22 @@ class SanitizationMiddleware(BaseHTTPMiddleware):
         request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
         path = request.url.path
         method = request.method
-        path_log = "[REDACTED]" if path in [
-            "/api/v1/auth/login",
-            "/api/v1/auth/register",
-        ] else path
+        path_log = (
+            "[REDACTED]"
+            if path
+            in [
+                "/api/v1/auth/login",
+                "/api/v1/auth/register",
+            ]
+            else path
+        )
 
         try:
             response = await call_next(request)
             log_method = (
                 logger.error
                 if response.status_code >= 500
-                else logger.warning
-                if response.status_code >= 400
-                else logger.info
+                else logger.warning if response.status_code >= 400 else logger.info
             )
             log_method(
                 "request_completed method=%s path=%s status_code=%s request_id=%s",
