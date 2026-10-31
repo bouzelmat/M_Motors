@@ -31,6 +31,7 @@ class Vehicle(Entity):
     updated_at: datetime = None
     services: list[ServiceInclusion] = field(default_factory=list)
     photo_url: str | None = None
+    photo_key: str | None = None
 
     def __post_init__(self) -> None:
         if not self.brand or not self.model:
@@ -73,6 +74,8 @@ class Vehicle(Entity):
         monthly_rent: Price | None = None,
         description: str | None = None,
         services: list[ServiceInclusion] | None = None,
+        photo_url: str | None = None,
+        photo_key: str | None = None,
     ) -> "Vehicle":
         """Fabrique permettant de créer un nouveau véhicule avec validation des invariants métier."""
         if mileage.value < 0:
@@ -94,6 +97,8 @@ class Vehicle(Entity):
             created_at=now,
             updated_at=now,
             services=services or [],
+            photo_url=photo_url,
+            photo_key=photo_key,
         )
 
     @property

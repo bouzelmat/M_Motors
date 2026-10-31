@@ -1,0 +1,28 @@
+services:
+  postgres_staging:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: mmotors_staging_db
+      POSTGRES_USER: staging_user
+      POSTGRES_PASSWORD: staging_password
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U staging_user -d mmotors_staging_db"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  etl_staging_runner:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.staging
+    depends_on:
+      postgres_staging:
+        condition: service_healthy
+    environment:
+      MIGRATION_DATABASE_URL: postgresql+psycopg://staging_user:staging_password@postgres_staging:5432/mmotors_staging_db
+      LEGACY_DB_PATH: /app/legacy.db
+      REPORTS_DIR: /app/reports/migration
+    volumes:
+      - ../reports:/app/reports

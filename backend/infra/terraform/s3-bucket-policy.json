@@ -1,89 +1,119 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Politique de sécurité du bucket S3 - M-Motors Documents",
-  "description": "Documentation de la configuration de sécurité du bucket 'm-motors-documents' pour le stockage des pièces justificatives (US-304).",
-  "bucket_name": "m-motors-documents",
+  "title": "Documentation de sécurité des buckets S3 M-Motors",
+  "description": "Documentation descriptive des contrôles appliqués par s3_cloudfront.tf. Ce fichier n'est pas une policy IAM appliquée directement par Terraform.",
+  "bucket_name_pattern": "m-motors-documents-<workspace>",
+  "workspaces": ["staging", "production"],
+  "effective_terraform_file": "s3_cloudfront.tf",
   "policies": [
     {
       "name": "BlockPublicAccess",
-      "description": "Bloque tout accès public au bucket et à ses objets (4 options activées).",
+      "description": "Bloque tout accès public au bucket et à ses objets.",
       "status": "ENABLED",
       "settings": {
         "block_public_acls": true,
         "block_public_policy": true,
         "ignore_public_acls": true,
         "restrict_public_buckets": true
-      }
+      },
+      "applies_to": [
+        "m-motors-frontend-<workspace>",
+        "m-motors-photos-<workspace>",
+        "m-motors-documents-<workspace>"
+      ]
     },
     {
       "name": "ServerSideEncryption",
-      "description": "Chiffrement automatique des objets côté serveur (SSE-S3).",
+      "description": "Chiffrement automatique des objets côté serveur avec SSE-S3.",
       "status": "ENABLED",
       "algorithm": "AES256",
-      "type": "SSE-S3"
+      "type": "SSE-S3",
+      "applies_to": "Tous les buckets M-Motors"
     },
     {
       "name": "EnforceTLS",
-      "description": "Refuse les requêtes non chiffrées (HTTPS obligatoire).",
+      "description": "Refuse les requêtes non chiffrées.",
       "status": "ENABLED",
       "condition": {
         "aws:SecureTransport": "false"
       },
-      "action": "Deny",
-      "applies_to": ["s3:*"]
+      "effect": "Deny",
+      "action": "s3:*",
+      "applies_to": "Tous les buckets M-Motors"
     },
     {
-      "name": "DenyPublicGetObject",
-      "description": "Refuse explicitement s3:GetObject aux principaux publics ou non autorisés (via IAM).",
+      "name": "AllowCloudFrontReadOnly",
+      "description": "Autorise uniquement CloudFront à lire les objets du bucket frontend via OAC et SigV4.",
       "status": "ENABLED",
-      "effect": "Deny",
+      "principal": "cloudfront.amazonaws.com",
       "action": "s3:GetObject",
-      "principal": {
-        "AWS": "*",
-        "Federated": "*"
-      },
-      "condition": {
-        "StringNotEquals": {
-          "aws:PrincipalArn": ["arn:aws:iam::ACCOUNT_ID:role/APPLICATION_ROLE"]
-        }
-      },
-      "note": "Remplacer ACCOUNT_ID et APPLICATION_ROLE par les valeurs réelles de votre infrastructure Terraform."
+      "condition": "AWS:SourceArn égal à l'ARN de la distribution CloudFront du workspace",
+      "applies_to": "m-motors-frontend-<workspace>"
+    },
+    {
+      "name": "AllowECSTaskApplicationAccess",
+      "description": "Autorise le rôle task ECS Express Mode à accéder aux buckets photos et documents.",
+      "status": "ENABLED",
+      "principal_pattern": "arn:aws:iam::<ACCOUNT_ID>:role/m-motors-<workspace>-ecs-task",
+      "actions": [
+        "s3:ListBucket",
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject"
+      ],
+      "applies_to": [
+        "m-motors-photos-<workspace>",
+        "m-motors-documents-<workspace>"
+      ]
+    },
+    {
+      "name": "NoPublicReadAllow",
+      "description": "Aucun Allow public n'est défini. L'accès anonyme reste bloqué par le Public Access Block et l'absence de permission publique.",
+      "status": "ENFORCED",
+      "note": "Le rôle applicatif est le seul principal IAM autorisé sur les buckets photos et documents."
     }
   ],
   "additional_checks": [
     {
       "name": "WebsiteHosting",
       "status": "DISABLED",
-      "description": "Le website hosting est désactivé pour ce bucket (pas de configuration définie)."
+      "description": "Le website hosting S3 n'est pas utilisé. Le frontend est servi par CloudFront avec OAC."
     },
     {
       "name": "PublicACLs",
       "status": "NOT_USED",
-      "description": "Aucun ACL public n'est utilisé. Tous les ACLs sont privés (enforcé par block_public_acls)."
+      "description": "Les ACL publics sont bloqués ; les accès sont contrôlés par policies IAM et OAC."
     },
     {
       "name": "AccessMethod",
-      "description": "Les accès applicatifs doivent utiliser uniquement :",
+      "description": "Les accès applicatifs utilisent uniquement :",
       "methods": [
-        "URLs pré-signées générées côté serveur (via generate_download_url)",
-        "Credentials IAM pour les opérations serveurs (via boto3)"
+        "URLs pré-signées générées côté serveur",
+        "Credentials IAM du rôle ECS task",
+        "CloudFront OAC pour le bucket frontend"
       ]
     }
   ],
   "testing": {
     "staging": {
       "anonymous_access_test": {
-        "description": "Test d'accès anonyme direct à un objet S3 (attendu: HTTP 403).",
-        "command": "curl -v https://m-motors-documents.s3.REGION.amazonaws.com/dossiers/1234/IDENTITY_CARD/doc.pdf",
+        "description": "Test d'accès anonyme direct à un objet du bucket documents staging.",
+        "command": "curl -i https://m-motors-documents-staging.s3.eu-west-3.amazonaws.com/dossiers/1234/IDENTITY_CARD/doc.pdf",
         "expected_result": "HTTP 403 Forbidden",
         "status": "PENDING",
-        "note": "À exécuter lorsque l'environnement AWS ou S3 compatible (LocalStack/MinIO) est disponible."
+        "note": "À exécuter après le déploiement staging avec un objet de test non sensible."
+      },
+      "cloudfront_frontend_test": {
+        "description": "Le frontend doit être accessible via le domaine CloudFront, sans accès public direct au bucket S3.",
+        "expected_result": "HTTP 200 via CloudFront et HTTP 403 en accès direct S3",
+        "status": "PENDING"
       }
     }
   },
   "notes": [
-    "Ce bucket est dédié uniquement au stockage des pièces justificatives des dossiers clients.",
-    "Conforme aux exigences RGPD : pas d'accès public, chiffrement activé, TLS obligatoire.",
-    "Les URLs de consultation sont générées via des URLs pré-signées avec une expiration de 60 secondes (US-304)."
+    "Les noms réels sont suffixés par workspace : staging ou production.",
+    "Le bucket documents est dédié aux pièces justificatives des dossiers clients.",
+    "Les sauvegardes RDS et le PITR ne sont pas stockés dans ces buckets applicatifs.",
+    "Les URLs de téléchargement documentaire utilisent par défaut une expiration de 60 secondes dans l'adaptateur backend."
   ]
 }

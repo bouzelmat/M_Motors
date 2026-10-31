@@ -160,11 +160,10 @@ async def generate_photo_upload_url(
             content_type=payload.content_type,
         )
         object_key = presigned_data["fields"]["key"]
-        photo_url = await storage_service.get_object_url(object_key)
+        # ✅ CORRIGÉ : On ne stocke plus photo_url en base
         photo = await vehicle_repository.create_pending_photo(
             vehicle_id=vehicle_id,
             object_key=object_key,
-            photo_url=photo_url,
             content_type=payload.content_type,
             uploaded_by=current_user.id,
         )
@@ -224,7 +223,8 @@ async def confirm_photo_upload(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Impossible de vérifier l'existence de la photo",
         ) from err
-    photo.photo_url = await storage_service.get_object_url(photo.object_key)
+    # ✅ CORRIGÉ : On ne stocke plus photo_url en base, on génère juste une URL fraîche pour la réponse
     await vehicle_repository.confirm_photo(photo)
     await session.commit()
-    return ConfirmPhotoResponse(photo_id=photo.id, photo_url=photo.photo_url)
+    fresh_url = await storage_service.get_object_url(photo.object_key)
+    return ConfirmPhotoResponse(photo_id=photo.id, photo_url=fresh_url)

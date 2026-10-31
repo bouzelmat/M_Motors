@@ -13,6 +13,11 @@ class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         settings = get_settings()
+
+        # CORRECTION : Ne pas rediriger les health checks
+        if request.url.path == "/health":
+            return await call_next(request)
+
         scheme = (
             request.headers.get("X-Forwarded-Proto", request.url.scheme)
             if settings.environment != "development"

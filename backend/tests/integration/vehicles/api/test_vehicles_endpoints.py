@@ -96,6 +96,10 @@ async def test_list_vehicles_rental_returns_available_vehicles(
         assert "brand" in item
         assert "model" in item
         assert "year" in item
+        assert "price" in item
+        assert "mileage" in item
+        assert "energy_type" in item
+        assert "catalog_type" in item
         assert "monthly_rent" in item
         assert "photo_url" in item
         assert "included_services" in item

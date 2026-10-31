@@ -40,6 +40,10 @@ class VehicleListItemDTO(BaseModel):
     brand: str
     model: str
     year: int
+    price: Decimal | None = None
+    mileage: int
+    energy_type: str
+    catalog_type: CatalogType
     monthly_rent: Decimal | None = None
     photo_url: str | None = Field(
         default=None,
